@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"
+	xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:wp="http://wordpress.org/export/1.2/"
+>
+<channel>
+	<title>Fixture Site</title>
+	<link>https://old-plainhtml.example</link>
+	<wp:wxr_version>1.2</wp:wxr_version>
+	<wp:base_site_url>https://old-plainhtml.example</wp:base_site_url>
+	<item>
+		<title><![CDATA[Golden Article]]></title>
+		<link>https://old-plainhtml.example/golden-article/</link>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<content:encoded><![CDATA[<h2>Welcome</h2><p>Some intro text with an <em>inline</em> image below.</p><p><img src="https://old-plainhtml.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero" width="800" height="400"/></p><ul><li>First point</li><li>Second point</li></ul><blockquote>A wise quote.<cite>Someone Notable</cite></blockquote>[gallery ids="10,11,12"]<p><img src="https://old-plainhtml.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></p><hr>]]></content:encoded>
+		<excerpt:encoded><![CDATA[]]></excerpt:encoded>
+		<wp:post_id>1</wp:post_id>
+		<wp:post_date><![CDATA[2026-01-01 00:00:00]]></wp:post_date>
+		<wp:post_name><![CDATA[golden-article]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<category domain="category" nicename="news"><![CDATA[News]]></category>
+	</item>
+	<item>
+		<title><![CDATA[Second Article]]></title>
+		<link>https://old-plainhtml.example/second-article-copy/</link>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<content:encoded><![CDATA[<p>A second, unrelated article that happens to share its slug with another.</p>]]></content:encoded>
+		<excerpt:encoded><![CDATA[]]></excerpt:encoded>
+		<wp:post_id>2</wp:post_id>
+		<wp:post_date><![CDATA[2026-01-02 00:00:00]]></wp:post_date>
+		<wp:post_name><![CDATA[golden-article]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+	</item>
+	<item>
+		<title><![CDATA[hero.jpg]]></title>
+		<link>https://old-plainhtml.example/wp-content/uploads/2020/01/hero.jpg</link>
+		<wp:post_id>100</wp:post_id>
+		<wp:post_type><![CDATA[attachment]]></wp:post_type>
+		<wp:post_parent>1</wp:post_parent>
+		<wp:attachment_url><![CDATA[https://old-plainhtml.example/wp-content/uploads/2020/01/hero.jpg]]></wp:attachment_url>
+	</item>
+</channel>
+</rss>

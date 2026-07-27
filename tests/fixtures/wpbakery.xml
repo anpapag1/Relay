@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"
+	xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:wp="http://wordpress.org/export/1.2/"
+>
+<channel>
+	<title>Fixture Site</title>
+	<link>https://old-wpbakery.example</link>
+	<wp:wxr_version>1.2</wp:wxr_version>
+	<wp:base_site_url>https://old-wpbakery.example</wp:base_site_url>
+	<item>
+		<title><![CDATA[Golden Article]]></title>
+		<link>https://old-wpbakery.example/golden-article/</link>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<content:encoded><![CDATA[[vc_row][vc_column][vc_column_text]<p>Intro paragraph before the layout.</p>[/vc_column_text][vc_single_image image="100" alt="Hero"][/vc_column][vc_column][vc_column_text]<p>Second column text.</p>[/vc_column_text][vc_gallery images="10,11,12"][vc_btn title="Learn more" link="url:https%3A%2F%2Fold-wpbakery.example%2Flearn-more|title:Learn more"][vc_single_image image="999" alt="No matching attachment"][/vc_column][/vc_row][vc_separator][vc_empty_space height="40px"]]]></content:encoded>
+		<excerpt:encoded><![CDATA[]]></excerpt:encoded>
+		<wp:post_id>1</wp:post_id>
+		<wp:post_date><![CDATA[2026-01-01 00:00:00]]></wp:post_date>
+		<wp:post_name><![CDATA[golden-article]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<category domain="category" nicename="news"><![CDATA[News]]></category>
+	</item>
+	<item>
+		<title><![CDATA[Second Article]]></title>
+		<link>https://old-wpbakery.example/second-article-copy/</link>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<content:encoded><![CDATA[[vc_row][vc_column][vc_column_text]<p>A second, unrelated article that happens to share its slug with another.</p>[/vc_column_text][/vc_column][/vc_row]]]></content:encoded>
+		<excerpt:encoded><![CDATA[]]></excerpt:encoded>
+		<wp:post_id>2</wp:post_id>
+		<wp:post_date><![CDATA[2026-01-02 00:00:00]]></wp:post_date>
+		<wp:post_name><![CDATA[golden-article]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+	</item>
+	<item>
+		<title><![CDATA[hero.jpg]]></title>
+		<link>https://old-wpbakery.example/wp-content/uploads/2020/01/hero.jpg</link>
+		<wp:post_id>100</wp:post_id>
+		<wp:post_type><![CDATA[attachment]]></wp:post_type>
+		<wp:post_parent>1</wp:post_parent>
+		<wp:attachment_url><![CDATA[https://old-wpbakery.example/wp-content/uploads/2020/01/hero.jpg]]></wp:attachment_url>
+	</item>
+</channel>
+</rss>

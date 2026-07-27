@@ -1,0 +1,199 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`golden fixtures > converts the divi fixture to the expected Gutenberg markup > blocks 1`] = `
+"<!-- wp:columns -->
+<div class="wp-block-columns">
+<!-- wp:column -->
+<div class="wp-block-column"><!-- wp:paragraph -->
+<p>Intro paragraph before the layout.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"align":"center","sizeSlug":"large"} -->
+<figure class="wp-block-image alignCenter size-large"><img src="https://old-divi.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero"/></figure>
+<!-- /wp:image --></div>
+<!-- /wp:column -->
+<!-- wp:column -->
+<div class="wp-block-column"><!-- wp:paragraph -->
+<p>Second column text.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:gallery {"columns":3,"linkTo":"none"} -->
+<figure class="wp-block-gallery has-nested-images columns-3">
+<!-- wp:image -->
+<figure class="wp-block-image"><img src="attachment:10" alt=""/></figure>
+<!-- /wp:image -->
+<!-- wp:image -->
+<figure class="wp-block-image"><img src="attachment:11" alt=""/></figure>
+<!-- /wp:image -->
+<!-- wp:image -->
+<figure class="wp-block-image"><img src="attachment:12" alt=""/></figure>
+<!-- /wp:image -->
+</figure>
+<!-- /wp:gallery -->
+
+<!-- wp:buttons -->
+<div class="wp-block-buttons"><!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://old-divi.example/learn-more" target="_blank" rel="noreferrer noopener">Learn more</a></div>
+<!-- /wp:button --></div>
+<!-- /wp:buttons -->
+
+<!-- wp:image {"align":"center","sizeSlug":"large"} -->
+<figure class="wp-block-image alignCenter size-large"><img src="https://old-divi.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></figure>
+<!-- /wp:image --></div>
+<!-- /wp:column -->
+</div>
+<!-- /wp:columns -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->"
+`;
+
+exports[`golden fixtures > converts the divi fixture to the expected Gutenberg markup > warnings 1`] = `[]`;
+
+exports[`golden fixtures > converts the elementor fixture to the expected Gutenberg markup > blocks 1`] = `
+"<!-- wp:columns -->
+<div class="wp-block-columns">
+<!-- wp:column -->
+<div class="wp-block-column"><!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Welcome</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Intro paragraph before the layout.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"align":"center","sizeSlug":"large"} -->
+<figure class="wp-block-image alignCenter size-large"><img src="https://old-elementor.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero"/></figure>
+<!-- /wp:image --></div>
+<!-- /wp:column -->
+<!-- wp:column -->
+<div class="wp-block-column"><!-- wp:paragraph -->
+<p>Second column text.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:gallery {"columns":3,"linkTo":"none"} -->
+<figure class="wp-block-gallery has-nested-images columns-3">
+<!-- wp:image -->
+<figure class="wp-block-image"><img src="https://old-elementor.example/wp-content/uploads/2020/01/g1.jpg" alt="G1"/></figure>
+<!-- /wp:image -->
+<!-- wp:image -->
+<figure class="wp-block-image"><img src="https://old-elementor.example/wp-content/uploads/2020/01/g2.jpg" alt="G2"/></figure>
+<!-- /wp:image -->
+</figure>
+<!-- /wp:gallery -->
+
+<!-- wp:buttons -->
+<div class="wp-block-buttons"><!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://old-elementor.example/learn-more" target="_blank" rel="noreferrer noopener">Learn more</a></div>
+<!-- /wp:button --></div>
+<!-- /wp:buttons -->
+
+<!-- wp:image {"align":"center","sizeSlug":"large"} -->
+<figure class="wp-block-image alignCenter size-large"><img src="https://old-elementor.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></figure>
+<!-- /wp:image --></div>
+<!-- /wp:column -->
+</div>
+<!-- /wp:columns -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->"
+`;
+
+exports[`golden fixtures > converts the elementor fixture to the expected Gutenberg markup > warnings 1`] = `[]`;
+
+exports[`golden fixtures > converts the plainHtml fixture to the expected Gutenberg markup > blocks 1`] = `
+"<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Welcome</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Some intro text with an <em>inline</em> image below.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"align":"center","sizeSlug":"large"} -->
+<figure class="wp-block-image alignCenter size-large"><img src="https://old-plainhtml.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero" width="800" height="400"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:list -->
+<ul class="wp-block-list"><li>First point</li><li>Second point</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><p>A wise quote.</p><cite>Someone Notable</cite></blockquote>
+<!-- /wp:quote -->
+
+<!-- wp:html -->
+[gallery ids="10,11,12"]
+<!-- /wp:html -->
+
+<!-- wp:image {"align":"center","sizeSlug":"large"} -->
+<figure class="wp-block-image alignCenter size-large"><img src="https://old-plainhtml.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></figure>
+<!-- /wp:image -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->"
+`;
+
+exports[`golden fixtures > converts the plainHtml fixture to the expected Gutenberg markup > warnings 1`] = `
+[
+  "Classic gallery shortcode kept as raw HTML — no attachment ID resolution available: [gallery ids="10,11,12"]",
+]
+`;
+
+exports[`golden fixtures > converts the wpbakery fixture to the expected Gutenberg markup > blocks 1`] = `
+"<!-- wp:columns -->
+<div class="wp-block-columns">
+<!-- wp:column -->
+<div class="wp-block-column"><!-- wp:paragraph -->
+<p>Intro paragraph before the layout.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"align":"center","sizeSlug":"large"} -->
+<figure class="wp-block-image alignCenter size-large"><img src="attachment:100" alt="Hero"/></figure>
+<!-- /wp:image --></div>
+<!-- /wp:column -->
+<!-- wp:column -->
+<div class="wp-block-column"><!-- wp:paragraph -->
+<p>Second column text.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:gallery {"columns":3,"linkTo":"none"} -->
+<figure class="wp-block-gallery has-nested-images columns-3">
+<!-- wp:image -->
+<figure class="wp-block-image"><img src="attachment:10" alt=""/></figure>
+<!-- /wp:image -->
+<!-- wp:image -->
+<figure class="wp-block-image"><img src="attachment:11" alt=""/></figure>
+<!-- /wp:image -->
+<!-- wp:image -->
+<figure class="wp-block-image"><img src="attachment:12" alt=""/></figure>
+<!-- /wp:image -->
+</figure>
+<!-- /wp:gallery -->
+
+<!-- wp:buttons -->
+<div class="wp-block-buttons"><!-- wp:button -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://old-wpbakery.example/learn-more" target="_blank" rel="noreferrer noopener">Learn more</a></div>
+<!-- /wp:button --></div>
+<!-- /wp:buttons -->
+
+<!-- wp:image {"align":"center","sizeSlug":"large"} -->
+<figure class="wp-block-image alignCenter size-large"><img src="attachment:999" alt="No matching attachment"/></figure>
+<!-- /wp:image --></div>
+<!-- /wp:column -->
+</div>
+<!-- /wp:columns -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:spacer {"height":"40px"} -->
+<div style="height:40px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->"
+`;
+
+exports[`golden fixtures > converts the wpbakery fixture to the expected Gutenberg markup > warnings 1`] = `[]`;

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"
+	xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:wp="http://wordpress.org/export/1.2/"
+>
+<channel>
+	<title>Fixture Site</title>
+	<link>https://old-divi.example</link>
+	<wp:wxr_version>1.2</wp:wxr_version>
+	<wp:base_site_url>https://old-divi.example</wp:base_site_url>
+	<item>
+		<title><![CDATA[Golden Article]]></title>
+		<link>https://old-divi.example/golden-article/</link>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<content:encoded><![CDATA[[et_pb_section][et_pb_row][et_pb_column][et_pb_text]<p>Intro paragraph before the layout.</p>[/et_pb_text][et_pb_image src="https://old-divi.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero"][/et_pb_column][et_pb_column][et_pb_text]<p>Second column text.</p>[/et_pb_text][et_pb_gallery gallery_ids="10,11,12"][et_pb_button button_text="Learn%20more" button_url="https%3A%2F%2Fold-divi.example%2Flearn-more"][et_pb_image src="https://old-divi.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"][/et_pb_column][/et_pb_row][/et_pb_section][et_pb_divider]]]></content:encoded>
+		<excerpt:encoded><![CDATA[]]></excerpt:encoded>
+		<wp:post_id>1</wp:post_id>
+		<wp:post_date><![CDATA[2026-01-01 00:00:00]]></wp:post_date>
+		<wp:post_name><![CDATA[golden-article]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<category domain="category" nicename="news"><![CDATA[News]]></category>
+	</item>
+	<item>
+		<title><![CDATA[Second Article]]></title>
+		<link>https://old-divi.example/second-article-copy/</link>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<content:encoded><![CDATA[[et_pb_section][et_pb_row][et_pb_column][et_pb_text]<p>A second, unrelated article that happens to share its slug with another.</p>[/et_pb_text][/et_pb_column][/et_pb_row][/et_pb_section]]]></content:encoded>
+		<excerpt:encoded><![CDATA[]]></excerpt:encoded>
+		<wp:post_id>2</wp:post_id>
+		<wp:post_date><![CDATA[2026-01-02 00:00:00]]></wp:post_date>
+		<wp:post_name><![CDATA[golden-article]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+	</item>
+	<item>
+		<title><![CDATA[hero.jpg]]></title>
+		<link>https://old-divi.example/wp-content/uploads/2020/01/hero.jpg</link>
+		<wp:post_id>100</wp:post_id>
+		<wp:post_type><![CDATA[attachment]]></wp:post_type>
+		<wp:post_parent>1</wp:post_parent>
+		<wp:attachment_url><![CDATA[https://old-divi.example/wp-content/uploads/2020/01/hero.jpg]]></wp:attachment_url>
+	</item>
+</channel>
+</rss>
