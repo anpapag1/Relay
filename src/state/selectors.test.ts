@@ -1,0 +1,187 @@
+import { describe, expect, it } from 'vitest';
+import { getDerivedArticles, getFilteredArticles, getMappingProgress, getMediaStats, getStatusCounts } from './selectors';
+import { appReducer, initialState } from './reducer';
+import type { ParseResult, TermTable } from '../types/domain';
+
+const MOCK_PARSE_RESULT: ParseResult = {
+  ok: true,
+  siteUrl: 'https://old.example',
+  totalItems: 4,
+  articles: [
+    {
+      postId: 101,
+      postType: 'post',
+      status: 'publish',
+      title: 'Ready Article',
+      link: 'https://old.example/ready/',
+      postDate: '2026-01-01',
+      postName: 'ready-article',
+      creator: 'alice',
+      contentHtml: '<p>Standard content</p>',
+      excerptHtml: '',
+      terms: [{ domain: 'category', nicename: 'news', name: 'News' }],
+      postmeta: {},
+    },
+    {
+      postId: 102,
+      postType: 'post',
+      status: 'publish',
+      title: 'Review Article',
+      link: 'https://old.example/review/',
+      postDate: '2026-01-02',
+      postName: 'review-article',
+      creator: 'bob',
+      contentHtml: '<p>Has unmapped term and unresolved image</p><figure><img src="https://old.example/missing.png"/></figure>',
+      excerptHtml: '',
+      terms: [{ domain: 'category', nicename: 'unmapped-cat', name: 'Unmapped Cat' }],
+      postmeta: {},
+    },
+    {
+      postId: 103,
+      postType: 'post',
+      status: 'publish',
+      title: 'Edited Article',
+      link: 'https://old.example/edited/',
+      postDate: '2026-01-03',
+      postName: 'edited-article',
+      creator: 'alice',
+      contentHtml: '<p>Original</p>',
+      excerptHtml: '',
+      terms: [],
+      postmeta: {},
+    },
+    {
+      postId: 104,
+      postType: 'post',
+      status: 'publish',
+      title: 'Auto Excluded Article',
+      link: 'https://old.example/ready/', // duplicate link/slug
+      postDate: '2026-01-04',
+      postName: 'ready-article',
+      creator: 'alice',
+      contentHtml: '<p>Duplicate</p>',
+      excerptHtml: '',
+      terms: [],
+      postmeta: {},
+    },
+  ],
+  attachments: [],
+  taxonomies: {
+    category: [
+      { nicename: 'news', name: 'News', count: 1 },
+      { nicename: 'unmapped-cat', name: 'Unmapped Cat', count: 1 },
+    ],
+  },
+  authors: ['alice', 'bob'],
+  statusCounts: { publish: 4 },
+};
+
+describe('selectors', () => {
+  const tables: TermTable[] = [
+    {
+      id: 'cats',
+      label: 'Categories',
+      terms: [{ id: 'cat-news', name: 'News', slug: 'news' }],
+    },
+  ];
+
+  function getTestState() {
+    let s = appReducer(initialState, {
+      type: 'LOAD_SOURCE',
+      result: MOCK_PARSE_RESULT,
+      defaultBuilder: 'plainHtml',
+      confidence: 90,
+    });
+    s = appReducer(s, { type: 'SET_TARGET_TABLES', tables });
+    s = appReducer(s, {
+      type: 'SET_MEDIA_RESOLUTIONS',
+      resolutions: {
+        'https://old.example/missing.png': { outcome: 'unresolved', reason: 'Not found' },
+      },
+    });
+    s = appReducer(s, {
+      type: 'SAVE_ARTICLE_EDIT',
+      articleId: 103,
+      editedHtml: '<!-- wp:paragraph -->Custom<!-- /wp:paragraph -->',
+    });
+    return s;
+  }
+
+  it('derives article statuses correctly', () => {
+    const s = getTestState();
+    const derived = getDerivedArticles(s);
+
+    expect(derived).toHaveLength(4);
+
+    const ready = derived.find((a) => a.id === 101);
+    expect(ready?.status).toBe('ready');
+    expect(ready?.warnings).toHaveLength(0);
+
+    const review = derived.find((a) => a.id === 102);
+    expect(review?.status).toBe('review');
+    expect(review?.warnings).toContain('Unmapped taxonomy term: "Unmapped Cat"');
+    expect(review?.warnings).toContain('Not found');
+
+    const edited = derived.find((a) => a.id === 103);
+    expect(edited?.status).toBe('edited');
+    expect(edited?.isEdited).toBe(true);
+    expect(edited?.editedHtml).toBe('<!-- wp:paragraph -->Custom<!-- /wp:paragraph -->');
+
+    const excluded = derived.find((a) => a.id === 104);
+    expect(excluded?.status).toBe('excluded_auto');
+    expect(excluded?.isExcluded).toBe(true);
+  });
+
+  it('computes status counts', () => {
+    const s = getTestState();
+    const derived = getDerivedArticles(s);
+    const counts = getStatusCounts(derived);
+
+    expect(counts).toEqual({
+      total: 4,
+      ready: 1,
+      review: 1,
+      edited: 1,
+      excluded_auto: 1,
+      excluded_manual: 0,
+    });
+  });
+
+  it('filters and sorts articles', () => {
+    const s = getTestState();
+    const derived = getDerivedArticles(s);
+
+    const byStatus = getFilteredArticles(derived, { status: 'review' });
+    expect(byStatus).toHaveLength(1);
+    expect(byStatus[0]?.id).toBe(102);
+
+    const byAuthor = getFilteredArticles(derived, { author: 'bob' });
+    expect(byAuthor).toHaveLength(1);
+    expect(byAuthor[0]?.id).toBe(102);
+
+    const bySearch = getFilteredArticles(derived, { search: 'Edited' });
+    expect(bySearch).toHaveLength(1);
+    expect(bySearch[0]?.id).toBe(103);
+
+    const sortedDateDesc = getFilteredArticles(derived, { sort: 'date-desc' });
+    expect(sortedDateDesc.map((a) => a.id)).toEqual([104, 103, 102, 101]);
+  });
+
+  it('computes mapping progress', () => {
+    const s = getTestState();
+    const progress = getMappingProgress(s);
+
+    expect(progress.total).toBe(2);
+    expect(progress.mapped).toBe(1);
+    expect(progress.percent).toBe(50);
+  });
+
+  it('computes media stats', () => {
+    const s = getTestState();
+    const derived = getDerivedArticles(s);
+    const stats = getMediaStats(s, derived);
+
+    expect(stats.total).toBe(1);
+    expect(stats.unresolved).toBe(1);
+  });
+});
