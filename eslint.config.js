@@ -14,6 +14,18 @@ export default [
     languageOptions: {
       parser: tsparser,
       parserOptions: { ecmaVersion: 2022, sourceType: 'module' },
+      globals: {
+        DOMParser: 'readonly',
+        Document: 'readonly',
+        Element: 'readonly',
+        URL: 'readonly',
+        fetch: 'readonly',
+        console: 'readonly',
+        document: 'readonly',
+        window: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+      },
     },
     plugins: {
       '@typescript-eslint': tseslint,
