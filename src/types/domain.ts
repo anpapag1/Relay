@@ -83,6 +83,29 @@ export type ImageAlign = 'left' | 'center' | 'right' | 'none';
 export type FileRender = 'button' | 'link' | 'embed';
 export type ButtonRender = 'button' | 'link';
 
+export interface NewSiteTerm {
+  id: string;
+  name: string;
+  slug?: string;
+}
+
+export interface TermTable {
+  id: string;
+  label: string;
+  terms: NewSiteTerm[];
+}
+
+export type MappingOrigin = 'suggested' | 'user';
+
+export interface TermMapping {
+  oldDomain: string;
+  oldNicename: string;
+  targetTableId: string | null;
+  targetTermId: string | null;
+  origin: MappingOrigin;
+  score?: number;
+}
+
 export type MediaOutcome = 'matched-export' | 'matched-live' | 'unresolved' | 'unreachable';
 
 export interface MediaResolution {
