@@ -83,6 +83,14 @@ export type ImageAlign = 'left' | 'center' | 'right' | 'none';
 export type FileRender = 'button' | 'link' | 'embed';
 export type ButtonRender = 'button' | 'link';
 
+export type MediaOutcome = 'matched-export' | 'matched-live' | 'unresolved' | 'unreachable';
+
+export interface MediaResolution {
+  outcome: MediaOutcome;
+  url?: string;
+  reason?: string;
+}
+
 /** The only place a migration's conversion choices live. writeBlocks is the
  * only module that reads these — see core/gutenberg/writeBlocks.ts. */
 export interface ConversionSettings {
