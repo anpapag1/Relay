@@ -36,7 +36,8 @@ export interface AppState {
   source: ParseResult | null;
   target: {
     tables: Record<string, TermTable>;
-  };
+  },
+  oldTables: Record<string, TermTable>;
   mappings: Record<string, TermMapping>;
   settings: ConversionSettings;
   articles: Record<number, ArticleOverride>;

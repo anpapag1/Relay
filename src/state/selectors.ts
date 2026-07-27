@@ -29,9 +29,11 @@ export function getArticleStatus(
   }
 
   const termWarnings: string[] = [];
+  const allTargetTerms = Object.values(state.target.tables).flatMap((t) => t.terms);
   for (const term of article.terms) {
     const mapping = state.mappings[termMappingIdOf(term)];
-    if (!mapping || !mapping.targetTermId) {
+    const targetExists = mapping?.targetTermId && allTargetTerms.some((t) => t.id === mapping.targetTermId);
+    if (!mapping || !mapping.targetTermId || !targetExists) {
       termWarnings.push(`Unmapped taxonomy term: "${term.name}"`);
     }
   }

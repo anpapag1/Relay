@@ -14,6 +14,7 @@ export type Action =
   | { type: 'SET_BUILDER'; builderId: BuilderId }
   | { type: 'SET_LIVE_FETCH_ENABLED'; enabled: boolean }
   | { type: 'SET_TARGET_TABLES'; tables: TermTable[] }
+  | { type: 'SET_OLD_TABLES'; tables: TermTable[] }
   | { type: 'SET_TERM_MAPPING'; oldDomain: string; oldNicename: string; targetTableId: string | null; targetTermId: string | null }
   | { type: 'RESET_MAPPINGS' }
   | { type: 'UPDATE_SETTINGS'; settings: Partial<ConversionSettings> }
@@ -44,6 +45,7 @@ export const actions = {
   setBuilder: (builderId: BuilderId): Action => ({ type: 'SET_BUILDER', builderId }),
   setLiveFetchEnabled: (enabled: boolean): Action => ({ type: 'SET_LIVE_FETCH_ENABLED', enabled }),
   setTargetTables: (tables: TermTable[]): Action => ({ type: 'SET_TARGET_TABLES', tables }),
+  setOldTables: (tables: TermTable[]): Action => ({ type: 'SET_OLD_TABLES', tables }),
   setTermMapping: (oldDomain: string, oldNicename: string, targetTableId: string | null, targetTermId: string | null): Action => ({
     type: 'SET_TERM_MAPPING',
     oldDomain,

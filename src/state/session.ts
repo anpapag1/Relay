@@ -8,6 +8,7 @@ export interface SessionBackup {
   builderId: BuilderId | null;
   builderConfidence: number;
   targetTables: Record<string, TermTable>;
+  oldTables?: Record<string, TermTable>;
   mappings: Record<string, TermMapping>;
   settings: ConversionSettings;
   articles: Record<number, ArticleOverride>;
@@ -24,6 +25,7 @@ export function createSessionBackup(state: AppState): SessionBackup {
     builderId: state.builderId,
     builderConfidence: state.builderConfidence,
     targetTables: state.target.tables,
+    oldTables: state.oldTables,
     mappings: state.mappings,
     settings: state.settings,
     articles: state.articles,
@@ -47,6 +49,7 @@ export function restoreSessionBackup(
     if (data.builderId !== undefined) restoredState.builderId = data.builderId;
     if (data.builderConfidence !== undefined) restoredState.builderConfidence = data.builderConfidence;
     if (data.targetTables) restoredState.target = { tables: data.targetTables };
+    if (data.oldTables) restoredState.oldTables = data.oldTables;
     if (data.mappings) restoredState.mappings = data.mappings;
     if (data.settings) restoredState.settings = { ...currentState.settings, ...data.settings };
     if (data.articles) restoredState.articles = data.articles;

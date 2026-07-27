@@ -172,6 +172,9 @@ export const MappingsTab: React.FC = () => {
                         <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
                           slug: <code>{term.nicename}</code>
                         </div>
+                        <div style={{ fontSize: '11px', color: 'oklch(50% 0.14 150)', marginTop: '2px' }}>
+                          suggested: {term.name}
+                        </div>
                       </div>
 
                       <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>
