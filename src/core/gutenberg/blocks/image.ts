@@ -1,0 +1,50 @@
+import type { IRNode } from '../../ir/nodes';
+import type { ConversionSettings } from '../../../types/domain';
+import { escapeAttr } from '../escapeHtml';
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** Resolves the emitted width/height: an explicit custom size scales the
+ * other dimension proportionally when only one is set; otherwise the
+ * writer defers to sizeSlug and the image's own intrinsic dimensions. */
+function resolveDimensions(
+  node: Extract<IRNode, { kind: 'image' }>,
+  settings: ConversionSettings,
+): { width?: number; height?: number } {
+  if (settings.imageSize !== 'custom') {
+    return { width: node.width, height: node.height };
+  }
+  const { customWidth, customHeight } = settings;
+  if (customWidth && !customHeight && node.width && node.height) {
+    return { width: customWidth, height: Math.round((customWidth * node.height) / node.width) };
+  }
+  if (customHeight && !customWidth && node.width && node.height) {
+    return { height: customHeight, width: Math.round((customHeight * node.width) / node.height) };
+  }
+  return { width: customWidth ?? node.width, height: customHeight ?? node.height };
+}
+
+export function writeImage(
+  node: Extract<IRNode, { kind: 'image' }>,
+  settings: ConversionSettings,
+): string {
+  const attrs: Record<string, unknown> = {};
+  if (settings.imageAlign !== 'none') attrs.align = settings.imageAlign;
+  if (settings.imageSize !== 'custom') attrs.sizeSlug = settings.imageSize;
+
+  const { width, height } = resolveDimensions(node, settings);
+  const dimAttrs = `${width ? ` width="${width}"` : ''}${height ? ` height="${height}"` : ''}`;
+  const img = `<img src="${escapeAttr(node.src)}" alt="${escapeAttr(node.alt)}"${dimAttrs}/>`;
+  const linked = node.href ? `<a href="${escapeAttr(node.href)}">${img}</a>` : img;
+  const figcaption = node.caption
+    ? `<figcaption class="wp-element-caption">${node.caption}</figcaption>`
+    : '';
+
+  const classes = ['wp-block-image'];
+  if (settings.imageAlign !== 'none') classes.push(`align${capitalize(settings.imageAlign)}`);
+  if (settings.imageSize !== 'custom') classes.push(`size-${settings.imageSize}`);
+
+  return `<!-- wp:image ${JSON.stringify(attrs)} -->\n<figure class="${classes.join(' ')}">${linked}${figcaption}</figure>\n<!-- /wp:image -->`;
+}

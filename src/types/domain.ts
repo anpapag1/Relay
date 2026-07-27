@@ -77,3 +77,24 @@ export interface GenerateWxrOptions {
   siteUrl: string;
   language?: string;
 }
+
+export type ImageSize = 'thumbnail' | 'medium' | 'large' | 'full' | 'custom';
+export type ImageAlign = 'left' | 'center' | 'right' | 'none';
+export type FileRender = 'button' | 'link' | 'embed';
+export type ButtonRender = 'button' | 'link';
+
+/** The only place a migration's conversion choices live. writeBlocks is the
+ * only module that reads these — see core/gutenberg/writeBlocks.ts. */
+export interface ConversionSettings {
+  imageSize: ImageSize;
+  customWidth?: number;
+  customHeight?: number;
+  imageAlign: ImageAlign;
+  autoSpacing: boolean;
+  spacerSize: number;
+  galleryCols: number;
+  pdfRender: FileRender;
+  buttonRender: ButtonRender;
+  headingShift: number;
+  linksNewTab: boolean;
+}
