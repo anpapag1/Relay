@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: oklch(98% 0.003 250); }
+  * { box-sizing: border-box; }
+  input, select, textarea, button { font-family: inherit; }
+  a { color: oklch(50% 0.16 265); text-decoration: none; }
+  a:hover { color: oklch(42% 0.18 265); text-decoration: underline; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: oklch(88% 0.005 250); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: oklch(80% 0.005 250); }
+  .relay-scroll { scrollbar-width: thin; scrollbar-color: oklch(88% 0.005 250) transparent; scrollbar-gutter: stable; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+</style>
+</helmet>
+
+<div style="height:100vh; display:flex; flex-direction:column; color:oklch(25% 0.01 250);">
+
+  <!-- HEADER -->
+  <div style="background:white; border-bottom:1px solid oklch(90% 0.005 250); position:sticky; top:0; z-index:20; box-shadow:0 1px 2px oklch(0% 0 0 / 0.02);">
+    <div style="max-width:1280px; margin:0 auto; padding:0 32px; display:flex; flex-direction:column;">
+      <div style="display:flex; align-items:flex-end; justify-content:space-between;">
+        <div style="display:flex; align-items:flex-end; gap:44px;">
+          <div style="display:flex; align-items:center; gap:10px; padding:18px 0 16px;">
+            <div style="{{ logoBoxStyle }}">
+              <div style="width:11px; height:11px; border-radius:2.5px; background:white;"></div>
+            </div>
+            <div style="font-size:18px; font-weight:700; letter-spacing:-0.01em;">Relay</div>
+            <div style="font-size:11px; font-weight:600; color:oklch(50% 0.01 250); padding:3px 8px; border:1px solid oklch(88% 0.005 250); border-radius:5px; text-transform:uppercase; letter-spacing:.04em;">WordPress Migration</div>
+          </div>
+          <div style="display:flex; gap:26px;">
+            <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="5">
+              <div onClick="{{ tab.onClick }}" style="{{ tab.style }}" style-hover="{{ tab.hoverStyle }}">
+                <span style="{{ tab.labelStyle }}">{{ tab.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <sc-if value="{{ hasImport }}">
+          <div style="display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:oklch(45% 0.01 250); background:oklch(97% 0.004 250); border:1px solid oklch(90% 0.005 250); border-radius:6px; padding:6px 10px; margin-bottom:14px; white-space:nowrap; flex-shrink:0;">
+            <span>{{ domain }}</span><span style="color:oklch(65% 0.005 250);">→</span><span>new site</span>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <div class="relay-scroll" style="flex:1; min-height:0; overflow-y:auto;">
+  <div style="max-width:1280px; width:100%; margin:0 auto; padding:32px; display:flex; flex-direction:column;">
+
+    <!-- ============ IMPORT TAB ============ -->
+    <sc-if value="{{ showImport }}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{ noImportYet }}" hint-placeholder-val="{{ true }}">
+        <div style="max-width:960px; margin:60px auto;">
+          <div onDragOver="{{ onDragOver }}" onDrop="{{ onDrop }}" style="border:2px dashed oklch(80% 0.01 250); border-radius:16px; background:white; padding:56px 32px; text-align:center; transition:border-color .15s;">
+            <sc-if value="{{ importing }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ spinnerStyle }}"></div>
+              <div style="font-size:15px; font-weight:600;">Reading {{ fileName }}…</div>
+              <div style="font-size:13px; color:oklch(55% 0.01 250); margin-top:4px;">Detecting page builder, taxonomies and media</div>
+            </sc-if>
+            <sc-if value="{{ notImporting }}" hint-placeholder-val="{{ true }}">
+              <div style="width:48px; height:48px; margin:0 auto 16px; border-radius:12px; background:oklch(95% 0.01 265); display:flex; align-items:center; justify-content:center;">
+                <div style="{{ dropIconStyle }}"></div>
+              </div>
+              <div style="font-size:17px; font-weight:700; margin-bottom:6px;">Drop your WordPress export here</div>
+              <div style="font-size:14px; color:oklch(55% 0.01 250); margin-bottom:20px; line-height:1.5;">A WXR file is the .xml export WordPress generates under Tools → Export. Drag it in, or choose a file below.</div>
+              <label style="{{ chooseFileBtnStyle }}">
+                Choose file
+                <input type="file" onChange="{{ onFilePick }}" style="display:none;" />
+              </label>
+              <div style="margin-top:14px;">
+                <span onClick="{{ loadSample }}" style="font-size:13px; color:oklch(50% 0.16 265); cursor:pointer; text-decoration:underline;">Use a sample export instead</span>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasImport }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:24px; max-width:960px; width:100%; margin:0 auto;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-size:22px; font-weight:700;">Import detected</div>
+              <div style="font-size:14px; color:oklch(55% 0.01 250); margin-top:2px;">From {{ fileName }} — review before mapping content</div>
+            </div>
+            <button onClick="{{ resetImport }}" style="border:1px solid oklch(88% 0.005 250); background:white; color:oklch(45% 0.01 250); font-size:13px; font-weight:600; padding:8px 14px; border-radius:8px; cursor:pointer;">Start over</button>
+          </div>
+
+          <div style="{{ cardStyleBase }} display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div>
+              <div style="font-size:12px; font-weight:600; color:oklch(50% 0.01 250); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px;">Source domain</div>
+              <input value="{{ domain }}" onChange="{{ onDomainChange }}" style="width:100%; padding:10px 12px; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:14px;" />
+            </div>
+            <div>
+              <div style="font-size:12px; font-weight:600; color:oklch(50% 0.01 250); text-transform:uppercase; letter-spacing:.04em; margin-bottom:6px;">Detected page builder</div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <select value="{{ builder }}" onChange="{{ onBuilderChange }}" style="flex:1; padding:10px 12px; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:14px;">
+                  <sc-for list="{{ builderOptions }}" as="opt" hint-placeholder-count="4">
+                    <option value="{{ opt }}">{{ opt }}</option>
+                  </sc-for>
+                </select>
+                <div style="font-size:12px; font-weight:700; color:oklch(50% 0.14 150); background:oklch(95% 0.03 150); padding:5px 9px; border-radius:6px; white-space:nowrap;">{{ builderConfidence }}% match</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+            <sc-for list="{{ statCards }}" as="card" hint-placeholder-count="4">
+              <div style="{{ statCardStyle }}">
+                <div style="font-size:26px; font-weight:700;">{{ card.value }}</div>
+                <div style="font-size:13px; color:oklch(55% 0.01 250); margin-top:2px;">{{ card.label }}</div>
+                <div style="font-size:12px; color:oklch(60% 0.01 250); margin-top:8px; line-height:1.5;">{{ card.detail }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="{{ cardStyleFlush }}">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid oklch(92% 0.005 250);">
+              <div>
+                <div style="font-size:15px; font-weight:700;">Old &amp; new site data</div>
+                <div style="font-size:12px; color:oklch(55% 0.01 250); margin-top:2px;">Export/Import JSON covers this whole session — site data, mappings, and conversion settings.</div>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button onClick="{{ exportFullBackup }}" style="padding:8px 14px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; line-height:1.2;">Export JSON</button>
+                <label style="display:inline-flex; align-items:center; padding:8px 14px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; line-height:1.2;">
+                  Import JSON
+                  <input type="file" accept="application/json" onChange="{{ onImportBackupFile }}" style="display:none;" />
+                </label>
+              </div>
+            </div>
+            <div style="display:flex; border-bottom:1px solid oklch(92% 0.005 250);">
+              <sc-for list="{{ connectTabs }}" as="ct" hint-placeholder-count="2">
+                <div onClick="{{ ct.onClick }}" style="{{ ct.style }}">{{ ct.label }}</div>
+              </sc-for>
+            </div>
+            <div style="padding:24px;">
+              <sc-if value="{{ isOldTab }}" hint-placeholder-val="{{ true }}">
+                <div style="font-size:13px; color:oklch(55% 0.01 250); margin-bottom:14px;">Add a table for each category/tag/taxonomy on the old site, and type in its terms by hand.</div>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                  <sc-for list="{{ oldTables }}" as="tbl" hint-placeholder-count="3">
+                    <div style="border:1px solid oklch(93% 0.005 250); border-radius:10px; padding:14px;">
+                      <div style="display:flex; gap:8px; margin-bottom:10px;">
+                        <input value="{{ tbl.name }}" onChange="{{ tbl.onNameChange }}" placeholder="Table name" style="flex:1; padding:8px 10px; border:1px solid oklch(88% 0.005 250); border-radius:7px; font-size:13px; font-weight:600;" />
+                        <select value="{{ tbl.type }}" onChange="{{ tbl.onTypeChange }}" style="padding:8px 10px; border:1px solid oklch(88% 0.005 250); border-radius:7px; font-size:13px;">
+                          <option value="category">Category</option>
+                          <option value="tag">Tag</option>
+                          <option value="custom">Custom taxonomy</option>
+                        </select>
+                        <button onClick="{{ tbl.onRemove }}" style="padding:8px 10px; background:white; border:1px solid oklch(85% 0.1 25); color:oklch(50% 0.18 25); border-radius:7px; font-size:12px; font-weight:600; cursor:pointer;">Remove</button>
+                      </div>
+                      <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+                        <sc-for list="{{ tbl.terms }}" as="trm" hint-placeholder-count="2">
+                          <div style="display:flex; gap:8px;">
+                            <input value="{{ trm.name }}" onChange="{{ trm.onNameChange }}" placeholder="Term name" style="flex:1; padding:7px 9px; border:1px solid oklch(88% 0.005 250); border-radius:6px; font-size:13px;" />
+                            <input value="{{ trm.slug }}" onChange="{{ trm.onSlugChange }}" placeholder="slug" style="width:120px; padding:7px 9px; border:1px solid oklch(88% 0.005 250); border-radius:6px; font-size:13px; font-family:'IBM Plex Mono',monospace;" />
+                            <button onClick="{{ trm.onRemove }}" style="width:30px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:6px; font-size:13px; cursor:pointer; color:oklch(55% 0.01 250);">✕</button>
+                          </div>
+                        </sc-for>
+                      </div>
+                      <button onClick="{{ tbl.onAddTerm }}" style="padding:6px 10px; background:white; border:1px dashed oklch(85% 0.005 250); border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; color:oklch(50% 0.01 250);">+ Add term</button>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ noOldTables }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:13px; color:oklch(55% 0.01 250); text-align:center; padding:20px;">No tables yet — add one to start entering the old site's terms.</div>
+                  </sc-if>
+                </div>
+                <button onClick="{{ addOldTable }}" style="margin-top:12px; padding:8px 14px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:7px; font-size:12px; font-weight:600; cursor:pointer;">+ Add table</button>
+              </sc-if>
+              <sc-if value="{{ isNewTab }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:13px; color:oklch(55% 0.01 250); margin-bottom:14px;">Add a table for each category/tag/taxonomy that already exists on the new site.</div>
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                  <sc-for list="{{ newTables }}" as="tbl" hint-placeholder-count="2">
+                    <div style="border:1px solid oklch(93% 0.005 250); border-radius:10px; padding:14px;">
+                      <div style="display:flex; gap:8px; margin-bottom:10px;">
+                        <input value="{{ tbl.name }}" onChange="{{ tbl.onNameChange }}" placeholder="Table name" style="flex:1; padding:8px 10px; border:1px solid oklch(88% 0.005 250); border-radius:7px; font-size:13px; font-weight:600;" />
+                        <select value="{{ tbl.type }}" onChange="{{ tbl.onTypeChange }}" style="padding:8px 10px; border:1px solid oklch(88% 0.005 250); border-radius:7px; font-size:13px;">
+                          <option value="category">Category</option>
+                          <option value="tag">Tag</option>
+                          <option value="custom">Custom taxonomy</option>
+                        </select>
+                        <button onClick="{{ tbl.onRemove }}" style="padding:8px 10px; background:white; border:1px solid oklch(85% 0.1 25); color:oklch(50% 0.18 25); border-radius:7px; font-size:12px; font-weight:600; cursor:pointer;">Remove</button>
+                      </div>
+                      <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+                        <sc-for list="{{ tbl.terms }}" as="trm" hint-placeholder-count="2">
+                          <div style="display:flex; gap:8px;">
+                            <input value="{{ trm.name }}" onChange="{{ trm.onNameChange }}" placeholder="Term name" style="flex:1; padding:7px 9px; border:1px solid oklch(88% 0.005 250); border-radius:6px; font-size:13px;" />
+                            <input value="{{ trm.slug }}" onChange="{{ trm.onSlugChange }}" placeholder="slug" style="width:140px; padding:7px 9px; border:1px solid oklch(88% 0.005 250); border-radius:6px; font-size:13px; font-family:'IBM Plex Mono',monospace;" />
+                            <button onClick="{{ trm.onRemove }}" style="width:30px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:6px; font-size:13px; cursor:pointer; color:oklch(55% 0.01 250);">✕</button>
+                          </div>
+                        </sc-for>
+                      </div>
+                      <button onClick="{{ tbl.onAddTerm }}" style="padding:6px 10px; background:white; border:1px dashed oklch(85% 0.005 250); border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; color:oklch(50% 0.01 250);">+ Add term</button>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ noNewTables }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:13px; color:oklch(55% 0.01 250); text-align:center; padding:20px;">No tables yet — add one to start entering the new site's terms.</div>
+                  </sc-if>
+                </div>
+                <button onClick="{{ addNewTable }}" style="margin-top:12px; padding:8px 14px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:7px; font-size:12px; font-weight:600; cursor:pointer;">+ Add table</button>
+              </sc-if>
+            </div>
+            <sc-if value="{{ hasBackupStatus }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:0 24px 18px; font-size:12px; color:oklch(50% 0.14 150);">{{ restoreStatus }}</div>
+            </sc-if>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end;">
+            <button onClick="{{ goToMappings }}" style="{{ primaryBtnStyle }}">Continue to Mappings →</button>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- ============ MAPPINGS TAB ============ -->
+    <sc-if value="{{ showMappings }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ hasImport }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:20px; max-width:960px; width:100%; margin:0 auto;">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+            <div>
+              <div style="font-size:22px; font-weight:700;">Map taxonomies</div>
+              <div style="font-size:14px; color:oklch(55% 0.01 250); margin-top:2px; max-width:560px;">Decide where every term from the old site lands: a category, a tag, or nowhere at all.</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button onClick="{{ exportFullBackup }}" style="border:1px solid oklch(88% 0.005 250); background:white; font-size:13px; font-weight:600; padding:9px 14px; border-radius:8px; cursor:pointer;">Export session JSON</button>
+              <button onClick="{{ openClearConfirm }}" style="border:1px solid oklch(85% 0.1 25); background:white; color:oklch(50% 0.18 25); font-size:13px; font-weight:600; padding:9px 14px; border-radius:8px; cursor:pointer;">Clear everything</button>
+            </div>
+          </div>
+
+          <sc-for list="{{ taxonomies }}" as="tax" hint-placeholder-count="3">
+            <div style="{{ cardStyleFlush }}">
+              <div onClick="{{ tax.onToggle }}" style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; cursor:pointer;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <div style="{{ tax.chevronStyle }}"></div>
+                  <div style="font-size:15px; font-weight:700;">{{ tax.label }}</div>
+                  <sc-if value="{{ tax.isCore }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:11px; font-weight:600; color:oklch(50% 0.01 250); background:oklch(95% 0.005 250); padding:2px 7px; border-radius:5px;">built-in</div>
+                  </sc-if>
+                </div>
+                <div style="font-size:13px; color:oklch(55% 0.01 250);">{{ tax.termCount }} terms</div>
+              </div>
+              <sc-if value="{{ tax.expanded }}" hint-placeholder-val="{{ true }}">
+                <div style="border-top:1px solid oklch(93% 0.005 250);">
+                  <div style="display:grid; grid-template-columns:2fr 0.6fr 0.9fr 1.8fr 0.8fr; gap:12px; padding:10px 20px; font-size:11px; font-weight:600; color:oklch(55% 0.01 250); text-transform:uppercase; letter-spacing:.03em;">
+                    <div>Term</div><div>Count</div><div>Action</div><div>Destination</div><div></div>
+                  </div>
+                  <sc-for list="{{ tax.terms }}" as="term" hint-placeholder-count="4">
+                    <div style="display:grid; grid-template-columns:2fr 0.6fr 0.9fr 1.8fr 0.8fr; gap:12px; padding:12px 20px; align-items:center; border-top:1px solid oklch(95% 0.005 250);">
+                      <div>
+                        <div style="font-size:14px; font-weight:500;">{{ term.name }}</div>
+                        <sc-if value="{{ term.hasSuggestion }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-size:11px; color:oklch(50% 0.14 150); margin-top:2px;">suggested: {{ term.suggestion }}</div>
+                        </sc-if>
+                      </div>
+                      <div style="font-size:13px; color:oklch(55% 0.01 250);">{{ term.count }}</div>
+                      <sc-if value="{{ term.notExcluded }}" hint-placeholder-val="{{ true }}">
+                        <select value="{{ term.action }}" onChange="{{ term.onActionChange }}" style="padding:7px 8px; border:1px solid oklch(88% 0.005 250); border-radius:7px; font-size:13px;">
+                          <option value="category">Category</option>
+                          <option value="tag">Tag</option>
+                        </select>
+                      </sc-if>
+                      <sc-if value="{{ term.isCategory }}" hint-placeholder-val="{{ false }}">
+                        <div style="position:relative;">
+                          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; border:1px solid oklch(88% 0.005 250); border-radius:6px; padding:4px 6px;">
+                            <sc-for list="{{ term.categoryChips }}" as="chip" hint-placeholder-count="2">
+                              <div style="{{ chip.style }}">{{ chip.name }}<span onClick="{{ chip.onClick }}" style="cursor:pointer; margin-left:5px; opacity:.7;">✕</span></div>
+                            </sc-for>
+                            <input value="{{ term.pickerSearch }}" onChange="{{ term.onPickerSearchChange }}" onFocus="{{ term.onPickerFocus }}" onBlur="{{ term.onPickerBlur }}" placeholder="Add category…" style="flex:1; min-width:80px; border:none; outline:none; padding:4px 2px; font-size:12px;" />
+                          </div>
+                          <sc-if value="{{ term.pickerOpen }}" hint-placeholder-val="{{ false }}">
+                            <div style="position:absolute; top:100%; left:0; right:0; margin-top:2px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:8px; box-shadow:0 4px 14px oklch(0% 0 0 / .1); max-height:150px; overflow-y:auto; z-index:5;">
+                              <sc-for list="{{ term.pickerOptions }}" as="opt" hint-placeholder-count="2">
+                                <div onMouseDown="{{ opt.onSelect }}" style="padding:8px 10px; font-size:13px; cursor:pointer;" style-hover="background:oklch(97% 0.005 250);">{{ opt.name }}</div>
+                              </sc-for>
+                              <sc-if value="{{ term.pickerNoOptions }}" hint-placeholder-val="{{ false }}">
+                                <div style="padding:8px 10px; font-size:12px; color:oklch(55% 0.01 250);">No matching categories</div>
+                              </sc-if>
+                            </div>
+                          </sc-if>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ term.isTag }}" hint-placeholder-val="{{ false }}">
+                        <div style="position:relative;">
+                          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; border:1px solid oklch(88% 0.005 250); border-radius:6px; padding:4px 6px;">
+                            <sc-for list="{{ term.tagChips }}" as="chip" hint-placeholder-count="1">
+                              <div style="{{ chip.style }}">{{ chip.name }}<span onClick="{{ chip.onClick }}" style="cursor:pointer; margin-left:5px; opacity:.7;">✕</span></div>
+                            </sc-for>
+                            <input value="{{ term.pickerSearch }}" onChange="{{ term.onPickerSearchChange }}" onFocus="{{ term.onPickerFocus }}" onBlur="{{ term.onPickerBlur }}" placeholder="Add tag slug…" style="flex:1; min-width:80px; border:none; outline:none; padding:4px 2px; font-size:12px; font-family:'IBM Plex Mono',monospace;" />
+                          </div>
+                          <sc-if value="{{ term.pickerOpen }}" hint-placeholder-val="{{ false }}">
+                            <div style="position:absolute; top:100%; left:0; right:0; margin-top:2px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:8px; box-shadow:0 4px 14px oklch(0% 0 0 / .1); max-height:150px; overflow-y:auto; z-index:5;">
+                              <sc-for list="{{ term.pickerOptions }}" as="opt" hint-placeholder-count="2">
+                                <div onMouseDown="{{ opt.onSelect }}" style="padding:8px 10px; font-size:13px; cursor:pointer; font-family:'IBM Plex Mono',monospace;" style-hover="background:oklch(97% 0.005 250);">{{ opt.name }}</div>
+                              </sc-for>
+                              <sc-if value="{{ term.pickerNoOptions }}" hint-placeholder-val="{{ false }}">
+                                <div style="padding:8px 10px; font-size:12px; color:oklch(55% 0.01 250); font-family:'IBM Plex Sans',sans-serif;">No matching tags</div>
+                              </sc-if>
+                            </div>
+                          </sc-if>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ term.isExcluded }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-size:13px; color:oklch(60% 0.01 250); grid-column: span 2;">Won't be migrated</div>
+                      </sc-if>
+                      <sc-if value="{{ term.isExcluded }}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{ term.onToggleExclude }}" style="padding:6px 10px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; color:oklch(45% 0.01 250);">Undo</button>
+                      </sc-if>
+                      <sc-if value="{{ term.notExcluded }}" hint-placeholder-val="{{ true }}">
+                        <button onClick="{{ term.onToggleExclude }}" style="padding:6px 10px; background:white; border:1px solid oklch(85% 0.1 25); border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; color:oklch(50% 0.18 25);">Exclude</button>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+
+          <div style="display:flex; justify-content:flex-end;">
+            <button onClick="{{ goToSettings }}" style="{{ primaryBtnStyle }}">Continue to Settings →</button>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noImportYet }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ emptyStateStyle }}">
+          <div style="font-size:16px; font-weight:700; margin-bottom:6px;">No import yet</div>
+          <div style="font-size:14px; color:oklch(55% 0.01 250); margin-bottom:16px;">Upload a WordPress export on the Import tab to see taxonomies here.</div>
+          <button onClick="{{ goToImport }}" style="{{ secondaryPrimaryBtnStyle }}">Go to Import</button>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- ============ SETTINGS TAB ============ -->
+    <sc-if value="{{ showSettings }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ hasImport }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:20px; max-width:960px; width:100%; margin:0 auto;">
+          <div>
+            <div style="font-size:22px; font-weight:700;">Conversion settings</div>
+            <div style="font-size:14px; color:oklch(55% 0.01 250); margin-top:2px;">Controls how the old builder's markup becomes clean Gutenberg blocks. The preview updates as you change these.</div>
+          </div>
+          <div style="display:grid; grid-template-columns:380px 1fr; gap:24px; align-items:start;">
+            <div style="background:white; border:1px solid oklch(90% 0.005 250); border-radius:14px; padding:22px; display:flex; flex-direction:column; gap:18px;">
+
+              <div>
+                <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Image size</div>
+                <select value="{{ settings.imageSize }}" onChange="{{ onImageSizeChange }}" style="width:100%; padding:9px 10px; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:13px;">
+                  <option value="thumbnail">Thumbnail</option>
+                  <option value="medium">Medium</option>
+                  <option value="large">Large</option>
+                  <option value="full">Full size</option>
+                  <option value="custom">Custom</option>
+                </select>
+                <sc-if value="{{ isCustomImageSize }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex; gap:8px; margin-top:10px;">
+                    <div style="flex:1;">
+                      <div style="font-size:11px; color:oklch(55% 0.01 250); margin-bottom:4px;">Width (px)</div>
+                      <input type="number" min="0" placeholder="auto" value="{{ settings.customWidth }}" onChange="{{ onCustomWidthChange }}" style="width:100%; padding:8px 10px; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:13px;" />
+                    </div>
+                    <div style="flex:1;">
+                      <div style="font-size:11px; color:oklch(55% 0.01 250); margin-bottom:4px;">Height (px)</div>
+                      <input type="number" min="0" placeholder="auto" value="{{ settings.customHeight }}" onChange="{{ onCustomHeightChange }}" style="width:100%; padding:8px 10px; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:13px;" />
+                    </div>
+                  </div>
+                  <div style="font-size:11px; color:oklch(55% 0.01 250); margin-top:6px;">Set one — the other scales proportionally, just like in WordPress.</div>
+                </sc-if>
+              </div>
+
+              <div>
+                <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Image alignment</div>
+                <div style="display:flex; gap:6px;">
+                  <sc-for list="{{ alignOptions }}" as="al" hint-placeholder-count="3">
+                    <button onClick="{{ al.onClick }}" style="{{ al.style }}">{{ al.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                  <div style="font-size:13px; font-weight:600;">Auto-space images next to text</div>
+                  <div style="font-size:12px; color:oklch(55% 0.01 250); margin-top:2px;">Adds margin so wrapped text doesn't hug the image</div>
+                </div>
+                <div onClick="{{ toggleAutoSpacing }}" style="{{ autoSpacingToggleStyle }}"><div style="{{ autoSpacingKnobStyle }}"></div></div>
+              </div>
+
+              <sc-if value="{{ settings.autoSpacing }}" hint-placeholder-val="{{ true }}">
+                <div>
+                  <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Spacer height (px)</div>
+                  <input type="number" min="0" value="{{ settings.spacerSize }}" onChange="{{ onSpacerSizeChange }}" style="width:100%; padding:9px 10px; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:13px;" />
+                </div>
+              </sc-if>
+
+              <div>
+                <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Gallery columns: {{ settings.galleryCols }}</div>
+                <input type="range" min="1" max="6" value="{{ settings.galleryCols }}" onChange="{{ onGalleryColsChange }}" style="width:100%;" />
+              </div>
+
+              <div>
+                <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Embedded PDFs render as</div>
+                <div style="display:flex; gap:6px;">
+                  <sc-for list="{{ pdfOptions }}" as="p" hint-placeholder-count="3">
+                    <button onClick="{{ p.onClick }}" style="{{ p.style }}">{{ p.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div>
+                <div style="font-size:13px; font-weight:600; margin-bottom:8px;">Buttons render as</div>
+                <div style="display:flex; gap:6px;">
+                  <sc-for list="{{ buttonOptions }}" as="b" hint-placeholder-count="3">
+                    <button onClick="{{ b.onClick }}" style="{{ b.style }}">{{ b.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                  <div style="font-size:13px; font-weight:600;">Shift heading levels down</div>
+                  <div style="font-size:12px; color:oklch(55% 0.01 250); margin-top:2px;">Old H1s become H2s, etc., to keep one H1 per page</div>
+                </div>
+                <select value="{{ settings.headingShift }}" onChange="{{ onHeadingShiftChange }}" style="padding:8px 10px; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:13px;">
+                  <option value="0">None</option>
+                  <option value="1">Down 1 (H1→H2)</option>
+                  <option value="2">Down 2 (H1→H3)</option>
+                  <option value="3">Down 3 (H1→H4)</option>
+                </select>
+              </div>
+
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                  <div style="font-size:13px; font-weight:600;">Links open in new tab</div>
+                </div>
+                <div onClick="{{ toggleLinksNewTab }}" style="{{ linksNewTabToggleStyle }}"><div style="{{ linksNewTabKnobStyle }}"></div></div>
+              </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:12px; height:600px;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div style="font-size:13px; font-weight:600; color:oklch(50% 0.01 250);">Live preview — sample article</div>
+                <div style="display:flex; gap:4px; background:oklch(95% 0.005 250); border-radius:8px; padding:3px;">
+                  <button onClick="{{ setPreviewBefore }}" style="{{ previewBeforeTabStyle }}">Before</button>
+                  <button onClick="{{ setPreviewAfter }}" style="{{ previewAfterTabStyle }}">After</button>
+                </div>
+              </div>
+              <div style="flex:1; min-height:0; background:white; border:1px solid oklch(90% 0.005 250); border-radius:12px; padding:20px; overflow-y:auto;">
+                <sc-if value="{{ showPreviewBefore }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-size:14px; line-height:1.6; display:flex; gap:12px; align-items:flex-start;">
+                    <div style="width:70px; height:46px; flex-shrink:0; border-radius:4px; background:repeating-linear-gradient(45deg, oklch(93% 0.005 250), oklch(93% 0.005 250) 5px, oklch(97% 0.003 250) 5px, oklch(97% 0.003 250) 10px);"></div>
+                    <div>
+                      <p style="margin:0 0 6px;">The team spent six weeks rebuilding the onboarding flow from scratch, focusing on reducing drop-off at step three...</p>
+                      <div style="background:oklch(95% 0.005 250); padding:6px 8px; border-radius:4px; font-size:12px; font-family:'IBM Plex Mono',monospace; color:oklch(45% 0.01 250); display:inline-block;">[button link="#" text="Read the full report"]</div>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ showPreviewAfter }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:14px; line-height:1.6;">
+                    <div style="{{ afterImageStyle }}">
+                      <div style="{{ afterImageBoxStyle }}"></div>
+                    </div>
+                    <p style="margin:0 0 8px;">The team spent six weeks rebuilding the onboarding flow from scratch, focusing on reducing drop-off at step three...</p>
+                    <div style="{{ afterButtonStyle }}">{{ afterButtonLabel }}</div>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:flex-end;">
+            <button onClick="{{ goToArticles }}" style="{{ primaryBtnStyle }}">Continue to Articles →</button>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noImportYet }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ emptyStateStyle }}">
+          <div style="font-size:16px; font-weight:700; margin-bottom:6px;">No import yet</div>
+          <div style="font-size:14px; color:oklch(55% 0.01 250); margin-bottom:16px;">Upload a WordPress export first — conversion settings apply to its content.</div>
+          <button onClick="{{ goToImport }}" style="{{ secondaryPrimaryBtnStyle }}">Go to Import</button>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- ============ ARTICLES TAB ============ -->
+    <sc-if value="{{ showArticles }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ hasImport }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:16px; max-width:960px; width:100%; margin:0 auto;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <div style="font-size:22px; font-weight:700;">Articles</div>
+              <div style="font-size:14px; color:oklch(55% 0.01 250); margin-top:2px;">{{ articleSummary }}</div>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <input value="{{ articleSearch }}" onChange="{{ onArticleSearchChange }}" placeholder="Search titles…" style="padding:9px 12px; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:13px; width:200px;" />
+              <button onClick="{{ openExcludeAllConfirm }}" style="padding:9px 14px; background:white; border:1px solid oklch(85% 0.1 25); color:oklch(50% 0.18 25); border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">Exclude all</button>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span style="font-size:12px; font-weight:600; color:oklch(55% 0.01 250); text-transform:uppercase; letter-spacing:.03em;">Showing:</span>
+            <sc-for list="{{ statusFilterChips }}" as="sf" hint-placeholder-count="4">
+              <div onClick="{{ sf.onClick }}" style="{{ sf.style }}">{{ sf.label }} <span style="opacity:.7;">{{ sf.count }}</span></div>
+            </sc-for>
+          </div>
+
+          <div style="{{ cardStyleFlush }}">
+            <div style="display:grid; grid-template-columns:2.2fr 0.9fr 0.9fr 0.7fr 1fr 0.8fr; padding:12px 20px; font-size:11px; font-weight:600; color:oklch(55% 0.01 250); text-transform:uppercase; letter-spacing:.03em; background:oklch(97% 0.003 250);">
+              <div onClick="{{ sortByTitle }}" style="cursor:pointer;">Title {{ titleSortArrow }}</div>
+              <div onClick="{{ sortByDate }}" style="cursor:pointer;">Date {{ dateSortArrow }}</div>
+              <div>Category</div>
+              <div>Media</div>
+              <div onClick="{{ sortByStatus }}" style="cursor:pointer;">Status {{ statusSortArrow }}</div>
+              <div></div>
+            </div>
+            <sc-for list="{{ visibleArticles }}" as="art" hint-placeholder-count="6">
+              <div onClick="{{ art.onClick }}" style="display:grid; grid-template-columns:2.2fr 0.9fr 0.9fr 0.7fr 1fr 0.8fr; padding:14px 20px; align-items:center; border-top:1px solid oklch(95% 0.005 250); cursor:pointer;" style-hover="background:oklch(98% 0.003 250);">
+                <div style="font-size:14px; font-weight:500;">{{ art.title }}</div>
+                <div style="font-size:13px; color:oklch(55% 0.01 250);">{{ art.date }}</div>
+                <div style="font-size:13px; color:oklch(55% 0.01 250);">{{ art.category }}</div>
+                <div style="font-size:13px; color:oklch(55% 0.01 250); display:flex; align-items:center; gap:5px;">
+                  {{ art.mediaCount }}
+                  <sc-if value="{{ art.mediaWarning }}" hint-placeholder-val="{{ false }}">
+                    <div style="width:14px; height:14px; border-radius:50%; background:oklch(65% 0.15 80); color:white; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center;">!</div>
+                  </sc-if>
+                </div>
+                <div><div style="{{ art.badgeStyle }}">{{ art.statusLabel }}</div></div>
+                <div><button onClick="{{ art.onToggleExclude }}" style="{{ art.excludeBtnStyle }}">{{ art.excludeBtnLabel }}</button></div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ noVisibleArticles }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:40px; text-align:center; font-size:14px; color:oklch(55% 0.01 250);">No articles match this filter.</div>
+            </sc-if>
+          </div>
+          <div style="display:flex; justify-content:flex-end;">
+            <button onClick="{{ goToBuild }}" style="{{ primaryBtnStyle }}">Continue to Build & Export →</button>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noImportYet }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ emptyStateStyle }}">
+          <div style="font-size:16px; font-weight:700; margin-bottom:6px;">No import yet</div>
+          <div style="font-size:14px; color:oklch(55% 0.01 250); margin-bottom:16px;">Upload a WordPress export first — this table lists its articles.</div>
+          <button onClick="{{ goToImport }}" style="{{ secondaryPrimaryBtnStyle }}">Go to Import</button>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- ============ BUILD TAB ============ -->
+    <sc-if value="{{ showBuild }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ hasImport }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; flex-direction:column; gap:20px; max-width:960px; width:100%; margin:0 auto;">
+          <div>
+            <div style="font-size:22px; font-weight:700;">Build & export</div>
+            <div style="font-size:14px; color:oklch(55% 0.01 250); margin-top:2px;">Run a quick check, then build the final import file for the new site.</div>
+          </div>
+
+          <div style="{{ cardStyleBase }} display:flex; align-items:center; justify-content:space-between; gap:24px;">
+            <div style="display:flex; gap:28px;">
+              <div>
+                <div style="font-size:24px; font-weight:700; color:oklch(45% 0.14 150);">{{ preflightIncluded }}</div>
+                <div style="font-size:12px; color:oklch(55% 0.01 250);">will be included</div>
+              </div>
+              <div>
+                <div style="font-size:24px; font-weight:700; color:oklch(55% 0.14 80);">{{ preflightReview }}</div>
+                <div style="font-size:12px; color:oklch(55% 0.01 250);">still need review</div>
+              </div>
+              <div>
+                <div style="font-size:24px; font-weight:700; color:oklch(55% 0.01 250);">{{ preflightExcluded }}</div>
+                <div style="font-size:12px; color:oklch(55% 0.01 250);">excluded</div>
+              </div>
+            </div>
+            <div style="font-size:13px; color:oklch(55% 0.01 250); max-width:220px; text-align:right;">{{ preflightNote }}</div>
+          </div>
+
+          <div style="background:white; border:1px solid oklch(90% 0.005 250); border-radius:14px; padding:22px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+              <div style="font-size:15px; font-weight:700;">Check for problems</div>
+              <button onClick="{{ runCheck }}" style="padding:9px 16px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Run check</button>
+            </div>
+            <div style="font-size:13px; color:oklch(55% 0.01 250); margin-bottom:12px;">Instant — scans all articles without building anything.</div>
+            <sc-if value="{{ hasCheckResults }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <sc-for list="{{ checkWarnings }}" as="w" hint-placeholder-count="3">
+                  <div onClick="{{ w.onClick }}" style="display:flex; gap:8px; align-items:center; font-size:13px; padding:8px 10px; background:oklch(97% 0.02 80); border-radius:7px; cursor:pointer;" style-hover="background:oklch(94% 0.03 80);">
+                    <div style="color:oklch(60% 0.15 80); font-weight:700;">⚠</div>
+                    <div style="flex:1;">{{ w.text }}</div>
+                    <div style="font-size:12px; color:oklch(50% 0.14 80); text-decoration:underline; white-space:nowrap;">Review →</div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ noCheckWarnings }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:13px; color:oklch(45% 0.14 150); padding:8px 10px; background:oklch(96% 0.03 150); border-radius:7px;">No problems found — ready to build.</div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="background:white; border:1px solid oklch(90% 0.005 250); border-radius:14px; padding:22px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+              <div style="font-size:15px; font-weight:700;">Build migration file</div>
+              <sc-if value="{{ canStartBuild }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ startBuild }}" style="{{ secondaryPrimaryBtnStyle }}">Build now</button>
+              </sc-if>
+              <sc-if value="{{ isBuilding }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ cancelBuild }}" style="padding:9px 18px; background:white; border:1px solid oklch(85% 0.1 25); color:oklch(50% 0.18 25); border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+              </sc-if>
+            </div>
+            <div style="font-size:13px; color:oklch(55% 0.01 250); margin-bottom:14px;">Converts every included article and packages a downloadable import file.</div>
+
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+              <span style="font-size:12px; font-weight:600; color:oklch(55% 0.01 250); text-transform:uppercase; letter-spacing:.03em;">Include:</span>
+              <sc-for list="{{ buildStatusChips }}" as="bc" hint-placeholder-count="3">
+                <div onClick="{{ bc.onClick }}" style="{{ bc.style }}">{{ bc.label }} <span style="opacity:.7;">{{ bc.count }}</span></div>
+              </sc-for>
+            </div>
+
+            <sc-if value="{{ isBuilding }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; font-size:12px; color:oklch(50% 0.01 250); margin-bottom:6px;">
+                  <span>{{ buildProgressLabel }}</span><span>{{ buildPercent }}%</span>
+                </div>
+                <div style="height:8px; background:oklch(94% 0.005 250); border-radius:4px; overflow:hidden;">
+                  <div style="{{ buildBarStyle }}"></div>
+                </div>
+              </div>
+              <div style="background:oklch(20% 0.005 250); color:oklch(85% 0.005 250); border-radius:10px; padding:14px; height:160px; overflow-y:auto; font-family:'IBM Plex Mono',monospace; font-size:12px; display:flex; flex-direction:column; gap:4px;">
+                <sc-for list="{{ buildLog }}" as="line" hint-placeholder-count="4">
+                  <div>{{ line }}</div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ buildCancelled }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:13px; color:oklch(50% 0.01 250); padding:10px; background:oklch(96% 0.005 250); border-radius:8px;">Build cancelled. No file was produced.</div>
+            </sc-if>
+
+            <sc-if value="{{ buildDone }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; gap:16px;">
+                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
+                  <div style="background:oklch(96% 0.03 150); border-radius:10px; padding:14px;">
+                    <div style="font-size:22px; font-weight:700; color:oklch(40% 0.14 150);">{{ buildIncludedCount }}</div>
+                    <div style="font-size:12px; color:oklch(45% 0.05 150);">included</div>
+                  </div>
+                  <div style="background:oklch(97% 0.02 80); border-radius:10px; padding:14px;">
+                    <div style="font-size:22px; font-weight:700; color:oklch(50% 0.14 80);">{{ buildReviewCount }}</div>
+                    <div style="font-size:12px; color:oklch(50% 0.05 80);">flagged in log</div>
+                  </div>
+                  <div style="background:oklch(96% 0.005 250); border-radius:10px; padding:14px;">
+                    <div style="font-size:22px; font-weight:700; color:oklch(50% 0.01 250);">{{ buildExcludedCount }}</div>
+                    <div style="font-size:12px; color:oklch(50% 0.01 250);">skipped</div>
+                  </div>
+                </div>
+
+                <div style="border:1px solid oklch(92% 0.005 250); border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+                  <div style="font-size:13px; font-weight:700;">What happened</div>
+                  <div>
+                    <div style="font-size:12px; font-weight:600; color:oklch(55% 0.01 250); margin-bottom:4px;">Categories created</div>
+                    <div style="font-size:13px;">{{ report.categoriesText }}</div>
+                  </div>
+                  <div>
+                    <div style="font-size:12px; font-weight:600; color:oklch(55% 0.01 250); margin-bottom:4px;">Tags created</div>
+                    <div style="font-size:13px;">{{ report.tagsText }}</div>
+                  </div>
+                  <sc-if value="{{ report.hasUnresolvedImages }}" hint-placeholder-val="{{ false }}">
+                    <div>
+                      <div style="font-size:12px; font-weight:600; color:oklch(55% 0.01 250); margin-bottom:4px;">Images that couldn't be resolved</div>
+                      <div style="display:flex; flex-direction:column; gap:4px;">
+                        <sc-for list="{{ report.unresolvedImages }}" as="ui" hint-placeholder-count="1">
+                          <div onClick="{{ ui.onClick }}" style="font-size:13px; cursor:pointer; text-decoration:underline;">{{ ui.title }} — {{ ui.reason }}</div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ report.hasSkipped }}" hint-placeholder-val="{{ false }}">
+                    <div>
+                      <div style="font-size:12px; font-weight:600; color:oklch(55% 0.01 250); margin-bottom:4px;">Articles skipped</div>
+                      <div style="display:flex; flex-direction:column; gap:4px;">
+                        <sc-for list="{{ report.skipped }}" as="sk" hint-placeholder-count="1">
+                          <div onClick="{{ sk.onClick }}" style="font-size:13px; cursor:pointer; text-decoration:underline;">{{ sk.title }} — {{ sk.reason }}</div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+
+                <button onClick="{{ downloadFileDefault }}" style="{{ primaryBtnStyle }}">Download {{ lastBuildFileName }}</button>
+
+                <div style="background:oklch(97% 0.01 265); border:1px solid oklch(90% 0.03 265); border-radius:10px; padding:16px;">
+                  <div style="font-size:13px; font-weight:700; margin-bottom:8px;">Next steps</div>
+                  <div style="display:flex; flex-direction:column; gap:6px; font-size:13px; line-height:1.5;">
+                    <div>1. On the new site, go to <b>wp-admin → Tools → Import</b>.</div>
+                    <div>2. Run the WordPress importer and upload the downloaded file.</div>
+                    <div>3. Assign an author for the imported content when prompted.</div>
+                    <div>4. Spot-check a few articles, then update permalinks/menus as needed.</div>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{ hasBuildHistory }}" hint-placeholder-val="{{ false }}">
+            <div style="background:white; border:1px solid oklch(90% 0.005 250); border-radius:14px; overflow:hidden;">
+              <div style="padding:16px 20px; border-bottom:1px solid oklch(92% 0.005 250); font-size:15px; font-weight:700;">Build history</div>
+              <sc-for list="{{ buildHistory }}" as="h" hint-placeholder-count="2">
+                <div style="display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:12px; padding:12px 20px; align-items:center; border-top:1px solid oklch(95% 0.005 250); font-size:13px;">
+                  <div>{{ h.timestamp }}</div>
+                  <div style="color:oklch(55% 0.01 250);">{{ h.count }} articles</div>
+                  <div style="color:oklch(55% 0.01 250);">{{ h.sizeLabel }}</div>
+                  <div style="text-align:right;"><button onClick="{{ h.onRedownload }}" style="padding:6px 12px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:7px; font-size:12px; font-weight:600; cursor:pointer;">Re-download</button></div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noImportYet }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ emptyStateStyle }}">
+          <div style="font-size:16px; font-weight:700; margin-bottom:6px;">No import yet</div>
+          <div style="font-size:14px; color:oklch(55% 0.01 250); margin-bottom:16px;">Upload a WordPress export first — there's nothing to build yet.</div>
+          <button onClick="{{ goToImport }}" style="{{ secondaryPrimaryBtnStyle }}">Go to Import</button>
+        </div>
+      </sc-if>
+    </sc-if>
+  </div>
+
+  <!-- ARTICLE DETAIL DRAWER -->
+  <sc-if value="{{ hasSelectedArticle }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ requestCloseDrawer }}" style="position:fixed; inset:0; background:oklch(20% 0 0 / 0.35); z-index:50; display:flex; flex-wrap:wrap-reverse;">
+      <div style="flex:1 1 480px; min-width:420px; display:flex; align-items:center; justify-content:center; padding:40px; min-height:0;">
+        <div onClick="{{ stopProp }}" style="width:100%; height:100%; max-width:900px; display:flex; flex-direction:column; gap:12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="font-size:13px; font-weight:600; color:white;">Content before / after</div>
+            <div style="display:flex; gap:4px; background:oklch(30% 0.005 250 / .6); border-radius:8px; padding:3px;">
+              <button onClick="{{ setArticlePreviewBefore }}" style="{{ articlePreviewBeforeTabStyle }}">Before</button>
+              <button onClick="{{ setArticlePreviewAfter }}" style="{{ articlePreviewAfterTabStyle }}">After</button>
+            </div>
+          </div>
+          <div style="flex:1; min-height:0; background:white; border-radius:14px; box-shadow:0 12px 40px oklch(0% 0 0 / .3); padding:24px; overflow-y:auto;">
+            <div style="font-size:14px; line-height:1.7;">
+              <sc-if value="{{ showArticlePreviewBefore }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; gap:14px; align-items:flex-start;">
+                  <div style="width:90px; height:60px; flex-shrink:0; border-radius:4px; background:repeating-linear-gradient(45deg, oklch(93% 0.005 250), oklch(93% 0.005 250) 5px, oklch(97% 0.003 250) 5px, oklch(97% 0.003 250) 10px);"></div>
+                  <div>
+                    <p style="margin:0 0 8px;">The team spent six weeks rebuilding the onboarding flow from scratch, focusing on reducing drop-off at step three...</p>
+                    <div style="background:oklch(95% 0.005 250); padding:6px 8px; border-radius:4px; font-size:12px; font-family:'IBM Plex Mono',monospace; color:oklch(45% 0.01 250); display:inline-block;">[button link="#" text="Read the full report"]</div>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ showArticlePreviewAfter }}" hint-placeholder-val="{{ true }}">
+                <div style="white-space:pre-wrap;">{{ selectedArticle.draftEditHtml }}</div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div onClick="{{ stopProp }}" style="width:640px; max-width:100%; flex-shrink:0; background:white; box-shadow:-8px 0 30px oklch(0% 0 0 / .15); overflow-y:auto; padding:28px;">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px;">
+          <div>
+            <div style="font-size:19px; font-weight:700;">{{ selectedArticle.title }}</div>
+            <a href="{{ selectedArticle.originalUrl }}" target="_blank" style="font-size:12px;">View original article ↗</a>
+          </div>
+          <div onClick="{{ requestCloseDrawer }}" style="cursor:pointer; font-size:18px; color:oklch(55% 0.01 250); padding:4px;">✕</div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:100px 1fr; gap:14px; margin-bottom:18px;">
+          <div style="width:100px; height:70px; border-radius:8px; background:repeating-linear-gradient(45deg, oklch(93% 0.005 250), oklch(93% 0.005 250) 6px, oklch(96% 0.003 250) 6px, oklch(96% 0.003 250) 12px); display:flex; align-items:center; justify-content:center; font-size:9px; color:oklch(55% 0.01 250); text-align:center; font-family:'IBM Plex Mono',monospace;">featured image</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
+            <div><span style="color:oklch(55% 0.01 250);">Published</span><br/><b>{{ selectedArticle.date }}</b></div>
+            <div><span style="color:oklch(55% 0.01 250);">New slug</span><br/><b style="font-family:'IBM Plex Mono',monospace;">{{ selectedArticle.slug }}</b></div>
+            <div><span style="color:oklch(55% 0.01 250);">Category</span><br/><b>{{ selectedArticle.category }}</b></div>
+            <div><span style="color:oklch(55% 0.01 250);">Tags</span><br/><b>{{ selectedArticle.tags }}</b></div>
+          </div>
+        </div>
+
+        <sc-if value="{{ selectedArticle.mediaWarning }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; gap:8px; font-size:13px; padding:10px 12px; background:oklch(97% 0.02 80); border-radius:8px; margin-bottom:16px;">
+            <div style="color:oklch(60% 0.15 80); font-weight:700;">⚠</div>
+            <div>{{ selectedArticle.statusReason }}</div>
+          </div>
+        </sc-if>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <div style="font-size:13px; font-weight:600; color:oklch(50% 0.01 250);">Include in migration</div>
+          <div onClick="{{ toggleSelectedInclude }}" style="{{ selectedIncludeToggleStyle }}"><div style="{{ selectedIncludeKnobStyle }}"></div></div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div style="font-size:13px; font-weight:600; color:oklch(50% 0.01 250); display:flex; align-items:center; gap:8px;">
+            Edit converted HTML
+            <sc-if value="{{ selectedArticle.isEdited }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:2px 6px; border-radius:5px; background:oklch(93% 0.05 265); color:oklch(40% 0.18 265);">Manual override</span>
+            </sc-if>
+          </div>
+          <sc-if value="{{ selectedArticle.canRevert }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ revertEdit }}" style="padding:5px 10px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">Revert to auto-generated</button>
+          </sc-if>
+        </div>
+        <div style="font-size:12px; color:oklch(55% 0.01 250); margin-bottom:8px;">Saving replaces the automatic conversion for this article entirely.</div>
+        <textarea value="{{ selectedArticle.draftEditHtml }}" onChange="{{ onEditHtmlChange }}" style="width:100%; height:120px; border:1px solid oklch(88% 0.005 250); border-radius:8px; padding:10px; font-size:12px; font-family:'IBM Plex Mono',monospace; resize:vertical; margin-bottom:12px;"></textarea>
+
+        <div style="display:flex; gap:8px;">
+          <sc-if value="{{ selectedArticle.isDirty }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ saveEdit }}" style="flex:1; padding:11px; background:oklch(40% 0.14 150); color:white; border:none; border-radius:9px; font-size:14px; font-weight:600; cursor:pointer;">Save override</button>
+          </sc-if>
+          <button onClick="{{ requestCloseDrawer }}" style="flex:1; {{ primaryBtnStyle }}">Done</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- DISCARD CONFIRM MODAL -->
+  <sc-if value="{{ showDiscardConfirm }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; background:oklch(20% 0 0 / 0.4); display:flex; align-items:center; justify-content:center; z-index:70;">
+      <div style="background:white; border-radius:14px; padding:26px; width:400px;">
+        <div style="font-size:17px; font-weight:700; margin-bottom:8px;">Discard unsaved edit?</div>
+        <div style="font-size:14px; color:oklch(45% 0.01 250); line-height:1.5; margin-bottom:20px;">You've edited this article's HTML but haven't saved the override. Leaving now discards those changes.</div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+          <button onClick="{{ cancelDiscard }}" style="padding:9px 16px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Keep editing</button>
+          <button onClick="{{ confirmDiscard }}" style="padding:9px 16px; background:oklch(50% 0.18 25); color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Discard changes</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- CLEAR CONFIRM MODAL -->
+  <sc-if value="{{ showClearConfirm }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; background:oklch(20% 0 0 / 0.4); display:flex; align-items:center; justify-content:center; z-index:60;">
+      <div style="background:white; border-radius:14px; padding:26px; width:400px;">
+        <div style="font-size:17px; font-weight:700; margin-bottom:8px;">Clear all mappings?</div>
+        <div style="font-size:14px; color:oklch(45% 0.01 250); line-height:1.5; margin-bottom:20px;">This resets every taxonomy mapping back to unmapped. Your import and articles stay intact. This can't be undone — export a JSON backup first if you're not sure.</div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+          <button onClick="{{ closeClearConfirm }}" style="padding:9px 16px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+          <button onClick="{{ confirmClear }}" style="padding:9px 16px; background:oklch(50% 0.18 25); color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Clear everything</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- EXCLUDE ALL CONFIRM MODAL -->
+  <sc-if value="{{ showExcludeAllConfirm }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; background:oklch(20% 0 0 / 0.4); display:flex; align-items:center; justify-content:center; z-index:60;">
+      <div style="background:white; border-radius:14px; padding:26px; width:400px;">
+        <div style="font-size:17px; font-weight:700; margin-bottom:8px;">Exclude all articles?</div>
+        <div style="font-size:14px; color:oklch(45% 0.01 250); line-height:1.5; margin-bottom:20px;">This excludes every article currently shown by your search/filter ({{ excludeAllCount }}) from the migration. You can re-include any of them individually afterward.</div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+          <button onClick="{{ closeExcludeAllConfirm }}" style="padding:9px 16px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+          <button onClick="{{ confirmExcludeAll }}" style="padding:9px 16px; background:oklch(50% 0.18 25); color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">Exclude all</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  </div>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accentTheme&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#4F46E5&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#4F46E5&quot;,&quot;#0D9488&quot;,&quot;#EA580C&quot;,&quot;#DB2777&quot;],&quot;section&quot;:&quot;Feel&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;comfortable&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;comfortable&quot;,&quot;compact&quot;],&quot;section&quot;:&quot;Feel&quot;},&quot;cardStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;soft&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;soft&quot;,&quot;crisp&quot;],&quot;section&quot;:&quot;Feel&quot;}}">
+const BUILDER_OPTIONS = ['WPBakery', 'Elementor', 'Divi', 'Plain HTML'];
+const NEW_CATS = ['News', 'Updates', 'Resources', 'Case Studies'];
+
+const SAMPLE_TAXONOMIES = [
+  { id: 'category', label: 'Categories', isCore: true, terms: [
+    { id: 'c1', name: 'News', count: 12, suggestion: 'News' },
+    { id: 'c2', name: 'Product Updates', count: 8, suggestion: 'Updates' },
+    { id: 'c3', name: 'Case Studies', count: 5, suggestion: 'Case Studies' },
+    { id: 'c4', name: 'Uncategorized', count: 3, suggestion: null },
+  ]},
+  { id: 'post_tag', label: 'Tags', isCore: true, terms: [
+    { id: 't1', name: 'tutorial', count: 15, suggestion: 'tutorial' },
+    { id: 't2', name: 'release', count: 6, suggestion: 'release' },
+    { id: 't3', name: 'partner', count: 4, suggestion: null },
+  ]},
+  { id: 'region', label: 'Region', isCore: false, terms: [
+    { id: 'r1', name: 'EMEA', count: 9, suggestion: null },
+    { id: 'r2', name: 'APAC', count: 6, suggestion: null },
+    { id: 'r3', name: 'Americas', count: 11, suggestion: null },
+  ]},
+];
+
+const SAMPLE_ARTICLES = [
+  { id: 'a1', title: 'How We Rebuilt Our Onboarding Flow', date: '2024-11-02', category: 'Product Updates', tags: 'tutorial', mediaCount: 4, mediaWarning: false, status: 'ready', statusReason: '', originalUrl: '#' },
+  { id: 'a2', title: 'Q3 Partner Roundup', date: '2024-09-14', category: 'News', tags: 'partner', mediaCount: 2, mediaWarning: true, status: 'review', statusReason: '1 image could not be matched to a media file — the original URL returned a 404.', originalUrl: '#' },
+  { id: 'a3', title: 'Case Study: Meridian Logistics', date: '2024-08-30', category: 'Case Studies', tags: '', mediaCount: 6, mediaWarning: false, status: 'ready', statusReason: '', originalUrl: '#' },
+  { id: 'a4', title: 'Release Notes — v2.4', date: '2024-08-01', category: 'Product Updates', tags: 'release, tutorial', mediaCount: 1, mediaWarning: false, status: 'ready', statusReason: '', originalUrl: '#' },
+  { id: 'a5', title: 'Untitled Draft (imported)', date: '2024-07-19', category: 'Uncategorized', tags: '', mediaCount: 0, mediaWarning: false, status: 'excluded', statusReason: 'Excluded manually — draft with no real content.', originalUrl: '#' },
+  { id: 'a6', title: 'APAC Expansion Announcement', date: '2024-06-11', category: 'News', tags: '', mediaCount: 3, mediaWarning: true, status: 'review', statusReason: 'Uses the "Region" taxonomy term "APAC," which has no mapping yet.', originalUrl: '#' },
+  { id: 'a7', title: 'Behind the Scenes: Our Design System', date: '2024-05-22', category: 'Case Studies', tags: 'tutorial', mediaCount: 8, mediaWarning: false, status: 'ready', statusReason: '', originalUrl: '#' },
+  { id: 'a8', title: 'How We Rebuilt Our Onboarding Flow (copy)', date: '2024-05-20', category: 'Product Updates', tags: 'tutorial', mediaCount: 4, mediaWarning: false, status: 'excluded', statusReason: 'Excluded automatically — duplicate slug of an existing article.', originalUrl: '#' },
+];
+
+const BEFORE_HTML = '<div style="border:1px solid #ddd;padding:8px;"><img src="https://placehold.co/120x80" style="float:left;margin-right:4px;" /><p style="margin:0;">The team spent six weeks rebuilding the onboarding flow from scratch, focusing on reducing drop-off at step three...</p><div style="background:#eee;padding:6px;margin-top:8px;">[button link="#" text="Read the full report"]</div></div>';
+
+const TABS = [
+  { id: 'import', label: 'Import' },
+  { id: 'mappings', label: 'Mappings' },
+  { id: 'settings', label: 'Settings' },
+  { id: 'articles', label: 'Articles' },
+  { id: 'build', label: 'Build & Export' },
+];
+
+class Component extends DCLogic {
+  state = {
+    activeTab: 'import',
+    hasImport: false,
+    importing: false,
+    fileName: '',
+    domain: '',
+    builder: 'WPBakery',
+    builderConfidence: 87,
+    newSiteMode: 'sync',
+    syncUrl: '', syncUser: '', syncPass: '',
+    jsonText: '',
+    connectTab: 'old',
+    restoreText: '', restoreStatus: '',
+    oldTables: [], newTables: [],
+    categoryPicker: { openKey: null, search: '' },
+    settingsPreview: 'after',
+    articlePreview: 'after',
+    showExcludeAllConfirm: false,
+    buildHistory: [], lastBuildFileName: '', report: null,
+    draftEditHtml: '', showDiscardConfirm: false, pendingAction: null,
+    buildStatusFilters: ['ready', 'review', 'edited'],
+    taxonomies: [],
+    settings: { imageSize: 'large', customWidth: '', customHeight: '', imageAlign: 'center', autoSpacing: true, spacerSize: 30, galleryCols: 3, pdfRender: 'button', buttonRender: 'button', headingShift: 0, linksNewTab: true },
+    articles: [],
+    articleEdits: {},
+    statusFilters: ['ready', 'review', 'edited'],
+    articleSearch: '',
+    sortKey: 'date',
+    sortDir: 'desc',
+    selectedArticleId: null,
+    showClearConfirm: false,
+    checkWarnings: null,
+    isBuilding: false,
+    buildCancelled: false,
+    buildDone: false,
+    buildProgress: 0,
+    buildLog: [],
+  };
+
+  _timer = null;
+
+  onDragOver(e) { e.preventDefault(); }
+  onDrop(e) { e.preventDefault(); this.beginImport('old-site-export.xml'); }
+  onFilePick(e) { this.beginImport((e.target.files && e.target.files[0] && e.target.files[0].name) || 'export.xml'); }
+  loadSample() { this.beginImport('old-site-export.xml'); }
+
+  beginImport(name) {
+    this.setState({ importing: true, fileName: name });
+    setTimeout(() => {
+      this.setState({
+        importing: false,
+        hasImport: true,
+        domain: 'oldcompanyblog.com',
+        taxonomies: SAMPLE_TAXONOMIES.map(t => ({ ...t, expanded: true, terms: t.terms.map(term => ({ ...term, action: term.suggestion ? (t.id === 'post_tag' ? 'tag' : 'category') : (t.isCore ? 'category' : 'category'), categories: term.suggestion && t.id === 'category' ? [term.suggestion] : [], tagSlugs: t.id === 'post_tag' && term.suggestion ? [term.suggestion] : [], slug: term.name.toLowerCase().replace(/\s+/g, '-') })) })),
+        articles: SAMPLE_ARTICLES.map(a => ({ ...a })),
+        oldTables: SAMPLE_TAXONOMIES.map(t => ({ id: t.id, name: t.label, type: t.isCore ? (t.id === 'post_tag' ? 'tag' : 'category') : 'custom', terms: t.terms.map(term => ({ id: term.id, name: term.name, slug: term.name.toLowerCase().replace(/\s+/g, '-') })) })),
+        newTables: [
+          { id: 'nc1', name: 'Categories', type: 'category', terms: NEW_CATS.map((n, i) => ({ id: 'ncat' + i, name: n, slug: n.toLowerCase().replace(/\s+/g, '-') })) },
+          { id: 'nt1', name: 'Tags', type: 'tag', terms: ['tutorial', 'release'].map((n, i) => ({ id: 'ntag' + i, name: n, slug: n })) },
+        ],
+      });
+    }, 1100);
+  }
+
+  resetImport() {
+    this.setState({ hasImport: false, fileName: '', importing: false, activeTab: 'import' });
+  }
+
+  setTab(id) { this.setState({ activeTab: id }); }
+  onDomainChange(e) { this.setState({ domain: e.target.value }); }
+  onBuilderChange(e) { this.setState({ builder: e.target.value, builderConfidence: 100 }); }
+  _newId() { return 'id' + Math.random().toString(36).slice(2, 9); }
+  addTable(listKey) {
+    this.setState(s => ({ [listKey]: [...s[listKey], { id: this._newId(), name: '', type: 'category', terms: [] }] }));
+  }
+  removeTable(listKey, tableId) {
+    this.setState(s => ({ [listKey]: s[listKey].filter(t => t.id !== tableId) }));
+  }
+  updateTable(listKey, tableId, patch) {
+    this.setState(s => ({ [listKey]: s[listKey].map(t => t.id === tableId ? { ...t, ...patch } : t) }));
+  }
+  addTerm(listKey, tableId) {
+    this.setState(s => ({ [listKey]: s[listKey].map(t => t.id === tableId ? { ...t, terms: [...t.terms, { id: this._newId(), name: '', slug: '' }] } : t) }));
+  }
+  removeTerm(listKey, tableId, termId) {
+    this.setState(s => ({ [listKey]: s[listKey].map(t => t.id === tableId ? { ...t, terms: t.terms.filter(term => term.id !== termId) } : t) }));
+  }
+  updateTerm(listKey, tableId, termId, patch) {
+    this.setState(s => ({ [listKey]: s[listKey].map(t => t.id === tableId ? { ...t, terms: t.terms.map(term => term.id === termId ? { ...term, ...patch } : term) } : t) }));
+  }
+  setConnectTab(id) { this.setState({ connectTab: id }); }
+  onRestoreTextChange(e) { this.setState({ restoreText: e.target.value }); }
+  onImportBackupFile(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.setState({ restoreText: reader.result });
+      this.restoreBackup();
+    };
+    reader.readAsText(file);
+  }
+  exportFullBackup() {
+    const s = this.state;
+    const data = {
+      oldTables: s.oldTables, newTables: s.newTables,
+      taxonomies: s.taxonomies.map(t => ({ id: t.id, label: t.label, isCore: t.isCore, terms: t.terms.map(term => ({ id: term.id, name: term.name, count: term.count, suggestion: term.suggestion, action: term.action, categories: term.categories, tagSlugs: term.tagSlugs, slug: term.slug })) })),
+      settings: s.settings,
+      articles: s.articles.map(a => ({ id: a.id, status: a.status, statusReason: a.statusReason })),
+      articleEdits: s.articleEdits,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'relay-session-backup.json'; a.click();
+  }
+  restoreBackup() {
+    try {
+      const data = JSON.parse(this.state.restoreText);
+      const patch = { restoreStatus: 'Session restored — site data, mappings and settings updated.' };
+      if (data.oldTables) patch.oldTables = data.oldTables;
+      if (data.newTables) patch.newTables = data.newTables;
+      if (data.taxonomies) patch.taxonomies = data.taxonomies.map(t => ({ ...t, expanded: true }));
+      if (data.settings) patch.settings = data.settings;
+      if (data.articleEdits) patch.articleEdits = data.articleEdits;
+      if (data.articles) {
+        this.setState(s => ({ articles: s.articles.map(a => { const found = data.articles.find(x => x.id === a.id); return found ? { ...a, status: found.status, statusReason: found.statusReason } : a; }) }));
+      }
+      this.setState(patch);
+    } catch (e) {
+      this.setState({ restoreStatus: "Couldn't parse that JSON — check the file and try again." });
+    }
+  }
+  setSyncMode() { this.setState({ newSiteMode: 'sync' }); }
+  setJsonMode() { this.setState({ newSiteMode: 'json' }); }
+  onSyncUrlChange(e) { this.setState({ syncUrl: e.target.value }); }
+  onSyncUserChange(e) { this.setState({ syncUser: e.target.value }); }
+  onSyncPassChange(e) { this.setState({ syncPass: e.target.value }); }
+  onJsonChange(e) { this.setState({ jsonText: e.target.value }); }
+
+  toggleTax(id) {
+    this.setState(s => ({ taxonomies: s.taxonomies.map(t => t.id === id ? { ...t, expanded: !t.expanded } : t) }));
+  }
+  setTermAction(taxId, termId, action) {
+    this.setState(s => ({ taxonomies: s.taxonomies.map(t => t.id !== taxId ? t : { ...t, terms: t.terms.map(term => term.id === termId ? { ...term, action } : term) }) }));
+  }
+  toggleTermCategory(taxId, termId, cat) {
+    this.setState(s => ({ taxonomies: s.taxonomies.map(t => t.id !== taxId ? t : { ...t, terms: t.terms.map(term => {
+      if (term.id !== termId) return term;
+      const has = term.categories.includes(cat);
+      return { ...term, categories: has ? term.categories.filter(c => c !== cat) : [...term.categories, cat] };
+    }) }) }));
+  }
+  setTermSlug(taxId, termId, slug) {
+    this.setState(s => ({ taxonomies: s.taxonomies.map(t => t.id !== taxId ? t : { ...t, terms: t.terms.map(term => term.id === termId ? { ...term, slug } : term) }) }));
+  }
+  toggleTermTagSlug(taxId, termId, slug) {
+    this.setState(s => ({ taxonomies: s.taxonomies.map(t => t.id !== taxId ? t : { ...t, terms: t.terms.map(term => {
+      if (term.id !== termId) return term;
+      const cur = term.tagSlugs || [];
+      const has = cur.includes(slug);
+      return { ...term, tagSlugs: has ? cur.filter(x => x !== slug) : [...cur, slug] };
+    }) }) }));
+  }
+  exportMappingsJson() {
+    const data = this.state.taxonomies.map(t => ({ taxonomy: t.label, terms: t.terms.map(term => ({ name: term.name, action: term.action, categories: term.categories, slug: term.slug })) }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'taxonomy-mappings.json'; a.click();
+  }
+  openClearConfirm() { this.setState({ showClearConfirm: true }); }
+  closeClearConfirm() { this.setState({ showClearConfirm: false }); }
+  confirmClear() {
+    this.setState(s => ({ showClearConfirm: false, taxonomies: s.taxonomies.map(t => ({ ...t, terms: t.terms.map(term => ({ ...term, action: 'category', categories: [], slug: term.name.toLowerCase().replace(/\s+/g, '-') })) })) }));
+  }
+
+  openCategoryPicker(key) { this.setState({ categoryPicker: { openKey: key, search: '' } }); }
+  onCategoryPickerBlur() { setTimeout(() => this.setState({ categoryPicker: { openKey: null, search: '' } }), 150); }
+  onCategoryPickerSearch(key, val) { this.setState(s => ({ categoryPicker: { ...s.categoryPicker, openKey: key, search: val } })); }
+  setSettingsPreview(v) { this.setState({ settingsPreview: v }); }
+  setArticlePreview(v) { this.setState({ articlePreview: v }); }
+  openExcludeAllConfirm() { this.setState({ showExcludeAllConfirm: true }); }
+  closeExcludeAllConfirm() { this.setState({ showExcludeAllConfirm: false }); }
+  confirmExcludeAll() {
+    const visibleIds = new Set(this._lastVisibleIds || []);
+    this.setState(s => ({ showExcludeAllConfirm: false, articles: s.articles.map(a => visibleIds.has(a.id) ? { ...a, status: 'excluded', statusReason: 'Excluded manually by user (bulk).' } : a) }));
+  }
+  toggleArticleExclude(id) {
+    this.setState(s => ({ articles: s.articles.map(a => a.id === id ? { ...a, status: a.status === 'excluded' ? 'ready' : 'excluded', statusReason: a.status === 'excluded' ? '' : 'Excluded manually by user.' } : a) }));
+  }
+  updateSettings(patch) { this.setState(s => ({ settings: { ...s.settings, ...patch } })); }
+  onImageSizeChange(e) { this.updateSettings({ imageSize: e.target.value }); }
+  onCustomWidthChange(e) { this.updateSettings({ customWidth: e.target.value, customHeight: e.target.value ? '' : this.state.settings.customHeight }); }
+  onCustomHeightChange(e) { this.updateSettings({ customHeight: e.target.value, customWidth: e.target.value ? '' : this.state.settings.customWidth }); }
+  onGalleryColsChange(e) { this.updateSettings({ galleryCols: Number(e.target.value) }); }
+  toggleAutoSpacing() { this.updateSettings({ autoSpacing: !this.state.settings.autoSpacing }); }
+  onSpacerSizeChange(e) { this.updateSettings({ spacerSize: Number(e.target.value) }); }
+  onHeadingShiftChange(e) { this.updateSettings({ headingShift: Number(e.target.value) }); }
+  toggleLinksNewTab() { this.updateSettings({ linksNewTab: !this.state.settings.linksNewTab }); }
+
+  onArticleSearchChange(e) { this.setState({ articleSearch: e.target.value }); }
+  toggleStatusFilter(key) {
+    this.setState(s => ({ statusFilters: s.statusFilters.includes(key) ? s.statusFilters.filter(k => k !== key) : [...s.statusFilters, key] }));
+  }
+  setSort(key) {
+    this.setState(s => ({ sortKey: key, sortDir: s.sortKey === key && s.sortDir === 'asc' ? 'desc' : 'asc' }));
+  }
+  getAutoHtmlForArticle() { return this.afterPreviewText(this.state.settings); }
+  getStatusKey(a) {
+    if (a.status === 'excluded') return (a.statusReason || '').toLowerCase().includes('automat') ? 'excluded_auto' : 'excluded_manual';
+    return this.state.articleEdits[a.id] !== undefined ? 'edited' : a.status;
+  }
+  toggleBuildStatusFilter(key) {
+    this.setState(s => ({ buildStatusFilters: s.buildStatusFilters.includes(key) ? s.buildStatusFilters.filter(k => k !== key) : [...s.buildStatusFilters, key] }));
+  }
+  isDirty() {
+    const s = this.state;
+    if (!s.selectedArticleId) return false;
+    const saved = s.articleEdits[s.selectedArticleId];
+    const baseline = saved !== undefined ? saved : this.getAutoHtmlForArticle();
+    return s.draftEditHtml !== baseline;
+  }
+  runGuarded(action) {
+    if (this.isDirty()) { this.setState({ showDiscardConfirm: true, pendingAction: action }); }
+    else { action(); }
+  }
+  selectArticle(id) { this.runGuarded(() => this._selectArticleNow(id)); }
+  _selectArticleNow(id) {
+    this.setState(s => ({ selectedArticleId: id, draftEditHtml: s.articleEdits[id] ?? this.getAutoHtmlForArticle() }));
+  }
+  closeDrawer() { this.runGuarded(() => this.setState({ selectedArticleId: null })); }
+  stopProp(e) { e.stopPropagation(); }
+  onEditHtmlChange(e) { this.setState({ draftEditHtml: e.target.value }); }
+  saveEdit() {
+    const id = this.state.selectedArticleId;
+    this.setState(s => ({ articleEdits: { ...s.articleEdits, [id]: s.draftEditHtml } }));
+  }
+  revertEdit() {
+    const id = this.state.selectedArticleId;
+    const auto = this.getAutoHtmlForArticle();
+    this.setState(s => { const ae = { ...s.articleEdits }; delete ae[id]; return { articleEdits: ae, draftEditHtml: auto }; });
+  }
+  confirmDiscard() {
+    const fn = this.state.pendingAction;
+    this.setState({ showDiscardConfirm: false, pendingAction: null });
+    if (fn) fn();
+  }
+  cancelDiscard() { this.setState({ showDiscardConfirm: false, pendingAction: null }); }
+  toggleSelectedInclude() {
+    const id = this.state.selectedArticleId;
+    this.setState(s => ({ articles: s.articles.map(a => a.id === id ? { ...a, status: a.status === 'excluded' ? 'ready' : 'excluded', statusReason: a.status === 'excluded' ? '' : 'Excluded manually by user.' } : a) }));
+  }
+
+  jumpToArticle(id) {
+    this.setState({ activeTab: 'articles', statusFilters: ['ready', 'review', 'edited', 'excluded_auto', 'excluded_manual'], articleSearch: '' });
+    this.selectArticle(id);
+  }
+  runCheck() {
+    const warnings = [];
+    this.state.articles.forEach(a => {
+      if (a.mediaWarning) warnings.push({ text: `"${a.title}" — a media file couldn't be automatically matched.`, onClick: () => this.jumpToArticle(a.id) });
+      if (a.status === 'review' && !a.mediaWarning) warnings.push({ text: `"${a.title}" — uses an unmapped taxonomy term.`, onClick: () => this.jumpToArticle(a.id) });
+    });
+    this.setState({ checkWarnings: warnings });
+  }
+
+  startBuild() {
+    const included = this.state.articles.filter(a => a.status !== 'excluded' && this.state.buildStatusFilters.includes(this.getStatusKey(a)));
+    this.setState({ isBuilding: true, buildDone: false, buildCancelled: false, buildProgress: 0, buildLog: [`Starting build — ${included.length} articles to process…`] });
+    let i = 0;
+    this._timer = setInterval(() => {
+      i++;
+      if (i > included.length) {
+        clearInterval(this._timer);
+        this.finishBuild(included);
+        return;
+      }
+      const art = included[i - 1];
+      this.setState(s => ({ buildProgress: i, buildLog: [...s.buildLog, `[${i}/${included.length}] Converting "${art.title}"… done`] }));
+    }, 350);
+  }
+  finishBuild(included) {
+    const s = this.state;
+    const categories = [...new Set(included.map(a => a.category).filter(Boolean))];
+    const tags = [...new Set(included.flatMap(a => (a.tags || '').split(',').map(t => t.trim()).filter(Boolean)))];
+    const unresolvedImages = included.filter(a => a.mediaWarning).map(a => ({ title: a.title, reason: 'a media file could not be matched', onClick: () => this.jumpToArticle(a.id) }));
+    const skipped = s.articles.filter(a => a.status === 'excluded').map(a => ({ title: a.title, reason: a.statusReason || 'excluded manually', onClick: () => this.jumpToArticle(a.id) }));
+    const report = { categoriesText: categories.length ? categories.join(', ') : 'none — all matched existing categories', tagsText: tags.length ? tags.join(', ') : 'none — all matched existing tags', unresolvedImages, hasUnresolvedImages: unresolvedImages.length > 0, skipped, hasSkipped: skipped.length > 0 };
+    const fileName = `migration-export-${Date.now()}.xml`;
+    const sizeKb = 40 + included.length * 18;
+    const historyEntry = { id: this._newId(), timestamp: new Date().toLocaleString(), count: included.length, sizeLabel: sizeKb > 1024 ? (sizeKb / 1024).toFixed(1) + ' MB' : sizeKb + ' KB', fileName };
+    this.setState(s2 => ({ isBuilding: false, buildDone: true, buildLog: [...s2.buildLog, 'Packaging import file…', 'Done.'], report, lastBuildFileName: fileName, buildHistory: [{ ...historyEntry, onRedownload: () => this.downloadFile(fileName) }, ...s2.buildHistory] }));
+  }
+  cancelBuild() {
+    clearInterval(this._timer);
+    this.setState(s => ({ isBuilding: false, buildCancelled: true, buildLog: [...s.buildLog, 'Build cancelled by user.'] }));
+  }
+  downloadFile(name) {
+    const blob = new Blob(['<!-- Mock WXR export -->'], { type: 'text/xml' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name || this.state.lastBuildFileName || 'migration-export.xml'; a.click();
+  }
+
+  tokens() {
+    const accent = this.props.accentTheme ?? '#4F46E5';
+    const density = this.props.density ?? 'comfortable';
+    const cardStyle = this.props.cardStyle ?? 'soft';
+    const soft = `color-mix(in oklab, ${accent} 12%, white)`;
+    const text = `color-mix(in oklab, ${accent} 78%, black)`;
+    const compact = density === 'compact';
+    return {
+      accent, accentSoft: soft, accentText: text,
+      cardPad: compact ? '16px' : '24px',
+      statPad: compact ? '13px' : '18px',
+      rowPad: compact ? '9px 20px' : '14px 20px',
+      cardRadius: cardStyle === 'crisp' ? '8px' : '14px',
+      cardBorder: cardStyle === 'crisp' ? '1.5px solid oklch(82% 0.005 250)' : '1px solid oklch(90% 0.005 250)',
+      cardShadow: cardStyle === 'crisp' ? 'none' : '0 1px 3px oklch(0% 0 0 / .05)',
+    };
+  }
+  afterPreviewParts(settings) {
+    const sizeMap = { thumbnail: '60×40', medium: '90×60', large: '140×90', full: '220×140' };
+    const presetBox = { thumbnail: [50, 34], medium: [70, 46], large: [100, 66], full: [140, 90] }[settings.imageSize] || [100, 66];
+    let boxSize = presetBox;
+    let customLabel = null;
+    if (settings.imageSize === 'custom') {
+      const w = Number(settings.customWidth) || 0;
+      const h = Number(settings.customHeight) || 0;
+      const ratio = 100 / 66;
+      if (w && h) { boxSize = [Math.min(w, 160), Math.min(h, 110)]; customLabel = `${w}×${h}`; }
+      else if (w) { boxSize = [Math.min(w, 160), Math.min(w, 160) / ratio]; customLabel = `${w}×auto`; }
+      else if (h) { boxSize = [Math.min(h, 110) * ratio, Math.min(h, 110)]; customLabel = `auto×${h}`; }
+      else { boxSize = presetBox; customLabel = 'auto×auto'; }
+    }
+    const alignStyle = settings.imageAlign === 'left' ? `float:left;margin:0 14px 8px 0;` : settings.imageAlign === 'right' ? `float:right;margin:0 0 8px 14px;` : `margin:0 auto 12px;`;
+    const spacing = settings.autoSpacing ? `padding:${settings.spacerSize ?? 30}px;` : '';
+    const imgBg = `width:${boxSize[0]}px;height:${boxSize[1]}px;border-radius:4px;background:repeating-linear-gradient(45deg, oklch(85% 0.03 265), oklch(85% 0.03 265) 5px, oklch(92% 0.02 265) 5px, oklch(92% 0.02 265) 10px);`;
+    const btnStyle = settings.buttonRender === 'button'
+      ? `display:inline-block;padding:7px 14px;background:oklch(55% 0.18 265);color:white;border-radius:6px;font-size:12px;font-weight:600;margin-top:6px;`
+      : settings.buttonRender === 'embed'
+      ? `display:block;border:1px solid oklch(85% 0.005 250);padding:8px 10px;border-radius:6px;margin-top:6px;font-size:11px;color:oklch(50% 0.01 250);`
+      : `display:inline-block;color:oklch(50% 0.16 265);text-decoration:underline;margin-top:6px;font-size:12px;`;
+    const btnLabel = settings.buttonRender === 'embed' ? 'embedded preview: Read the full report' : 'Read the full report';
+    return {
+      imageWrapStyle: `${alignStyle}${spacing}display:inline-block;`,
+      imageBoxStyle: imgBg,
+      btnStyle, btnLabel,
+      sizeLabel: customLabel || sizeMap[settings.imageSize] || '140×90',
+    };
+  }
+  afterPreviewText(settings) {
+    const p = this.afterPreviewParts(settings);
+    return `[image ${p.sizeLabel}, ${settings.imageAlign} aligned] The team spent six weeks rebuilding the onboarding flow from scratch, focusing on reducing drop-off at step three... [${p.btnLabel}]`;
+  }
+
+  buildTablesVm(s, listKey, withCount) {
+    return s[listKey].map(t => ({
+      name: t.name, type: t.type,
+      onNameChange: (e) => this.updateTable(listKey, t.id, { name: e.target.value }),
+      onTypeChange: (e) => this.updateTable(listKey, t.id, { type: e.target.value }),
+      onRemove: () => this.removeTable(listKey, t.id),
+      onAddTerm: () => this.addTerm(listKey, t.id),
+      terms: t.terms.map(term => ({
+        name: term.name, slug: term.slug,
+        onNameChange: (e) => this.updateTerm(listKey, t.id, term.id, { name: e.target.value }),
+        onSlugChange: (e) => this.updateTerm(listKey, t.id, term.id, { slug: e.target.value }),
+        onRemove: () => this.removeTerm(listKey, t.id, term.id),
+      })),
+    }));
+  }
+  renderVals() {
+    const s = this.state;
+    const tk = this.tokens();
+    const primaryBtnStyle = `padding:12px 22px; background:${tk.accent}; color:white; border:none; border-radius:9px; font-size:14px; font-weight:600; cursor:pointer;`;
+    const secondaryPrimaryBtnStyle = `padding:9px 16px; background:${tk.accent}; color:white; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;`;
+    const cardStyleBase = `background:white; border:${tk.cardBorder}; border-radius:${tk.cardRadius}; box-shadow:${tk.cardShadow}; padding:${tk.cardPad};`;
+    const statCardStyle = `background:white; border:${tk.cardBorder}; border-radius:${tk.cardRadius}; box-shadow:${tk.cardShadow}; padding:${tk.statPad};`;
+    const cardStyleFlush = `background:white; border:${tk.cardBorder}; border-radius:${tk.cardRadius}; box-shadow:${tk.cardShadow}; overflow:hidden;`;
+    const tabIndex = TABS.findIndex(t => t.id === s.activeTab);
+    const tabs = TABS.map((t, i) => ({
+      label: t.label,
+      onClick: () => this.setTab(t.id),
+      style: `display:flex; align-items:center; padding:16px 4px 14px; cursor:pointer; white-space:nowrap; flex-shrink:0; border-bottom:2px solid ${t.id === s.activeTab ? tk.accent : 'transparent'}; transition:border-color .15s ease, color .15s ease;`,
+      hoverStyle: t.id === s.activeTab ? '' : `border-bottom-color: oklch(88% 0.005 250);`,
+      labelStyle: `font-size:14px; font-weight:${t.id === s.activeTab ? 700 : 600}; color:${t.id === s.activeTab ? 'oklch(20% 0.02 250)' : (i < tabIndex || (s.hasImport && i === 0) ? 'oklch(40% 0.01 250)' : 'oklch(62% 0.005 250)')};`,
+    }));
+
+    const statusBreakdown = { published: 46, draft: 6, private: 2 };
+    const statCards = [
+      { value: 54, label: 'Posts found', detail: `${statusBreakdown.published} published, ${statusBreakdown.draft} draft, ${statusBreakdown.private} private` },
+      { value: 3, label: 'Taxonomies', detail: 'Categories, Tags, and 1 custom taxonomy (Region)' },
+      { value: 20, label: 'Distinct terms', detail: '4 categories, 3 tags, 3 region terms' },
+      { value: 112, label: 'Media items', detail: 'Images, PDFs and embeds referenced in content' },
+    ];
+
+    const allCategoryOptions = s.newTables.filter(nt => nt.type === 'category').flatMap(nt => nt.terms).map(nc => nc.name).filter(Boolean);
+    const allTagTerms = s.newTables.filter(nt => nt.type === 'tag').flatMap(nt => nt.terms);
+    const allTagOptions = allTagTerms.map(nc => nc.slug || nc.name).filter(Boolean);
+    const taxonomies = s.taxonomies.map(t => ({
+      label: t.label, isCore: t.isCore, termCount: t.terms.length, expanded: t.expanded,
+      onToggle: () => this.toggleTax(t.id),
+      chevronStyle: `width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:6px solid oklch(50% 0.01 250); transform:rotate(${t.expanded ? '0' : '-90deg'}); transition:transform .15s;`,
+      terms: t.terms.map(term => { const pickerKey = t.id + ':' + term.id; return {
+        name: term.name, count: term.count,
+        hasSuggestion: !!term.suggestion,
+        suggestion: term.suggestion,
+        action: term.action,
+        isCategory: term.action === 'category' && term.action !== 'exclude', isTag: term.action === 'tag' && term.action !== 'exclude', isExcluded: term.action === 'exclude', notExcluded: term.action !== 'exclude',
+        onToggleExclude: () => this.setTermAction(t.id, term.id, term.action === 'exclude' ? (term.suggestion ? 'category' : 'category') : 'exclude'),
+        slug: term.slug,
+        onActionChange: (e) => this.setTermAction(t.id, term.id, e.target.value),
+        onSlugChange: (e) => this.setTermSlug(t.id, term.id, e.target.value),
+        categoryChips: term.categories.map(cat => ({
+          name: cat,
+          onClick: () => this.toggleTermCategory(t.id, term.id, cat),
+          style: `padding:4px 8px; border-radius:6px; font-size:12px; font-weight:600; border:1px solid ${tk.accent}; background:${tk.accentSoft}; color:${tk.accentText};`,
+        })),
+        pickerSearch: pickerKey === s.categoryPicker.openKey ? s.categoryPicker.search : '',
+        pickerOpen: pickerKey === s.categoryPicker.openKey,
+        onPickerFocus: () => this.openCategoryPicker(pickerKey),
+        onPickerBlur: () => this.onCategoryPickerBlur(),
+        onPickerSearchChange: (e) => this.onCategoryPickerSearch(pickerKey, e.target.value),
+        pickerOptions: term.action === 'tag'
+          ? allTagOptions.filter(slug => !(term.tagSlugs || []).includes(slug) && slug.toLowerCase().includes((pickerKey === s.categoryPicker.openKey ? s.categoryPicker.search : '').toLowerCase())).map(slug => ({
+            name: slug, onSelect: () => this.toggleTermTagSlug(t.id, term.id, slug),
+          }))
+          : allCategoryOptions.filter(cat => !term.categories.includes(cat) && cat.toLowerCase().includes((pickerKey === s.categoryPicker.openKey ? s.categoryPicker.search : '').toLowerCase())).map(cat => ({
+            name: cat, onSelect: () => this.toggleTermCategory(t.id, term.id, cat),
+          })),
+        pickerNoOptions: term.action === 'tag'
+          ? allTagOptions.filter(slug => !(term.tagSlugs || []).includes(slug) && slug.toLowerCase().includes((pickerKey === s.categoryPicker.openKey ? s.categoryPicker.search : '').toLowerCase())).length === 0
+          : allCategoryOptions.filter(cat => !term.categories.includes(cat) && cat.toLowerCase().includes((pickerKey === s.categoryPicker.openKey ? s.categoryPicker.search : '').toLowerCase())).length === 0,
+        tagChips: (term.tagSlugs || []).map(slug => ({
+          name: slug, onClick: () => this.toggleTermTagSlug(t.id, term.id, slug),
+          style: `padding:4px 8px; border-radius:6px; font-size:12px; font-weight:600; border:1px solid ${tk.accent}; background:${tk.accentSoft}; color:${tk.accentText}; font-family:'IBM Plex Mono',monospace;`,
+        })),
+      }; }),
+    }));
+
+    const alignOptions = ['left', 'center', 'right'].map(a => ({
+      label: a[0].toUpperCase() + a.slice(1), onClick: () => this.updateSettings({ imageAlign: a }),
+      style: `flex:1; padding:8px; border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid ${s.settings.imageAlign === a ? tk.accent : 'oklch(88% 0.005 250)'}; background:${s.settings.imageAlign === a ? tk.accentSoft : 'white'}; color:${s.settings.imageAlign === a ? tk.accentText : 'oklch(45% 0.01 250)'};`,
+    }));
+    const renderChoiceRow = (key, options) => options.map(o => ({
+      label: o[0].toUpperCase() + o.slice(1), onClick: () => this.updateSettings({ [key]: o }),
+      style: `flex:1; padding:8px; border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid ${s.settings[key] === o ? tk.accent : 'oklch(88% 0.005 250)'}; background:${s.settings[key] === o ? tk.accentSoft : 'white'}; color:${s.settings[key] === o ? tk.accentText : 'oklch(45% 0.01 250)'};`,
+    }));
+
+    const toggleStyle = (on) => `width:38px; height:22px; border-radius:11px; background:${on ? tk.accent : 'oklch(88% 0.005 250)'}; position:relative; cursor:pointer; transition:background .15s; flex-shrink:0;`;
+    const knobStyle = (on) => `width:18px; height:18px; border-radius:50%; background:white; position:absolute; top:2px; left:${on ? '18px' : '2px'}; transition:left .15s; box-shadow:0 1px 2px rgba(0,0,0,.2);`;
+
+    const statusKeyOf = (a) => a.status === 'excluded' ? ((a.statusReason || '').toLowerCase().includes('automat') ? 'excluded_auto' : 'excluded_manual') : (s.articleEdits[a.id] !== undefined ? 'edited' : a.status);
+    let filtered = s.articles.filter(a => s.statusFilters.includes(statusKeyOf(a)) && a.title.toLowerCase().includes(s.articleSearch.toLowerCase()));
+    filtered = [...filtered].sort((a, b) => {
+      let av = a[s.sortKey], bv = b[s.sortKey];
+      if (av < bv) return s.sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return s.sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    const statusMeta = { ready: { label: 'Ready', bg: 'oklch(94% 0.04 150)', color: 'oklch(38% 0.14 150)' }, review: { label: 'Needs review', bg: 'oklch(96% 0.03 80)', color: 'oklch(48% 0.14 80)' }, edited: { label: 'Edited', bg: 'oklch(93% 0.05 265)', color: 'oklch(40% 0.18 265)' }, excluded: { label: 'Excluded', bg: 'oklch(94% 0.005 250)', color: 'oklch(45% 0.01 250)' } };
+    this._lastVisibleIds = filtered.map(a => a.id);
+    const visibleArticles = filtered.map(a => ({
+      title: a.title, date: a.date, category: a.category, mediaCount: a.mediaCount, mediaWarning: a.mediaWarning,
+      statusLabel: statusMeta[statusKeyOf(a).startsWith('excluded') ? 'excluded' : statusKeyOf(a)].label,
+      badgeStyle: `display:inline-block; padding:3px 9px; border-radius:6px; font-size:12px; font-weight:600; background:${statusMeta[statusKeyOf(a).startsWith('excluded') ? 'excluded' : statusKeyOf(a)].bg}; color:${statusMeta[statusKeyOf(a).startsWith('excluded') ? 'excluded' : statusKeyOf(a)].color};`,
+      onClick: () => this.selectArticle(a.id),
+      excludeBtnLabel: a.status === 'excluded' ? 'Undo' : 'Exclude',
+      onToggleExclude: (e) => { e.stopPropagation(); this.toggleArticleExclude(a.id); },
+      excludeBtnStyle: a.status === 'excluded'
+        ? `padding:6px 10px; background:white; border:1px solid oklch(88% 0.005 250); border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; color:oklch(45% 0.01 250);`
+        : `padding:6px 10px; background:white; border:1px solid oklch(85% 0.1 25); border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; color:oklch(50% 0.18 25);`,
+    }));
+
+    const sortArrow = (key) => s.sortKey === key ? (s.sortDir === 'asc' ? '↑' : '↓') : '';
+
+    const readyCount = s.articles.filter(a => a.status === 'ready').length;
+    const reviewCount = s.articles.filter(a => a.status === 'review').length;
+    const excludedCount = s.articles.filter(a => a.status === 'excluded').length;
+
+    let selectedArticle = null;
+    if (s.selectedArticleId) {
+      const a = s.articles.find(x => x.id === s.selectedArticleId);
+      const afterText = this.afterPreviewText(s.settings);
+      const savedOverride = s.articleEdits[a.id];
+      selectedArticle = {
+        title: a.title, date: a.date, category: a.category, tags: a.tags || '—', mediaWarning: a.mediaWarning, statusReason: a.statusReason,
+        slug: a.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        originalUrl: a.originalUrl,
+        beforeText: '[image 120×80] The team spent six weeks rebuilding the onboarding flow from scratch, focusing on reducing drop-off at step three... [button: Read the full report]',
+        afterText,
+        draftEditHtml: s.draftEditHtml,
+        isEdited: savedOverride !== undefined,
+        canRevert: savedOverride !== undefined,
+        isDirty: this.isDirty(),
+      };
+    }
+
+    const buildTotal = s.articles.filter(a => a.status !== 'excluded').length;
+
+    return {
+      primaryBtnStyle, secondaryPrimaryBtnStyle, cardStyleBase, statCardStyle, cardStyleFlush,
+      logoBoxStyle: `width:30px; height:30px; border-radius:7px; background:${tk.accent}; display:flex; align-items:center; justify-content:center;`,
+      spinnerStyle: `width:40px; height:40px; margin:0 auto 16px; border:3px solid oklch(90% 0.01 265); border-top-color:${tk.accent}; border-radius:50%; animation:spin .8s linear infinite;`,
+      dropIconStyle: `width:18px; height:22px; border:2px solid ${tk.accent}; border-radius:3px;`,
+      chooseFileBtnStyle: `display:inline-block; padding:10px 20px; background:${tk.accent}; color:white; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer;`,
+      hasImport: s.hasImport, showImport: s.activeTab === 'import', showMappings: s.activeTab === 'mappings', showSettings: s.activeTab === 'settings', showArticles: s.activeTab === 'articles', showBuild: s.activeTab === 'build',
+      noImportYet: !s.hasImport,
+      domain: s.domain, fileName: s.fileName, importing: s.importing, notImporting: !s.importing,
+      onDragOver: (e) => this.onDragOver(e), onDrop: (e) => this.onDrop(e), onFilePick: (e) => this.onFilePick(e), loadSample: () => this.loadSample(),
+      resetImport: () => this.resetImport(),
+      onDomainChange: (e) => this.onDomainChange(e),
+      builder: s.builder, builderOptions: BUILDER_OPTIONS, builderConfidence: s.builderConfidence, onBuilderChange: (e) => this.onBuilderChange(e),
+      statCards, tabs,
+      connectTabs: [{ id: 'old', label: 'Old site' }, { id: 'new', label: 'New site' }].map(t => ({
+        label: t.label, onClick: () => this.setConnectTab(t.id),
+        style: `flex:1; padding:12px; text-align:center; font-size:13px; font-weight:600; cursor:pointer; border-bottom:2px solid ${s.connectTab === t.id ? tk.accent : 'transparent'}; color:${s.connectTab === t.id ? 'oklch(30% 0.02 265)' : 'oklch(55% 0.01 250)'};`,
+      })),
+      isOldTab: s.connectTab === 'old', isNewTab: s.connectTab === 'new',
+      exportFullBackup: () => this.exportFullBackup(), restoreBackup: () => this.restoreBackup(), onImportBackupFile: (e) => this.onImportBackupFile(e),
+      restoreText: s.restoreText, restoreStatus: s.restoreStatus, onRestoreTextChange: (e) => this.onRestoreTextChange(e), hasBackupStatus: !!s.restoreStatus,
+      addOldTable: () => this.addTable('oldTables'), addNewTable: () => this.addTable('newTables'),
+      noOldTables: s.oldTables.length === 0, noNewTables: s.newTables.length === 0,
+      oldTables: this.buildTablesVm(s, 'oldTables', true),
+      newTables: this.buildTablesVm(s, 'newTables', false),
+      goToMappings: () => this.setTab('mappings'), goToSettings: () => this.setTab('settings'), goToArticles: () => this.setTab('articles'), goToBuild: () => this.setTab('build'), goToImport: () => this.setTab('import'),
+      taxonomies,
+      exportMappingsJson: () => this.exportMappingsJson(), openClearConfirm: () => this.openClearConfirm(), closeClearConfirm: () => this.closeClearConfirm(), confirmClear: () => this.confirmClear(),
+      showClearConfirm: s.showClearConfirm,
+      emptyStateStyle: 'max-width:480px; margin:60px auto; text-align:center; background:white; border:1px solid oklch(90% 0.005 250); border-radius:14px; padding:40px 32px;',
+      settings: s.settings,
+      isCustomImageSize: s.settings.imageSize === 'custom',
+      onCustomWidthChange: (e) => this.onCustomWidthChange(e),
+      onCustomHeightChange: (e) => this.onCustomHeightChange(e),
+      alignOptions,
+      pdfOptions: renderChoiceRow('pdfRender', ['link', 'button', 'embed']),
+      buttonOptions: renderChoiceRow('buttonRender', ['link', 'button', 'embed']),
+      onImageSizeChange: (e) => this.onImageSizeChange(e), onGalleryColsChange: (e) => this.onGalleryColsChange(e),
+      toggleAutoSpacing: () => this.toggleAutoSpacing(), onSpacerSizeChange: (e) => this.onSpacerSizeChange(e), onHeadingShiftChange: (e) => this.onHeadingShiftChange(e), toggleLinksNewTab: () => this.toggleLinksNewTab(),
+      autoSpacingToggleStyle: toggleStyle(s.settings.autoSpacing), autoSpacingKnobStyle: knobStyle(s.settings.autoSpacing),
+      linksNewTabToggleStyle: toggleStyle(s.settings.linksNewTab), linksNewTabKnobStyle: knobStyle(s.settings.linksNewTab),
+      setArticlePreviewBefore: () => this.setArticlePreview('before'), setArticlePreviewAfter: () => this.setArticlePreview('after'),
+      articlePreviewBeforeTabStyle: `padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:${s.articlePreview === 'before' ? 'white' : 'transparent'}; color:${s.articlePreview === 'before' ? 'oklch(30% 0.02 250)' : 'oklch(55% 0.01 250)'}; box-shadow:${s.articlePreview === 'before' ? '0 1px 3px oklch(0% 0 0 / .1)' : 'none'};`,
+      articlePreviewAfterTabStyle: `padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:${s.articlePreview === 'after' ? 'white' : 'transparent'}; color:${s.articlePreview === 'after' ? 'oklch(30% 0.02 250)' : 'oklch(55% 0.01 250)'}; box-shadow:${s.articlePreview === 'after' ? '0 1px 3px oklch(0% 0 0 / .1)' : 'none'};`,
+      setPreviewBefore: () => this.setSettingsPreview('before'), setPreviewAfter: () => this.setSettingsPreview('after'),
+      showPreviewBefore: s.settingsPreview === 'before', showPreviewAfter: s.settingsPreview === 'after',
+      previewBeforeTabStyle: `padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:${s.settingsPreview === 'before' ? 'white' : 'transparent'}; color:${s.settingsPreview === 'before' ? 'oklch(30% 0.02 250)' : 'oklch(55% 0.01 250)'}; box-shadow:${s.settingsPreview === 'before' ? '0 1px 3px oklch(0% 0 0 / .1)' : 'none'};`,
+      previewAfterTabStyle: `padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; border:none; cursor:pointer; background:${s.settingsPreview === 'after' ? 'white' : 'transparent'}; color:${s.settingsPreview === 'after' ? 'oklch(30% 0.02 250)' : 'oklch(55% 0.01 250)'}; box-shadow:${s.settingsPreview === 'after' ? '0 1px 3px oklch(0% 0 0 / .1)' : 'none'};`,
+      afterImageStyle: this.afterPreviewParts(s.settings).imageWrapStyle,
+      afterImageBoxStyle: this.afterPreviewParts(s.settings).imageBoxStyle,
+      afterButtonStyle: this.afterPreviewParts(s.settings).btnStyle,
+      afterButtonLabel: this.afterPreviewParts(s.settings).btnLabel,
+      showArticlePreviewBefore: s.articlePreview === 'before', showArticlePreviewAfter: s.articlePreview === 'after',
+      articleAfterImageStyle: this.afterPreviewParts(s.settings).imageWrapStyle,
+      articleAfterImageBoxStyle: this.afterPreviewParts(s.settings).imageBoxStyle,
+      articleAfterButtonStyle: this.afterPreviewParts(s.settings).btnStyle,
+      articleAfterButtonLabel: this.afterPreviewParts(s.settings).btnLabel,
+      articleSummary: `${readyCount} ready · ${reviewCount} need review · ${excludedCount} excluded`,
+      articleSearch: s.articleSearch,
+      statusFilterChips: [
+        { key: 'ready', label: 'Ready' },
+        { key: 'review', label: 'Needs review' },
+        { key: 'edited', label: 'Edited' },
+        { key: 'excluded_auto', label: 'Excluded (auto)' },
+        { key: 'excluded_manual', label: 'Excluded (manual)' },
+      ].map(f => { const active = s.statusFilters.includes(f.key); const count = s.articles.filter(a => statusKeyOf(a) === f.key).length; return {
+        label: f.label, count,
+        onClick: () => this.toggleStatusFilter(f.key),
+        style: `padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid ${active ? tk.accent : 'oklch(88% 0.005 250)'}; background:${active ? tk.accentSoft : 'white'}; color:${active ? tk.accentText : 'oklch(50% 0.01 250)'};`,
+      }; }),
+      onArticleSearchChange: (e) => this.onArticleSearchChange(e),
+      sortByTitle: () => this.setSort('title'), sortByDate: () => this.setSort('date'), sortByStatus: () => this.setSort('status'),
+      titleSortArrow: sortArrow('title'), dateSortArrow: sortArrow('date'), statusSortArrow: sortArrow('status'),
+      visibleArticles, noVisibleArticles: visibleArticles.length === 0,
+      buildStatusChips: [{ key: 'ready', label: 'Ready' }, { key: 'review', label: 'Needs review' }, { key: 'edited', label: 'Edited' }].map(f => { const active = s.buildStatusFilters.includes(f.key); const count = s.articles.filter(a => a.status !== 'excluded' && this.getStatusKey(a) === f.key).length; return {
+        label: f.label, count, onClick: () => this.toggleBuildStatusFilter(f.key),
+        style: `padding:5px 12px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid ${active ? tk.accent : 'oklch(88% 0.005 250)'}; background:${active ? tk.accentSoft : 'white'}; color:${active ? tk.accentText : 'oklch(50% 0.01 250)'};`,
+      }; }),
+      preflightIncluded: readyCount + reviewCount, preflightReview: reviewCount, preflightExcluded: excludedCount,
+      preflightNote: reviewCount > 0 ? `${reviewCount} article${reviewCount === 1 ? '' : 's'} will build but are flagged for a closer look.` : 'Everything included looks clean.',
+      report: s.report, buildHistory: s.buildHistory, hasBuildHistory: s.buildHistory.length > 0, lastBuildFileName: s.lastBuildFileName,
+      openExcludeAllConfirm: () => this.openExcludeAllConfirm(), closeExcludeAllConfirm: () => this.closeExcludeAllConfirm(), confirmExcludeAll: () => this.confirmExcludeAll(),
+      showExcludeAllConfirm: s.showExcludeAllConfirm, excludeAllCount: this._lastVisibleIds ? this._lastVisibleIds.length : 0,
+      hasSelectedArticle: !!selectedArticle, selectedArticle,
+      closeDrawer: () => this.closeDrawer(), requestCloseDrawer: () => this.closeDrawer(), stopProp: (e) => this.stopProp(e), onEditHtmlChange: (e) => this.onEditHtmlChange(e), toggleSelectedInclude: () => this.toggleSelectedInclude(),
+      saveEdit: () => this.saveEdit(), revertEdit: () => this.revertEdit(), confirmDiscard: () => this.confirmDiscard(), cancelDiscard: () => this.cancelDiscard(), showDiscardConfirm: s.showDiscardConfirm,
+      selectedIncludeToggleStyle: selectedArticle ? toggleStyle(s.articles.find(a => a.id === s.selectedArticleId).status !== 'excluded') : '',
+      selectedIncludeKnobStyle: selectedArticle ? knobStyle(s.articles.find(a => a.id === s.selectedArticleId).status !== 'excluded') : '',
+      runCheck: () => this.runCheck(), hasCheckResults: !!s.checkWarnings, checkWarnings: s.checkWarnings || [], noCheckWarnings: !!s.checkWarnings && s.checkWarnings.length === 0,
+      canStartBuild: !s.isBuilding, isBuilding: s.isBuilding, startBuild: () => this.startBuild(), cancelBuild: () => this.cancelBuild(),
+      buildProgressLabel: `Processing article ${Math.min(s.buildProgress, buildTotal)} of ${buildTotal}`,
+      buildPercent: buildTotal ? Math.round((s.buildProgress / buildTotal) * 100) : 0,
+      buildBarStyle: `height:100%; background:${tk.accent}; width:${buildTotal ? Math.round((s.buildProgress / buildTotal) * 100) : 0}%; transition:width .3s;`,
+      buildLog: s.buildLog, buildCancelled: s.buildCancelled, buildDone: s.buildDone,
+      buildIncludedCount: buildTotal, buildReviewCount: reviewCount, buildExcludedCount: excludedCount,
+      downloadFile: () => this.downloadFile(), downloadFileDefault: () => this.downloadFile(),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
