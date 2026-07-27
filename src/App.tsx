@@ -1,38 +1,34 @@
-import { useState } from 'react';
+import { AppStateProvider, useAppState } from './state/AppStateContext';
+import { Header } from './ui/Header';
+import { ImportTab } from './features/import';
+import { MappingsTab } from './features/mappings';
+import { SettingsTab } from './features/settings';
+import { ArticlesTab } from './features/articles';
+import { BuildTab } from './features/build';
+import './theme';
 
-type TabId = 'import' | 'mappings' | 'settings' | 'articles' | 'build';
-
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'import', label: 'Import' },
-  { id: 'mappings', label: 'Mappings' },
-  { id: 'settings', label: 'Settings' },
-  { id: 'articles', label: 'Articles' },
-  { id: 'build', label: 'Build & Export' },
-];
-
-export function App() {
-  const [activeTab, setActiveTab] = useState<TabId>('import');
+function AppContent() {
+  const { state } = useAppState();
+  const { activeTab } = state.ui;
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>Relay</h1>
-        <nav className="tab-bar">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              className={tab.id === activeTab ? 'tab-button tab-button-active' : 'tab-button'}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </header>
-      <main className="app-main">
-        <p>{TABS.find((tab) => tab.id === activeTab)?.label} tab coming soon.</p>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'oklch(98% 0.003 250)', color: 'oklch(20% 0.01 250)' }}>
+      <Header />
+      <main style={{ flex: 1, padding: '32px 24px' }}>
+        {activeTab === 'import' && <ImportTab />}
+        {activeTab === 'mappings' && <MappingsTab />}
+        {activeTab === 'settings' && <SettingsTab />}
+        {activeTab === 'articles' && <ArticlesTab />}
+        {activeTab === 'build' && <BuildTab />}
       </main>
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <AppStateProvider>
+      <AppContent />
+    </AppStateProvider>
   );
 }

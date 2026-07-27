@@ -44,10 +44,10 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({
   return <AppStateContext.Provider value={{ state, dispatch }}>{children}</AppStateContext.Provider>;
 };
 
-export function useAppState(): AppState {
+export function useAppState(): AppStateContextValue {
   const ctx = useContext(AppStateContext);
   if (!ctx) throw new Error('useAppState must be used within an AppStateProvider');
-  return ctx.state;
+  return ctx;
 }
 
 export function useAppDispatch(): React.Dispatch<Action> {

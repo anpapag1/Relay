@@ -1,0 +1,367 @@
+import React, { useState, useRef } from 'react';
+import { useAppState } from '../../state/AppStateContext';
+import { getDerivedArticles } from '../../state/selectors';
+import { runBuild, type BuildArticleInput } from '../../core/build/runBuild';
+
+export const BuildTab: React.FC = () => {
+  const { state, dispatch } = useAppState();
+  const [hasCheckResults, setHasCheckResults] = useState<boolean>(false);
+  const [isBuilding, setIsBuilding] = useState<boolean>(false);
+  const [buildPercent, setBuildPercent] = useState<number>(0);
+  const [buildLog, setBuildLog] = useState<string[]>([]);
+  const [buildDone, setBuildDone] = useState<boolean>(false);
+  const [buildCancelled, setBuildCancelled] = useState<boolean>(false);
+  const [wxrResult, setWxrResult] = useState<string>('');
+  const [includeFilter, setIncludeFilter] = useState<'all' | 'ready' | 'review' | 'edited'>('all');
+  const cancelRef = useRef<boolean>(false);
+
+  if (!state.source) {
+    return (
+      <div style={{ maxWidth: '960px', margin: '60px auto', textAlign: 'center', padding: '40px', background: 'white', borderRadius: '12px', border: '1px solid oklch(90% 0.005 250)' }}>
+        <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>No import yet</div>
+        <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginBottom: '20px' }}>
+          Upload a WordPress export first — then build the final migration file here.
+        </div>
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', tab: 'import' })}
+          className="btn btn-primary"
+        >
+          Go to Import tab →
+        </button>
+      </div>
+    );
+  }
+
+  const derivedArticles = getDerivedArticles(state);
+  const includedArticles = derivedArticles.filter((a) => !a.status.startsWith('excluded'));
+  const excludedArticles = derivedArticles.filter((a) => a.status.startsWith('excluded'));
+  const reviewArticles = includedArticles.filter((a) => a.status === 'review' || (a.warnings && a.warnings.length > 0));
+  const readyArticles = includedArticles.filter((a) => a.status === 'ready');
+  const editedArticles = includedArticles.filter((a) => a.status === 'edited');
+
+  const countIncluded = includedArticles.length;
+  const countReview = reviewArticles.length;
+  const countExcluded = excludedArticles.length;
+
+  // Collect warnings for instant check
+  const checkWarnings = includedArticles.flatMap((art) =>
+    (art.warnings || []).map((w) => ({ title: art.title || '(Untitled)', text: w, id: art.id }))
+  );
+
+  const runCheck = () => {
+    setHasCheckResults(true);
+  };
+
+  const cancelBuild = () => {
+    cancelRef.current = true;
+  };
+
+  const startBuild = async () => {
+    if (!state.source) return;
+    setIsBuilding(true);
+    setBuildDone(false);
+    setBuildCancelled(false);
+    setBuildPercent(0);
+    setBuildLog(['Starting conversion build…', `Targeting page builder: ${state.builderId || 'plainHtml'}`]);
+    cancelRef.current = false;
+
+    const buildInputs: BuildArticleInput[] = state.source.articles.map((art, idx) => {
+      const override = state.articles[art.postId ?? idx];
+      const isExc = override?.excluded ?? false;
+      return {
+        article: art,
+        excluded: isExc,
+        editedHtml: override?.editedHtml,
+      };
+    });
+
+    try {
+      const res = await runBuild({
+        articles: buildInputs,
+        attachments: state.source.attachments ?? [],
+        mappings: state.mappings,
+        newTables: Object.values(state.target.tables),
+        settings: state.settings,
+        builderId: state.builderId || 'plainHtml',
+        siteTitle: 'Relay Migration Site',
+        siteUrl: state.source.siteUrl || 'https://example.com',
+        liveFetchEnabled: false,
+        fetchImpl: window.fetch ? window.fetch.bind(window) : (async () => new Response()) as any,
+        onProgress: ({ completed, total }) => {
+          const pct = Math.round((completed / Math.max(total, 1)) * 100);
+          setBuildPercent(pct);
+          setBuildLog((prev) => [...prev, `Converted post ${completed}/${total} (${pct}%)`]);
+        },
+        isCancelled: () => cancelRef.current,
+      });
+
+      if (res.cancelled) {
+        setBuildCancelled(true);
+        setIsBuilding(false);
+        setBuildLog((prev) => [...prev, 'Build cancelled by user.']);
+      } else {
+        setWxrResult(res.wxr);
+        setBuildDone(true);
+        setIsBuilding(false);
+        setBuildPercent(100);
+        setBuildLog((prev) => [
+          ...prev,
+          `Build finished! Produced WXR XML package (${Math.round(res.wxr.length / 1024)} KB).`,
+        ]);
+      }
+    } catch (err: any) {
+      setIsBuilding(false);
+      setBuildLog((prev) => [...prev, `Build failed with error: ${err.message || String(err)}`]);
+      console.error(err);
+    }
+  };
+
+  const downloadWxr = () => {
+    const blob = new Blob([wxrResult], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `relay-migration-${new Date().toISOString().slice(0, 10)}.xml`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const cardStyleBase: React.CSSProperties = {
+    background: 'white',
+    border: '1px solid oklch(90% 0.005 250)',
+    borderRadius: '14px',
+    padding: '22px',
+    boxShadow: '0 1px 3px oklch(0% 0 0 / 0.02)',
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '960px', width: '100%', margin: '0 auto' }}>
+      <div>
+        <div style={{ fontSize: '22px', fontWeight: 700 }}>Build &amp; export</div>
+        <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
+          Run a quick check, then build the final import file for the new site.
+        </div>
+      </div>
+
+      <div style={{ ...cardStyleBase, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px' }}>
+        <div style={{ display: 'flex', gap: '28px' }}>
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(45% 0.14 150)' }}>{countIncluded}</div>
+            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>will be included</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(55% 0.14 60)' }}>{countReview}</div>
+            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>still need review</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(55% 0.01 250)' }}>{countExcluded}</div>
+            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>excluded</div>
+          </div>
+        </div>
+        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', maxWidth: '240px', textAlign: 'right', lineHeight: 1.4 }}>
+          {countReview > 0
+            ? 'Articles flagged for review will still be converted using automatic settings.'
+            : 'All included articles are ready for conversion.'}
+        </div>
+      </div>
+
+      <div style={cardStyleBase}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 700 }}>Check for problems</div>
+          <button
+            type="button"
+            onClick={runCheck}
+            className="btn btn-secondary"
+            style={{ padding: '8px 16px', fontSize: '13px' }}
+          >
+            Run check
+          </button>
+        </div>
+        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginBottom: '12px' }}>
+          Instant — scans all articles without building anything.
+        </div>
+        {hasCheckResults && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {checkWarnings.length > 0 ? (
+              checkWarnings.map((w, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', tab: 'articles' })}
+                  style={{
+                    display: 'flex',
+                    gap: '8px',
+                    alignItems: 'center',
+                    fontSize: '13px',
+                    padding: '10px 12px',
+                    background: 'oklch(97% 0.04 60)',
+                    border: '1px solid oklch(88% 0.1 60)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ color: 'oklch(50% 0.16 60)', fontWeight: 700 }}>⚠</div>
+                  <div style={{ flex: 1 }}>
+                    <b>{w.title}:</b> {w.text}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'oklch(50% 0.14 60)', textDecoration: 'underline', whiteSpace: 'nowrap' }}>
+                    Review →
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{ fontSize: '13px', color: 'oklch(40% 0.14 150)', padding: '10px 12px', background: 'oklch(96% 0.03 150)', border: '1px solid oklch(88% 0.1 150)', borderRadius: '8px' }}>
+                No problems found — ready to build.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div style={cardStyleBase}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 700 }}>Build migration file</div>
+          {!isBuilding && (
+            <button
+              type="button"
+              onClick={startBuild}
+              className="btn btn-primary"
+              style={{ padding: '10px 20px', fontSize: '14px' }}
+            >
+              Build now
+            </button>
+          )}
+          {isBuilding && (
+            <button
+              type="button"
+              onClick={cancelBuild}
+              className="btn btn-danger"
+              style={{ padding: '8px 16px', fontSize: '13px' }}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginBottom: '14px' }}>
+          Converts every included article and packages a downloadable import file.
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'oklch(55% 0.01 250)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+            Include:
+          </span>
+          {[
+            { id: 'all', label: 'All included', count: countIncluded },
+            { id: 'ready', label: 'Ready only', count: readyArticles.length },
+            { id: 'review', label: 'Review needed', count: countReview },
+            { id: 'edited', label: 'Manual edits', count: editedArticles.length },
+          ].map((bc) => (
+            <button
+              key={bc.id}
+              type="button"
+              onClick={() => setIncludeFilter(bc.id as any)}
+              style={{
+                border: '1px solid',
+                borderColor: includeFilter === bc.id ? 'oklch(50% 0.16 265)' : 'oklch(88% 0.005 250)',
+                background: includeFilter === bc.id ? 'oklch(96% 0.04 265)' : 'white',
+                color: includeFilter === bc.id ? 'oklch(45% 0.18 265)' : 'oklch(35% 0.01 250)',
+                padding: '5px 12px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: includeFilter === bc.id ? 600 : 500,
+                cursor: 'pointer',
+              }}
+            >
+              {bc.label} <span style={{ opacity: 0.7 }}>{bc.count}</span>
+            </button>
+          ))}
+        </div>
+
+        {isBuilding && (
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'oklch(50% 0.01 250)', marginBottom: '6px' }}>
+              <span>Converting blocks and resolving media…</span>
+              <span>{buildPercent}%</span>
+            </div>
+            <div style={{ height: '8px', background: 'oklch(94% 0.005 250)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ width: `${buildPercent}%`, height: '100%', background: 'oklch(50% 0.16 265)', transition: 'width 0.2s ease' }} />
+            </div>
+          </div>
+        )}
+
+        {(isBuilding || buildDone || buildCancelled || buildLog.length > 0) && (
+          <div
+            style={{
+              background: 'oklch(15% 0.01 250)',
+              color: 'oklch(85% 0.005 250)',
+              borderRadius: '10px',
+              padding: '14px',
+              height: '160px',
+              overflowY: 'auto',
+              fontFamily: 'monospace',
+              fontSize: '12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+              marginBottom: '16px',
+            }}
+          >
+            {buildLog.map((line, idx) => (
+              <div key={idx}>{line}</div>
+            ))}
+          </div>
+        )}
+
+        {buildCancelled && (
+          <div style={{ fontSize: '13px', color: 'oklch(50% 0.01 250)', padding: '12px', background: 'oklch(96% 0.005 250)', borderRadius: '8px' }}>
+            Build cancelled. No file was produced.
+          </div>
+        )}
+
+        {buildDone && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+              <div style={{ background: 'oklch(96% 0.03 150)', borderRadius: '10px', padding: '16px', border: '1px solid oklch(88% 0.08 150)' }}>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(40% 0.14 150)' }}>{countIncluded}</div>
+                <div style={{ fontSize: '12px', color: 'oklch(45% 0.05 150)', marginTop: '2px' }}>included articles</div>
+              </div>
+              <div style={{ background: 'oklch(97% 0.04 60)', borderRadius: '10px', padding: '16px', border: '1px solid oklch(88% 0.1 60)' }}>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(50% 0.16 60)' }}>{countReview}</div>
+                <div style={{ fontSize: '12px', color: 'oklch(50% 0.08 60)', marginTop: '2px' }}>flagged in log</div>
+              </div>
+              <div style={{ background: 'oklch(96% 0.005 250)', borderRadius: '10px', padding: '16px', border: '1px solid oklch(90% 0.005 250)' }}>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(50% 0.01 250)' }}>{countExcluded}</div>
+                <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>skipped</div>
+              </div>
+            </div>
+
+            <div style={{ border: '1px solid oklch(92% 0.005 250)', borderRadius: '10px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'oklch(99% 0.002 250)' }}>
+              <div style={{ fontSize: '14px', fontWeight: 700 }}>What happened</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '13px' }}>
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'oklch(55% 0.01 250)', marginBottom: '4px' }}>Target Tables Generated</div>
+                  <div>{Object.values(state.target.tables).length} category/tag tables mapped</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'oklch(55% 0.01 250)', marginBottom: '4px' }}>Output WXR Size</div>
+                  <div>{Math.round(wxrResult.length / 1024)} KB XML package ready</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+              <button
+                type="button"
+                onClick={downloadWxr}
+                className="btn btn-primary"
+                style={{ padding: '12px 24px', fontSize: '15px', fontWeight: 700 }}
+              >
+                ↓ Download WXR file
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

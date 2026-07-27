@@ -25,6 +25,13 @@ export default [
         window: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
+        alert: 'readonly',
+        Blob: 'readonly',
+        FileReader: 'readonly',
+        Response: 'readonly',
+        HTMLTextAreaElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        HTMLDivElement: 'readonly',
       },
     },
     plugins: {
