@@ -149,6 +149,46 @@ export const ImportTab: React.FC = () => {
     dispatch({ type: 'SET_TARGET_TABLES', tables: updated });
   };
 
+  const updateTableLabel = (tableId: string, newLabel: string) => {
+    const tables = Object.values(state.target.tables);
+    const updated = tables.map((t) => {
+      if (t.id !== tableId) return t;
+      return { ...t, label: newLabel };
+    });
+    dispatch({ type: 'SET_TARGET_TABLES', tables: updated });
+  };
+
+  const updateTermName = (tableId: string, termId: string, newName: string) => {
+    const tables = Object.values(state.target.tables);
+    const updated = tables.map((t) => {
+      if (t.id !== tableId) return t;
+      return {
+        ...t,
+        terms: t.terms.map((term) => {
+          if (term.id !== termId) return term;
+          return { ...term, name: newName };
+        }),
+      };
+    });
+    dispatch({ type: 'SET_TARGET_TABLES', tables: updated });
+  };
+
+  const updateTermSlug = (tableId: string, termId: string, newSlug: string) => {
+    const tables = Object.values(state.target.tables);
+    const updated = tables.map((t) => {
+      if (t.id !== tableId) return t;
+      return {
+        ...t,
+        terms: t.terms.map((term) => {
+          if (term.id !== termId) return term;
+          return { ...term, slug: newSlug };
+        }),
+      };
+    });
+    dispatch({ type: 'SET_TARGET_TABLES', tables: updated });
+  };
+
+
   if (!state.source) {
     return (
       <div style={{ maxWidth: '960px', margin: '60px auto' }}>
@@ -450,14 +490,20 @@ export const ImportTab: React.FC = () => {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {Object.values(state.target.tables).map((tbl) => (
-                  <div key={tbl.id} style={{ border: '1px solid oklch(93% 0.005 250)', borderRadius: '10px', padding: '14px' }}>
+                  <div key={tbl.id} style={{ border: '1px solid oklch(93% 0.005 250)', borderRadius: '10px', padding: '14px', background: 'white' }}>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center' }}>
-                      <div style={{ flex: 1, fontWeight: 600, fontSize: '14px' }}>{tbl.label}</div>
+                      <input
+                        type="text"
+                        value={tbl.label}
+                        onChange={(e) => updateTableLabel(tbl.id, e.target.value)}
+                        placeholder="Table name"
+                        style={{ flex: 1, padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '13px', fontWeight: 600 }}
+                      />
                       <button
                         type="button"
                         onClick={() => addTermToTable(tbl.id)}
                         className="btn btn-secondary"
-                        style={{ padding: '4px 10px', fontSize: '12px' }}
+                        style={{ padding: '8px 12px', fontSize: '12px' }}
                       >
                         + Add Term
                       </button>
@@ -465,35 +511,36 @@ export const ImportTab: React.FC = () => {
                         type="button"
                         onClick={() => removeTable(tbl.id)}
                         className="btn btn-danger"
-                        style={{ padding: '4px 10px', fontSize: '12px' }}
+                        style={{ padding: '8px 12px', fontSize: '12px' }}
                       >
                         Remove Table
                       </button>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
                       {tbl.terms.map((trm) => (
-                        <span
-                          key={trm.id}
-                          style={{
-                            background: 'oklch(96% 0.004 250)',
-                            border: '1px solid oklch(90% 0.005 250)',
-                            borderRadius: '4px',
-                            padding: '4px 8px',
-                            fontSize: '12px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                          }}
-                        >
-                          {trm.name} <code style={{ color: 'oklch(60% 0.01 250)' }}>({trm.slug})</code>
+                        <div key={trm.id} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input
+                            type="text"
+                            value={trm.name}
+                            onChange={(e) => updateTermName(tbl.id, trm.id, e.target.value)}
+                            placeholder="Term name"
+                            style={{ flex: 1, padding: '7px 9px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px' }}
+                          />
+                          <input
+                            type="text"
+                            value={trm.slug || ''}
+                            onChange={(e) => updateTermSlug(tbl.id, trm.id, e.target.value)}
+                            placeholder="slug"
+                            style={{ width: '120px', padding: '7px 9px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace" }}
+                          />
                           <button
                             type="button"
                             onClick={() => removeTermFromTable(tbl.id, trm.id)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'oklch(60% 0.01 250)', padding: 0 }}
+                            style={{ width: '30px', height: '32px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: 'oklch(55% 0.01 250)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                           >
-                            ×
+                            ✕
                           </button>
-                        </span>
+                        </div>
                       ))}
                     </div>
                   </div>
