@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import { parseWxr } from '../../core/wxr/parseWxr';
 import { detectBuilder } from '../../core/builders/detectBuilder';
 import { SAMPLE_WXR } from './sampleWxr';
 import { createSessionBackup, restoreSessionBackup } from '../../state/session';
+import { findMissingOldTerms, mergeMissingIntoOldTables } from '../../core/mappings/reconcileOldTables';
 import type { BuilderId } from '../../core/builders/types';
 import type { TermTable } from '../../types/domain';
 
@@ -272,7 +273,15 @@ export const ImportTab: React.FC = () => {
     dispatch({ type: 'SET_OLD_TABLES', tables: updated });
   };
 
+  const missingOldTerms = useMemo(
+    () => findMissingOldTerms(state.source?.taxonomies ?? {}, state.oldTables),
+    [state.source, state.oldTables],
+  );
 
+  const addMissingOldTerms = () => {
+    const updated = mergeMissingIntoOldTables(state.oldTables, missingOldTerms);
+    dispatch({ type: 'SET_OLD_TABLES', tables: updated });
+  };
 
   if (!state.source) {
     return (
@@ -542,6 +551,35 @@ export const ImportTab: React.FC = () => {
               <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginBottom: '14px' }}>
                 Add legacy categories/tags/taxonomies on the old site:
               </div>
+              {missingOldTerms.length > 0 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    background: 'oklch(97% 0.02 80)',
+                    border: '1px solid oklch(88% 0.05 80)',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                    marginBottom: '14px',
+                    fontSize: '13px',
+                  }}
+                >
+                  <div>
+                    The tool also found <strong>{missingOldTerms.length}</strong> taxonomy term
+                    {missingOldTerms.length === 1 ? '' : 's'} in the imported XML — add them to the current tables?
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addMissingOldTerms}
+                    className="btn btn-primary"
+                    style={{ padding: '7px 14px', fontSize: '12px', whiteSpace: 'nowrap' }}
+                  >
+                    Add
+                  </button>
+                </div>
+              )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {Object.values(state.oldTables).map((tbl) => (
                   <div key={tbl.id} style={{ border: '1px solid oklch(93% 0.005 250)', borderRadius: '10px', padding: '14px', background: 'white' }}>
