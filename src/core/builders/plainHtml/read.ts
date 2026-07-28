@@ -123,6 +123,25 @@ function readElement(el: Element, warnings: string[]): IRNode[] {
       return [readBlockquote(el)];
     case 'HR':
       return [{ kind: 'separator' }];
+    // Generic layout containers carry no Gutenberg-relevant meaning of
+    // their own, but old-site page builders (WPBakery, Divi, plain theme
+    // markup) wrap nearly everything in one — a <div> around a paragraph,
+    // a <header> around an event's title block. Dumping the whole subtree
+    // as one opaque raw-HTML blob (the old default-case behavior) loses
+    // no content, but it both needlessly flags real, convertible content
+    // for review and stops paragraphs/images inside from becoming real
+    // blocks. Unwrapping and reading the children through the normal
+    // pipeline instead handles the overwhelmingly common case; a
+    // genuinely unrecognised leaf tag still falls through to the raw
+    // default below.
+    case 'DIV':
+    case 'HEADER':
+    case 'FOOTER':
+    case 'SECTION':
+    case 'ARTICLE':
+    case 'ASIDE':
+    case 'MAIN':
+      return readChildNodes(el.childNodes, warnings);
     default: {
       const html = el.outerHTML.trim();
       if (!html) return [];
@@ -163,12 +182,13 @@ function flushInlineChunks(html: string, nodes: IRNode[]): void {
   }
 }
 
-/** The baseline reader: standard HTML elements plus the classic
- * [caption]/[gallery] shortcodes. Every other builder's `vc_column_text`
- * / `et_pb_text` / rich-text widget delegates its inner HTML here. */
-export function readPlainHtml(input: ReadInput): ReadResult {
-  const doc = new DOMParser().parseFromString(`<body>${preprocessShortcodes(input.contentHtml)}</body>`, 'text/html');
-  const warnings: string[] = [];
+/** Walks a list of sibling DOM nodes (a document body, or the children of
+ * an unwrapped generic container like <div>) into IR nodes: bare text and
+ * inline-formatting tags are buffered and flushed as paragraphs (split on
+ * blank lines, images promoted — see flushInlineChunks), and everything
+ * else goes through readElement. Shared by the top-level document walk and
+ * by container-unwrapping so nesting (a <div> inside a <div>) just recurses. */
+function readChildNodes(childNodes: ArrayLike<ChildNode>, warnings: string[]): IRNode[] {
   const nodes: IRNode[] = [];
 
   let inlineBuffer = '';
@@ -178,7 +198,7 @@ export function readPlainHtml(input: ReadInput): ReadResult {
     if (html.trim()) flushInlineChunks(html, nodes);
   };
 
-  for (const child of Array.from(doc.body.childNodes)) {
+  for (const child of Array.from(childNodes)) {
     if (child.nodeType === Node.TEXT_NODE) {
       inlineBuffer += child.textContent ?? '';
       continue;
@@ -194,5 +214,15 @@ export function readPlainHtml(input: ReadInput): ReadResult {
   }
   flushInline();
 
+  return nodes;
+}
+
+/** The baseline reader: standard HTML elements plus the classic
+ * [caption]/[gallery] shortcodes. Every other builder's `vc_column_text`
+ * / `et_pb_text` / rich-text widget delegates its inner HTML here. */
+export function readPlainHtml(input: ReadInput): ReadResult {
+  const doc = new DOMParser().parseFromString(`<body>${preprocessShortcodes(input.contentHtml)}</body>`, 'text/html');
+  const warnings: string[] = [];
+  const nodes = readChildNodes(doc.body.childNodes, warnings);
   return { nodes, warnings };
 }

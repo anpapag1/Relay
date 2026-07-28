@@ -121,6 +121,35 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
     }
   }
 
+  if (el.tag === 'caption') {
+    // The classic WordPress [caption] shortcode is plain text, not real
+    // shortcode syntax of WPBakery's own — but it uses the same
+    // `[tag]...[/tag]` grammar, so the shared tokenizer parses it as just
+    // another (unrecognised) element when it sits at the top level of
+    // content:encoded rather than nested inside vc_column_text (where
+    // readPlainHtml's own [caption] handling already covers it). Without
+    // this case it fell to the generic fallback below, which only
+    // serialises the shortcode's own tag/attrs — silently discarding the
+    // image inside entirely.
+    const inner = textContent(el.children);
+    const imgMatch = /<img\b[^>]*>/i.exec(inner);
+    if (!imgMatch) {
+      warnings.push('caption shortcode with no <img> — kept as raw.');
+      return [{ kind: 'raw', html: textFallback(el), note: 'caption shortcode without an image' }];
+    }
+    const captionText = inner
+      .slice(imgMatch.index + imgMatch[0].length)
+      .replace(/<[^>]+>/g, '')
+      .trim();
+    const result = readPlainHtml({ contentHtml: imgMatch[0], postmeta: {} });
+    const imageNode = result.nodes.find((n): n is Extract<IRNode, { kind: 'image' }> => n.kind === 'image');
+    if (!imageNode) {
+      warnings.push('caption shortcode image could not be parsed — kept as raw.');
+      return [{ kind: 'raw', html: textFallback(el), note: 'caption shortcode: image parse failed' }];
+    }
+    return [{ ...imageNode, caption: captionText || undefined }];
+  }
+
   if (el.tag === 'vc_icon') {
     // A bare decorative icon glyph has no Gutenberg equivalent worth
     // fabricating; a linked one is functionally a button, just missing the

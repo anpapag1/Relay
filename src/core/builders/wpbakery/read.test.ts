@@ -94,4 +94,25 @@ describe('readWpbakery', () => {
     });
     expect(linked.nodes).toEqual([{ kind: 'button', text: 'Go', href: 'https://example.com' }]);
   });
+
+  it('reads a classic [caption] shortcode sitting at the top level (outside vc_column_text) as an image with a caption, instead of losing the image entirely', () => {
+    // [caption] uses the same [tag]...[/tag] grammar the WPBakery tokenizer
+    // parses everything with, so at the top level it arrives as just
+    // another unrecognised shortcode - the generic fallback only
+    // serialises the tag/attrs, silently dropping the <img> inside.
+    const { nodes, warnings } = readWpbakery({
+      contentHtml: '[caption id="attachment_1"]<img src="https://x/a.jpg" alt="A"/> My caption[/caption]',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'image', src: 'https://x/a.jpg', alt: 'A', caption: 'My caption', href: undefined, width: undefined, height: undefined },
+    ]);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it('keeps a top-level [caption] with no image as raw with a warning, never fabricating one', () => {
+    const { nodes, warnings } = readWpbakery({ contentHtml: '[caption]just text, no image[/caption]', postmeta: {} });
+    expect(nodes[0].kind).toBe('raw');
+    expect(warnings.some((w) => w.includes('no <img>'))).toBe(true);
+  });
 });

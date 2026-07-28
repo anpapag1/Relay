@@ -128,4 +128,41 @@ describe('readPlainHtml', () => {
     expect(nodes[1]).toMatchObject({ kind: 'image', src: 'https://x/b.jpg' });
     expect(nodes[2]).toEqual({ kind: 'paragraph', html: 'Some text.' });
   });
+
+  it('unwraps a generic <div> wrapper and reads its children instead of dumping it as raw HTML', () => {
+    // Old-site page builders (WPBakery, Divi, plain theme markup) wrap
+    // nearly everything in a <div> - this used to make every such post
+    // trigger an "Unrecognised element <div>" review warning and lose the
+    // paragraph/image conversion inside it entirely.
+    const { nodes, warnings } = readPlainHtml({
+      contentHtml: '<div><p>Inside a div</p><img src="https://x/a.jpg" alt="A"></div>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'paragraph', html: 'Inside a div' },
+      { kind: 'image', src: 'https://x/a.jpg', alt: 'A', caption: undefined, href: undefined, width: undefined, height: undefined },
+    ]);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it('unwraps nested containers (div inside header) and still splits bare text on blank lines', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml: '<header><div>First paragraph.\n\nSecond paragraph.</div></header>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'paragraph', html: 'First paragraph.' },
+      { kind: 'paragraph', html: 'Second paragraph.' },
+    ]);
+  });
+
+  it('still keeps a genuinely unrecognised leaf element (not a generic container) as raw with a warning', () => {
+    const { nodes, warnings } = readPlainHtml({
+      contentHtml: '<div><table><tr><td>cell</td></tr></table></div>',
+      postmeta: {},
+    });
+    expect(nodes).toHaveLength(1);
+    expect(nodes[0].kind).toBe('raw');
+    expect(warnings).toHaveLength(1);
+  });
 });
