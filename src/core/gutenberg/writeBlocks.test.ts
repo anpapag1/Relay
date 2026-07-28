@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS: ConversionSettings = {
   imageAlign: 'center',
   autoSpacing: true,
   spacerSize: 30,
-  galleryCols: 3,
+  combineConsecutiveImages: false,
   pdfRender: 'button',
   buttonRender: 'button',
   headingShift: 0,
@@ -74,14 +74,47 @@ describe('writeBlocks', () => {
     expect(out).toContain('<a href="https://x/full.jpg"><img');
   });
 
-  it('writes a gallery using galleryCols', () => {
+  it('writes a gallery with WordPress-default columns and per-image sizeSlug', () => {
     const out = writeBlocks(
       [{ kind: 'gallery', images: [{ src: 'a.jpg', alt: '' }, { src: 'b.jpg', alt: '' }] }],
-      { ...DEFAULT_SETTINGS, galleryCols: 4 },
+      DEFAULT_SETTINGS,
     );
-    expect(out).toContain('"columns":4');
-    expect(out).toContain('columns-4');
-    expect(out.match(/<!-- wp:image -->/g)).toHaveLength(2);
+    expect(out).toContain('columns-default');
+    expect(out).toContain('is-cropped');
+    expect(out).toContain('"linkTo":"none"');
+    expect(out.match(/<!-- wp:image \{"linkDestination":"none","sizeSlug":"large"\} -->/g)).toHaveLength(2);
+  });
+
+  it('combines consecutive standalone images into a gallery when combineConsecutiveImages is on', () => {
+    const nodes: IRNode[] = [
+      { kind: 'paragraph', html: 'Intro' },
+      { kind: 'image', src: 'a.jpg', alt: '' },
+      { kind: 'image', src: 'b.jpg', alt: '' },
+      { kind: 'image', src: 'c.jpg', alt: '' },
+      { kind: 'paragraph', html: 'Outro' },
+    ];
+    const out = writeBlocks(nodes, { ...DEFAULT_SETTINGS, combineConsecutiveImages: true });
+    expect(out).toContain('wp:gallery');
+    expect(out.match(/<!-- wp:image /g)).toHaveLength(3);
+    expect(out.indexOf('Intro')).toBeLessThan(out.indexOf('wp:gallery'));
+    expect(out.indexOf('wp:gallery')).toBeLessThan(out.indexOf('Outro'));
+  });
+
+  it('leaves a lone image alone even with combineConsecutiveImages on', () => {
+    const nodes: IRNode[] = [{ kind: 'image', src: 'a.jpg', alt: '' }];
+    const out = writeBlocks(nodes, { ...DEFAULT_SETTINGS, combineConsecutiveImages: true });
+    expect(out).not.toContain('wp:gallery');
+    expect(out).toContain('wp:image');
+  });
+
+  it('does not combine images when combineConsecutiveImages is off', () => {
+    const nodes: IRNode[] = [
+      { kind: 'image', src: 'a.jpg', alt: '' },
+      { kind: 'image', src: 'b.jpg', alt: '' },
+    ];
+    const out = writeBlocks(nodes, DEFAULT_SETTINGS);
+    expect(out).not.toContain('wp:gallery');
+    expect(out.match(/<!-- wp:image /g)).toHaveLength(2);
   });
 
   it('renders a button as wp:buttons by default and as a link when configured', () => {

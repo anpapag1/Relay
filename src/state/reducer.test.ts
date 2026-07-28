@@ -139,6 +139,41 @@ describe('appReducer', () => {
     });
   });
 
+  it('handles SET_OLD_TABLES and computes suggestions against existing target tables', () => {
+    const tables: TermTable[] = [
+      {
+        id: 'categories',
+        label: 'Categories',
+        terms: [{ id: 'cat-news', name: 'News', slug: 'news' }],
+      },
+    ];
+    const loaded = appReducer(initialState, {
+      type: 'LOAD_SOURCE',
+      result: MOCK_PARSE_RESULT,
+      defaultBuilder: 'plainHtml',
+      confidence: 95,
+    });
+    const withTargets = appReducer(loaded, { type: 'SET_TARGET_TABLES', tables });
+    // Clear mappings to simulate reconciliation adding old-site terms after
+    // target tables were already configured, with no suggestion yet.
+    const cleared = { ...withTargets, mappings: {} };
+
+    const oldTables: TermTable[] = [
+      { id: 'category', label: 'Category', terms: [{ id: 'category:news', name: 'News', slug: 'news' }] },
+    ];
+    const next = appReducer(cleared, { type: 'SET_OLD_TABLES', tables: oldTables });
+
+    expect(next.mappings['category:news']).toEqual({
+      oldDomain: 'category',
+      oldNicename: 'news',
+      targetTableId: 'categories',
+      targetTermIds: ['cat-news'],
+      excluded: false,
+      origin: 'suggested',
+      score: 1,
+    });
+  });
+
   it('handles SET_TERM_ACTION with user origin, clearing prior destinations', () => {
     const next = appReducer(initialState, {
       type: 'SET_TERM_ACTION',

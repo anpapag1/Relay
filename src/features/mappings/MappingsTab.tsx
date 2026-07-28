@@ -100,6 +100,7 @@ export const MappingsTab: React.FC = () => {
         const isExpanded = expandedDomains[domainName] ?? true;
         const isCore = CORE_DOMAINS.has(domainName);
         const siteTerms = source.taxonomies?.[domainName] ?? [];
+        const siteTermsByNicename = new Map(siteTerms.map((s) => [s.nicename, s]));
 
         return (
           <div
@@ -160,7 +161,7 @@ export const MappingsTab: React.FC = () => {
                         (t) => !targetTermIds.includes(t.id) && t.name.toLowerCase().includes(pickerSearch.toLowerCase()),
                       )
                     : [];
-                  const siteMatch = siteTerms.find((s) => s.nicename === nicename);
+                  const siteMatch = siteTermsByNicename.get(nicename);
 
                   return (
                     <div

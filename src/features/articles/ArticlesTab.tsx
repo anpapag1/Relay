@@ -213,7 +213,7 @@ export const ArticlesTab: React.FC = () => {
                 {art.title || '(Untitled)'}
               </div>
               <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{art.postDate || '—'}</div>
-              <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{art.terms.filter(t => t.domain === 'category').map(t => t.name).join(', ') || '—'}</div>
+              <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{art.destinationTerms.filter(t => t.domain === 'category').map(t => t.name).join(', ') || '—'}</div>
               <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 —
                 {art.warnings && art.warnings.length > 0 && (

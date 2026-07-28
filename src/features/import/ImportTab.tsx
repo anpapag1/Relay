@@ -474,7 +474,7 @@ export const ImportTab: React.FC = () => {
                 whiteSpace: 'nowrap',
               }}
             >
-              {builderConfidence}% match
+              {Math.round(builderConfidence * 100)}% match
             </div>
           </div>
         </div>

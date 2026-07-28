@@ -24,6 +24,7 @@ function makeArticle(overrides: Partial<DerivedArticle> = {}): DerivedArticle {
     warnings: [],
     isEdited: false,
     isExcluded: false,
+    destinationTerms: [],
     ...overrides,
   };
 }

@@ -3,6 +3,8 @@ import type { ParsedArticle, TermRef } from '../types/domain';
 import { termMappingIdOf } from '../core/mappings/termId';
 import { getReader } from '../core/builders';
 import { collectMediaRefs } from '../core/build/collectMediaRefs';
+import { resolveArticleTerms } from '../core/build/resolveTerms';
+import { writeBlocks } from '../core/gutenberg/writeBlocks';
 
 export function getArticleId(article: ParsedArticle, index: number): number {
   return article.postId ?? -(index + 1);
@@ -67,6 +69,8 @@ export function getArticleStatus(
 export function getDerivedArticles(state: AppState): DerivedArticle[] {
   if (!state.source) return [];
 
+  const newTables = Object.values(state.target.tables);
+
   return state.source.articles.map((art, index) => {
     const id = getArticleId(art, index);
     const { status, reason, warnings } = getArticleStatus(art, index, state);
@@ -81,8 +85,26 @@ export function getDerivedArticles(state: AppState): DerivedArticle[] {
       isEdited: status === 'edited',
       isExcluded: status.startsWith('excluded'),
       editedHtml: override?.editedHtml,
+      destinationTerms: resolveArticleTerms(art.terms, state.mappings, newTables),
     };
   });
+}
+
+/** Converts one article's content through the exact same reader ->
+ * writeBlocks pipeline runBuild uses, so the Articles preview shows the
+ * real post-export markup rather than the untouched original HTML. Media
+ * URLs are not rewritten here (that step is async, live-fetch-aware, and
+ * only meaningful during a real build) — src attributes stay as the
+ * old-site URLs from the WXR. An `editedHtml` override bypasses conversion
+ * entirely, mirroring how runBuild treats a manual override. */
+export function getArticlePreviewHtml(article: ParsedArticle, editedHtml: string | undefined, state: AppState): { html: string; warnings: string[] } {
+  if (editedHtml != null) {
+    return { html: editedHtml, warnings: [] };
+  }
+
+  const reader = getReader(state.builderId ?? 'plainHtml');
+  const { nodes, warnings } = reader.read({ contentHtml: article.contentHtml, postmeta: article.postmeta });
+  return { html: writeBlocks(nodes, state.settings), warnings };
 }
 
 export function getStatusCounts(derivedArticles: DerivedArticle[]): Record<ArticleStatus | 'total', number> {

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import type { DerivedArticle } from '../../state/types';
+import { getArticlePreviewHtml } from '../../state/selectors';
 import { Badge } from '../../ui/Badge';
 
 export interface ArticleDrawerProps {
@@ -22,17 +23,22 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
   hasPrev,
   hasNext,
 }) => {
-  const { dispatch } = useAppState();
+  const { state, dispatch } = useAppState();
   const [draftHtml, setDraftHtml] = useState<string>('');
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
+  const converted = useMemo(() => {
+    if (!article) return { html: '', warnings: [] as string[] };
+    return getArticlePreviewHtml(article, article.editedHtml, state);
+  }, [article, state.settings, state.builderId]);
+
   useEffect(() => {
     if (article) {
-      setDraftHtml(article.editedHtml || article.contentHtml || '');
+      setDraftHtml(converted.html);
       setIsDirty(false);
     }
-  }, [article]);
+  }, [article, converted.html]);
 
   const requestClose = () => {
     if (isDirty) {
@@ -254,12 +260,12 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
               <div>
                 <span style={{ color: 'oklch(55% 0.01 250)' }}>Category</span>
                 <br />
-                <b>{article.terms.filter(t => t.domain === 'category').map(t => t.name).join(', ') || 'Unmapped'}</b>
+                <b>{article.destinationTerms.filter(t => t.domain === 'category').map(t => t.name).join(', ') || 'Unmapped'}</b>
               </div>
               <div>
                 <span style={{ color: 'oklch(55% 0.01 250)' }}>Tags</span>
                 <br />
-                <b>{article.terms.filter(t => t.domain === 'post_tag').map(t => t.name).join(', ') || 'None'}</b>
+                <b>{article.destinationTerms.filter(t => t.domain === 'post_tag').map(t => t.name).join(', ') || 'None'}</b>
               </div>
             </div>
           </div>

@@ -79,7 +79,39 @@ export const SettingsTab: React.FC = () => {
               <option value="medium">Medium</option>
               <option value="large">Large</option>
               <option value="full">Full size</option>
+              <option value="custom">Custom</option>
             </select>
+            {settings.imageSize === 'custom' && (
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)', marginBottom: '4px' }}>Width (px)</div>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="auto"
+                    value={settings.customWidth ?? ''}
+                    onChange={(e) => updateSetting('customWidth', e.target.value ? Number(e.target.value) : undefined)}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px' }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)', marginBottom: '4px' }}>Height (px)</div>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="auto"
+                    value={settings.customHeight ?? ''}
+                    onChange={(e) => updateSetting('customHeight', e.target.value ? Number(e.target.value) : undefined)}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px' }}
+                  />
+                </div>
+              </div>
+            )}
+            {settings.imageSize === 'custom' && (
+              <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)', marginTop: '6px' }}>
+                Set one — the other scales proportionally, just like in WordPress.
+              </div>
+            )}
           </div>
 
           <div>
@@ -139,15 +171,18 @@ export const SettingsTab: React.FC = () => {
             </div>
           )}
 
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>Gallery columns: {settings.galleryCols}</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 600 }}>Combine consecutive photos into a gallery</div>
+              <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
+                Two or more images in a row become a single gallery block instead of separate images
+              </div>
+            </div>
             <input
-              type="range"
-              min="1"
-              max="6"
-              value={settings.galleryCols}
-              onChange={(e) => updateSetting('galleryCols', Number(e.target.value))}
-              style={{ width: '100%' }}
+              type="checkbox"
+              checked={settings.combineConsecutiveImages}
+              onChange={(e) => updateSetting('combineConsecutiveImages', e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
             />
           </div>
 

@@ -15,7 +15,7 @@ const DEFAULT_SETTINGS: ConversionSettings = {
   imageAlign: 'center',
   autoSpacing: true,
   spacerSize: 30,
-  galleryCols: 3,
+  combineConsecutiveImages: false,
   pdfRender: 'button',
   buttonRender: 'button',
   headingShift: 0,
