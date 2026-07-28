@@ -123,7 +123,11 @@ describe('ArticleDrawer navigation buttons', () => {
     });
     const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
     await act(async () => {
-      textarea.value = '<p>edited</p>';
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        'value',
+      )!.set!;
+      nativeInputValueSetter.call(textarea, '<p>edited</p>');
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
     });
     const nextBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Next'));
