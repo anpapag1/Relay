@@ -188,7 +188,7 @@ describe('runBuild', () => {
   it('wires mapped terms through into the exported WXR', async () => {
     const newTables: TermTable[] = [{ id: 'category', label: 'Categories', terms: [{ id: 'c1', name: 'News', slug: 'news' }] }];
     const mappings: Record<string, TermMapping> = {
-      'category:oldnews': { oldDomain: 'category', oldNicename: 'oldnews', targetTableId: 'category', targetTermId: 'c1', origin: 'user' },
+      'category:oldnews': { oldDomain: 'category', oldNicename: 'oldnews', targetTableId: 'category', targetTermIds: ['c1'], excluded: false, origin: 'user' },
     };
     const articles: BuildArticleInput[] = [
       { article: makeArticle({ terms: [{ domain: 'category', nicename: 'oldnews', name: 'Old News' }] }), excluded: false },

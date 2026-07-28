@@ -15,7 +15,12 @@ export type Action =
   | { type: 'SET_LIVE_FETCH_ENABLED'; enabled: boolean }
   | { type: 'SET_TARGET_TABLES'; tables: TermTable[] }
   | { type: 'SET_OLD_TABLES'; tables: TermTable[] }
-  | { type: 'SET_TERM_MAPPING'; oldDomain: string; oldNicename: string; targetTableId: string | null; targetTermId: string | null }
+  | { type: 'SET_TERM_ACTION'; oldDomain: string; oldNicename: string; targetTableId: string | null }
+  | { type: 'ADD_TERM_DESTINATION'; oldDomain: string; oldNicename: string; targetTermId: string }
+  | { type: 'REMOVE_TERM_DESTINATION'; oldDomain: string; oldNicename: string; targetTermId: string }
+  | { type: 'SET_TERM_EXCLUDED'; oldDomain: string; oldNicename: string; excluded: boolean }
+  | { type: 'SET_DESTINATION_PICKER'; termId: string | null }
+  | { type: 'CLEAR_ALL_MAPPINGS' }
   | { type: 'RESET_MAPPINGS' }
   | { type: 'UPDATE_SETTINGS'; settings: Partial<ConversionSettings> }
   | { type: 'SET_ARTICLE_EXCLUDED'; articleId: number; excluded: boolean }
@@ -46,13 +51,32 @@ export const actions = {
   setLiveFetchEnabled: (enabled: boolean): Action => ({ type: 'SET_LIVE_FETCH_ENABLED', enabled }),
   setTargetTables: (tables: TermTable[]): Action => ({ type: 'SET_TARGET_TABLES', tables }),
   setOldTables: (tables: TermTable[]): Action => ({ type: 'SET_OLD_TABLES', tables }),
-  setTermMapping: (oldDomain: string, oldNicename: string, targetTableId: string | null, targetTermId: string | null): Action => ({
-    type: 'SET_TERM_MAPPING',
+  setTermAction: (oldDomain: string, oldNicename: string, targetTableId: string | null): Action => ({
+    type: 'SET_TERM_ACTION',
     oldDomain,
     oldNicename,
     targetTableId,
+  }),
+  addTermDestination: (oldDomain: string, oldNicename: string, targetTermId: string): Action => ({
+    type: 'ADD_TERM_DESTINATION',
+    oldDomain,
+    oldNicename,
     targetTermId,
   }),
+  removeTermDestination: (oldDomain: string, oldNicename: string, targetTermId: string): Action => ({
+    type: 'REMOVE_TERM_DESTINATION',
+    oldDomain,
+    oldNicename,
+    targetTermId,
+  }),
+  setTermExcluded: (oldDomain: string, oldNicename: string, excluded: boolean): Action => ({
+    type: 'SET_TERM_EXCLUDED',
+    oldDomain,
+    oldNicename,
+    excluded,
+  }),
+  setDestinationPicker: (termId: string | null): Action => ({ type: 'SET_DESTINATION_PICKER', termId }),
+  clearAllMappings: (): Action => ({ type: 'CLEAR_ALL_MAPPINGS' }),
   resetMappings: (): Action => ({ type: 'RESET_MAPPINGS' }),
   updateSettings: (settings: Partial<ConversionSettings>): Action => ({ type: 'UPDATE_SETTINGS', settings }),
   setArticleExcluded: (articleId: number, excluded: boolean): Action => ({ type: 'SET_ARTICLE_EXCLUDED', articleId, excluded }),

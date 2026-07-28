@@ -39,7 +39,8 @@ export function suggestTerms(oldTerms: TermRef[], newTables: TermTable[]): Recor
       oldDomain: term.domain,
       oldNicename: term.nicename,
       targetTableId: best.tableId,
-      targetTermId: best.termId,
+      targetTermIds: [best.termId],
+      excluded: false,
       origin: 'suggested',
       score: best.score,
     };

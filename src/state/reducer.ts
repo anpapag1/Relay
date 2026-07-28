@@ -136,7 +136,8 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
             oldDomain: domain,
             oldNicename: item.nicename,
             targetTableId: domain,
-            targetTermId: `${domain}:${item.nicename}`,
+            targetTermIds: [`${domain}:${item.nicename}`],
+            excluded: false,
             origin: 'suggested',
             score: 1.0,
           };
@@ -218,8 +219,9 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
         oldTables: oldTablesMap,
       };
     }
-    case 'SET_TERM_MAPPING': {
+    case 'SET_TERM_ACTION': {
       const key = termMappingId(action.oldDomain, action.oldNicename);
+      const existing = state.mappings[key];
       return {
         ...state,
         mappings: {
@@ -228,12 +230,67 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
             oldDomain: action.oldDomain,
             oldNicename: action.oldNicename,
             targetTableId: action.targetTableId,
-            targetTermId: action.targetTermId,
+            targetTermIds: [],
+            excluded: existing?.excluded ?? false,
             origin: 'user',
           },
         },
       };
     }
+    case 'ADD_TERM_DESTINATION': {
+      const key = termMappingId(action.oldDomain, action.oldNicename);
+      const existing = state.mappings[key];
+      if (!existing || existing.targetTermIds.includes(action.targetTermId)) return state;
+      return {
+        ...state,
+        mappings: {
+          ...state.mappings,
+          [key]: {
+            ...existing,
+            targetTermIds: [...existing.targetTermIds, action.targetTermId],
+            origin: 'user',
+          },
+        },
+      };
+    }
+    case 'REMOVE_TERM_DESTINATION': {
+      const key = termMappingId(action.oldDomain, action.oldNicename);
+      const existing = state.mappings[key];
+      if (!existing) return state;
+      return {
+        ...state,
+        mappings: {
+          ...state.mappings,
+          [key]: {
+            ...existing,
+            targetTermIds: existing.targetTermIds.filter((id) => id !== action.targetTermId),
+            origin: 'user',
+          },
+        },
+      };
+    }
+    case 'SET_TERM_EXCLUDED': {
+      const key = termMappingId(action.oldDomain, action.oldNicename);
+      const existing = state.mappings[key];
+      return {
+        ...state,
+        mappings: {
+          ...state.mappings,
+          [key]: {
+            oldDomain: action.oldDomain,
+            oldNicename: action.oldNicename,
+            targetTableId: existing?.targetTableId ?? null,
+            targetTermIds: existing?.targetTermIds ?? [],
+            excluded: action.excluded,
+            origin: 'user',
+          },
+        },
+      };
+    }
+    case 'SET_DESTINATION_PICKER':
+      return { ...state, ui: { ...state.ui, pickers: { ...state.ui.pickers, destinationTermId: action.termId } } };
+    case 'CLEAR_ALL_MAPPINGS':
+      return { ...state, mappings: {} };
     case 'RESET_MAPPINGS': {
       const reset = state.source ? suggestTerms(getAllTerms(state.source), Object.values(state.target.tables)) : {};
       return { ...state, mappings: reset };

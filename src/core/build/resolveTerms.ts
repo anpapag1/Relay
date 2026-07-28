@@ -15,13 +15,16 @@ export function resolveArticleTerms(
 
   for (const term of terms) {
     const mapping = mappings[termMappingIdOf(term)];
-    if (!mapping || !mapping.targetTableId || !mapping.targetTermId) continue;
+    if (!mapping || mapping.excluded || !mapping.targetTableId || mapping.targetTermIds.length === 0) continue;
 
     const table = tableById.get(mapping.targetTableId);
-    const newTerm = table?.terms.find((candidate) => candidate.id === mapping.targetTermId);
-    if (!table || !newTerm) continue;
+    if (!table) continue;
 
-    out.push({ domain: table.id, nicename: newTerm.slug || newTerm.id, name: newTerm.name });
+    for (const targetTermId of mapping.targetTermIds) {
+      const newTerm = table.terms.find((candidate) => candidate.id === targetTermId);
+      if (!newTerm) continue;
+      out.push({ domain: table.id, nicename: newTerm.slug || newTerm.id, name: newTerm.name });
+    }
   }
 
   return out;

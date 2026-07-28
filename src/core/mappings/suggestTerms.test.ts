@@ -13,7 +13,8 @@ describe('suggestTerms', () => {
     const result = suggestTerms(oldTerms, NEW_TABLES);
     expect(result['category:news']).toMatchObject({
       targetTableId: 'category',
-      targetTermId: 'c1',
+      targetTermIds: ['c1'],
+      excluded: false,
       origin: 'suggested',
     });
     expect(result['category:news'].score).toBeGreaterThanOrEqual(0.55);

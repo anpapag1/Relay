@@ -3,10 +3,12 @@ import { useAppState } from '../../state/AppStateContext';
 import { termMappingId } from '../../core/mappings/termId';
 import { createSessionBackup } from '../../state/session';
 
+const CORE_DOMAINS = new Set(['category', 'post_tag']);
+
 export const MappingsTab: React.FC = () => {
   const { state, dispatch } = useAppState();
   const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>({ category: true, post_tag: true });
-  const [searchQuery, setSearchQuery] = useState('');
+  const [pickerSearch, setPickerSearch] = useState('');
 
   if (!state.source) {
     return (
@@ -29,9 +31,7 @@ export const MappingsTab: React.FC = () => {
   const { source, mappings, target } = state;
   const taxonomies = source.taxonomies ?? {};
   const targetTables = Object.values(target.tables);
-  const allTargetTerms = targetTables.flatMap((tbl) =>
-    tbl.terms.map((t) => ({ ...t, tableId: tbl.id }))
-  );
+  const openPickerTermId = state.ui.pickers.destinationTermId;
 
   const toggleDomain = (domain: string) => {
     setExpandedDomains((prev) => ({ ...prev, [domain]: !prev[domain] }));
@@ -48,20 +48,11 @@ export const MappingsTab: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Count how many terms are mapped vs total
-  let totalTerms = 0;
-  let mappedTerms = 0;
-  Object.entries(taxonomies).forEach(([domainName, terms]) => {
-    terms.forEach((term) => {
-      totalTerms++;
-      const key = termMappingId(domainName, term.nicename);
-      if (mappings[key]?.targetTermId) {
-        mappedTerms++;
-      }
-    });
-  });
-
-  const percentMapped = totalTerms > 0 ? Math.round((mappedTerms / totalTerms) * 100) : 100;
+  const openPicker = (termId: string) => {
+    setPickerSearch('');
+    dispatch({ type: 'SET_DESTINATION_PICKER', termId });
+  };
+  const closePicker = () => dispatch({ type: 'SET_DESTINATION_PICKER', termId: null });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '960px', width: '100%', margin: '0 auto' }}>
@@ -69,43 +60,26 @@ export const MappingsTab: React.FC = () => {
         <div>
           <div style={{ fontSize: '22px', fontWeight: 700 }}>Map taxonomies</div>
           <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginTop: '2px', maxWidth: '560px' }}>
-            Decide where every term from the old site lands: a category, a tag, or custom taxonomy term.
+            Decide where every term from the old site lands: a category, a tag, or nowhere at all.
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button type="button" onClick={() => dispatch({ type: 'RESET_MAPPINGS' })} className="btn btn-secondary">
-            Reset to suggested
-          </button>
           <button type="button" onClick={exportFullBackup} className="btn btn-secondary">
             Export session JSON
           </button>
+          <button
+            type="button"
+            onClick={() => dispatch({ type: 'OPEN_MODAL', modal: 'resetConfirm' })}
+            style={{ border: '1px solid oklch(85% 0.1 25)', background: 'white', color: 'oklch(50% 0.18 25)', fontSize: '13px', fontWeight: 600, padding: '9px 14px', borderRadius: '8px', cursor: 'pointer' }}
+          >
+            Clear everything
+          </button>
         </div>
-      </div>
-
-      <div style={{ background: 'white', border: '1px solid oklch(90% 0.005 250)', borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 600 }}>Mapping progress</div>
-          <div style={{ width: '200px', height: '8px', background: 'oklch(92% 0.005 250)', borderRadius: '4px', overflow: 'hidden' }}>
-            <div style={{ width: `${percentMapped}%`, height: '100%', background: 'oklch(50% 0.16 265)', transition: 'width 0.3s ease' }} />
-          </div>
-          <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{mappedTerms} of {totalTerms} mapped ({percentMapped}%)</div>
-        </div>
-        <input
-          type="text"
-          placeholder="Filter terms…"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ padding: '6px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px', width: '200px' }}
-        />
       </div>
 
       {Object.entries(taxonomies).map(([domainName, terms]) => {
         const isExpanded = expandedDomains[domainName] ?? true;
-        const filteredTerms = searchQuery
-          ? terms.filter((t) => t.name.toLowerCase().includes(searchQuery.toLowerCase()) || t.nicename.toLowerCase().includes(searchQuery.toLowerCase()))
-          : terms;
-
-        if (searchQuery && filteredTerms.length === 0) return null;
+        const isCore = CORE_DOMAINS.has(domainName);
 
         return (
           <div
@@ -132,35 +106,46 @@ export const MappingsTab: React.FC = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>{isExpanded ? '▼' : '►'}</span>
                 <div style={{ fontSize: '15px', fontWeight: 700, textTransform: 'capitalize' }}>{domainName === 'post_tag' ? 'Tags' : domainName}</div>
-                <div style={{ fontSize: '11px', fontWeight: 600, color: 'oklch(50% 0.01 250)', background: 'oklch(95% 0.005 250)', padding: '2px 7px', borderRadius: '5px' }}>
-                  legacy {domainName}
-                </div>
+                {isCore && (
+                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'oklch(50% 0.01 250)', background: 'oklch(95% 0.005 250)', padding: '2px 7px', borderRadius: '5px' }}>
+                    built-in
+                  </div>
+                )}
               </div>
               <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{terms.length} terms</div>
             </div>
 
             {isExpanded && (
               <div style={{ borderTop: '1px solid oklch(93% 0.005 250)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 0.6fr 1.5fr 1.5fr', gap: '12px', padding: '10px 20px', fontSize: '11px', fontWeight: 600, color: 'oklch(55% 0.01 250)', textTransform: 'uppercase', letterSpacing: '0.03em', background: 'oklch(99% 0.002 250)' }}>
-                  <div>Old Site Term</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 0.6fr 0.9fr 1.8fr 0.8fr', gap: '12px', padding: '10px 20px', fontSize: '11px', fontWeight: 600, color: 'oklch(55% 0.01 250)', textTransform: 'uppercase', letterSpacing: '0.03em', background: 'oklch(99% 0.002 250)' }}>
+                  <div>Term</div>
                   <div>Count</div>
-                  <div>Mapping Status</div>
-                  <div>Target Destination</div>
+                  <div>Action</div>
+                  <div>Destination</div>
+                  <div></div>
                 </div>
 
-                {filteredTerms.map((term) => {
+                {terms.map((term) => {
                   const key = termMappingId(domainName, term.nicename);
-                  const currentMapping = mappings[key];
-                  const targetTermId = currentMapping?.targetTermId;
-                  const targetTerm = allTargetTerms.find((t) => t.id === targetTermId);
-                  const origin = currentMapping?.origin;
+                  const mapping = mappings[key];
+                  const targetTableId = mapping?.targetTableId ?? null;
+                  const targetTermIds = mapping?.targetTermIds ?? [];
+                  const excluded = mapping?.excluded ?? false;
+                  const selectedTable = targetTables.find((t) => t.id === targetTableId) ?? null;
+                  const chipTerms = selectedTable ? selectedTable.terms.filter((t) => targetTermIds.includes(t.id)) : [];
+                  const pickerOpen = openPickerTermId === key;
+                  const pickerOptions = selectedTable
+                    ? selectedTable.terms.filter(
+                        (t) => !targetTermIds.includes(t.id) && t.name.toLowerCase().includes(pickerSearch.toLowerCase()),
+                      )
+                    : [];
 
                   return (
                     <div
                       key={term.nicename}
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '2fr 0.6fr 1.5fr 1.5fr',
+                        gridTemplateColumns: '2fr 0.6fr 0.9fr 1.8fr 0.8fr',
                         gap: '12px',
                         padding: '12px 20px',
                         alignItems: 'center',
@@ -169,76 +154,105 @@ export const MappingsTab: React.FC = () => {
                     >
                       <div>
                         <div style={{ fontSize: '14px', fontWeight: 500 }}>{term.name}</div>
-                        <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
-                          slug: <code>{term.nicename}</code>
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'oklch(50% 0.14 150)', marginTop: '2px' }}>
-                          suggested: {term.name}
-                        </div>
-                      </div>
-
-                      <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>
-                        {term.count !== undefined ? `${term.count} posts` : '—'}
-                      </div>
-
-                      <div>
-                        {targetTerm ? (
-                          <span style={{ fontSize: '12px', color: origin === 'user' ? 'oklch(50% 0.16 265)' : 'oklch(55% 0.15 150)', fontWeight: 600 }}>
-                            {origin === 'user' ? '● Manual override' : '✓ Auto-suggested'}
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: '12px', color: 'oklch(60% 0.16 60)', fontWeight: 600 }}>○ Unmapped</span>
+                        {mapping?.origin === 'suggested' && chipTerms.length > 0 && (
+                          <div style={{ fontSize: '11px', color: 'oklch(50% 0.14 150)', marginTop: '2px' }}>
+                            suggested: {chipTerms.map((t) => t.name).join(', ')}
+                          </div>
                         )}
                       </div>
 
-                      <div>
-                        <select
-                          value={targetTermId ?? ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (!val) {
-                              // Unmap
-                              dispatch({
-                                type: 'SET_TERM_MAPPING',
-                                oldDomain: domainName,
-                                oldNicename: term.nicename,
-                                targetTableId: '',
-                                targetTermId: '',
-                              });
-                            } else {
-                              const found = allTargetTerms.find((t) => t.id === val);
-                              if (found) {
-                                dispatch({
-                                  type: 'SET_TERM_MAPPING',
-                                  oldDomain: domainName,
-                                  oldNicename: term.nicename,
-                                  targetTableId: found.tableId,
-                                  targetTermId: found.id,
-                                });
-                              }
-                            }
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '8px 10px',
-                            border: '1px solid oklch(88% 0.005 250)',
-                            borderRadius: '6px',
-                            fontSize: '13px',
-                            background: targetTerm ? 'white' : 'oklch(98% 0.005 60)',
-                          }}
-                        >
-                          <option value="">-- Do not map (leave unmapped) --</option>
-                          {targetTables.map((tbl) => (
-                            <optgroup key={tbl.id} label={tbl.label}>
-                              {tbl.terms.map((tt) => (
-                                <option key={tt.id} value={tt.id}>
-                                  {tt.name} ({tt.slug})
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))}
-                        </select>
+                      <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>
+                        {term.count !== undefined ? term.count : '—'}
                       </div>
+
+                      {excluded ? (
+                        <div style={{ fontSize: '13px', color: 'oklch(60% 0.01 250)', gridColumn: 'span 2' }}>
+                          Won't be migrated
+                        </div>
+                      ) : (
+                        <>
+                          <select
+                            value={targetTableId ?? ''}
+                            onChange={(e) => {
+                              const val = e.target.value || null;
+                              dispatch({ type: 'SET_TERM_ACTION', oldDomain: domainName, oldNicename: term.nicename, targetTableId: val });
+                            }}
+                            style={{ padding: '7px 8px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '13px' }}
+                          >
+                            <option value="">-- Choose --</option>
+                            {targetTables.map((tbl) => (
+                              <option key={tbl.id} value={tbl.id}>
+                                {tbl.label}
+                              </option>
+                            ))}
+                          </select>
+
+                          <div style={{ position: 'relative' }}>
+                            {selectedTable ? (
+                              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', padding: '4px 6px' }}>
+                                {chipTerms.map((chip) => (
+                                  <div
+                                    key={chip.id}
+                                    style={{ display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: 600, background: 'oklch(94% 0.03 265)', color: 'oklch(40% 0.16 265)', padding: '3px 8px', borderRadius: '999px' }}
+                                  >
+                                    {chip.name}
+                                    <span
+                                      onClick={() =>
+                                        dispatch({ type: 'REMOVE_TERM_DESTINATION', oldDomain: domainName, oldNicename: term.nicename, targetTermId: chip.id })
+                                      }
+                                      style={{ cursor: 'pointer', marginLeft: '5px', opacity: 0.7 }}
+                                    >
+                                      ✕
+                                    </span>
+                                  </div>
+                                ))}
+                                <input
+                                  value={pickerOpen ? pickerSearch : ''}
+                                  onChange={(e) => setPickerSearch(e.target.value)}
+                                  onFocus={() => openPicker(key)}
+                                  onBlur={() => window.setTimeout(closePicker, 150)}
+                                  placeholder={`Add ${selectedTable.label}…`}
+                                  style={{ flex: 1, minWidth: '80px', border: 'none', outline: 'none', padding: '4px 2px', fontSize: '12px' }}
+                                />
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: '12px', color: 'oklch(60% 0.01 250)' }}>Choose an action first</div>
+                            )}
+                            {pickerOpen && selectedTable && (
+                              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '2px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', boxShadow: '0 4px 14px oklch(0% 0 0 / .1)', maxHeight: '150px', overflowY: 'auto', zIndex: 5 }}>
+                                {pickerOptions.map((opt) => (
+                                  <div
+                                    key={opt.id}
+                                    onMouseDown={() =>
+                                      dispatch({ type: 'ADD_TERM_DESTINATION', oldDomain: domainName, oldNicename: term.nicename, targetTermId: opt.id })
+                                    }
+                                    style={{ padding: '8px 10px', fontSize: '13px', cursor: 'pointer' }}
+                                  >
+                                    {opt.name}
+                                  </div>
+                                ))}
+                                {pickerOptions.length === 0 && (
+                                  <div style={{ padding: '8px 10px', fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>No matching terms</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          dispatch({ type: 'SET_TERM_EXCLUDED', oldDomain: domainName, oldNicename: term.nicename, excluded: !excluded })
+                        }
+                        style={
+                          excluded
+                            ? { padding: '6px 10px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: 'oklch(45% 0.01 250)' }
+                            : { padding: '6px 10px', background: 'white', border: '1px solid oklch(85% 0.1 25)', borderRadius: '7px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: 'oklch(50% 0.18 25)' }
+                        }
+                      >
+                        {excluded ? 'Undo' : 'Exclude'}
+                      </button>
                     </div>
                   );
                 })}
@@ -258,6 +272,36 @@ export const MappingsTab: React.FC = () => {
           Continue to Settings →
         </button>
       </div>
+
+      {state.ui.modals.resetConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'oklch(20% 0 0 / 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
+          <div style={{ background: 'white', borderRadius: '14px', padding: '26px', width: '400px' }}>
+            <div style={{ fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>Clear all mappings?</div>
+            <div style={{ fontSize: '14px', color: 'oklch(45% 0.01 250)', lineHeight: 1.5, marginBottom: '20px' }}>
+              This resets every taxonomy mapping back to unmapped. Your import and articles stay intact. This can't be undone — export a JSON backup first if you're not sure.
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => dispatch({ type: 'CLOSE_MODAL', modal: 'resetConfirm' })}
+                style={{ padding: '9px 16px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  dispatch({ type: 'CLEAR_ALL_MAPPINGS' });
+                  dispatch({ type: 'CLOSE_MODAL', modal: 'resetConfirm' });
+                }}
+                style={{ padding: '9px 16px', background: 'oklch(50% 0.18 25)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Clear everything
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

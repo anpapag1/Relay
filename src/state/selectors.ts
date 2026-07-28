@@ -32,8 +32,9 @@ export function getArticleStatus(
   const allTargetTerms = Object.values(state.target.tables).flatMap((t) => t.terms);
   for (const term of article.terms) {
     const mapping = state.mappings[termMappingIdOf(term)];
-    const targetExists = mapping?.targetTermId && allTargetTerms.some((t) => t.id === mapping.targetTermId);
-    if (!mapping || !mapping.targetTermId || !targetExists) {
+    if (mapping?.excluded) continue;
+    const hasValidTarget = mapping?.targetTermIds.some((id) => allTargetTerms.some((t) => t.id === id)) ?? false;
+    if (!mapping || mapping.targetTermIds.length === 0 || !hasValidTarget) {
       termWarnings.push(`Unmapped taxonomy term: "${term.name}"`);
     }
   }
@@ -186,7 +187,7 @@ export function getMappingProgress(state: AppState): {
 
   for (const [id] of uniqueTerms) {
     const mapping = state.mappings[id];
-    if (mapping && mapping.targetTermId) {
+    if (mapping && (mapping.excluded || mapping.targetTermIds.length > 0)) {
       mapped += 1;
       if (mapping.origin === 'suggested') suggested += 1;
       if (mapping.origin === 'user') user += 1;
@@ -210,7 +211,7 @@ export function getUnmappedTerms(state: AppState): TermRef[] {
   const unmapped: TermRef[] = [];
   for (const [id, term] of uniqueTerms) {
     const mapping = state.mappings[id];
-    if (!mapping || !mapping.targetTermId) {
+    if (!mapping || (!mapping.excluded && mapping.targetTermIds.length === 0)) {
       unmapped.push(term);
     }
   }

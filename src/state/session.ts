@@ -18,6 +18,32 @@ export interface SessionBackup {
 
 const LOCAL_STORAGE_KEY = 'relay_session_backup_v1';
 
+/** Normalizes a mapping record coming from a session backup. Older backups
+ * used a singular `targetTermId` instead of `targetTermIds`, and had no
+ * `excluded` flag — both are defaulted here so an older export loads as
+ * "unmapped" rather than crashing the restore. */
+function normalizeMappings(raw: Record<string, unknown>): Record<string, TermMapping> {
+  const out: Record<string, TermMapping> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    const m = value as Partial<TermMapping> & { targetTermId?: string | null };
+    const targetTermIds = Array.isArray(m.targetTermIds)
+      ? m.targetTermIds
+      : m.targetTermId
+        ? [m.targetTermId]
+        : [];
+    out[key] = {
+      oldDomain: m.oldDomain ?? '',
+      oldNicename: m.oldNicename ?? '',
+      targetTableId: m.targetTableId ?? null,
+      targetTermIds,
+      excluded: m.excluded ?? false,
+      origin: m.origin ?? 'suggested',
+      score: m.score,
+    };
+  }
+  return out;
+}
+
 export function createSessionBackup(state: AppState): SessionBackup {
   return {
     version: 1,
@@ -50,7 +76,7 @@ export function restoreSessionBackup(
     if (data.builderConfidence !== undefined) restoredState.builderConfidence = data.builderConfidence;
     if (data.targetTables) restoredState.target = { tables: data.targetTables };
     if (data.oldTables) restoredState.oldTables = data.oldTables;
-    if (data.mappings) restoredState.mappings = data.mappings;
+    if (data.mappings) restoredState.mappings = normalizeMappings(data.mappings as Record<string, unknown>);
     if (data.settings) restoredState.settings = { ...currentState.settings, ...data.settings };
     if (data.articles) restoredState.articles = data.articles;
     if (data.mediaResolved) {

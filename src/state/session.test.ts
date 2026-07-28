@@ -95,6 +95,17 @@ describe('session backup', () => {
     expect(restoredState.liveFetchEnabled).toBe(false);
     expect(restoredState.target.tables.cats).toBeDefined();
 
+    // Legacy backups used a singular `targetTermId` — restore normalizes it into the array shape.
+    expect(restoredState.mappings['category:news']).toEqual({
+      oldDomain: 'category',
+      oldNicename: 'news',
+      targetTableId: 'cats',
+      targetTermIds: ['cat-news'],
+      excluded: false,
+      origin: 'user',
+      score: undefined,
+    });
+
     // Verify derived status recomputes from restored overrides
     const derived = getDerivedArticles(restoredState);
     expect(derived[0]?.status).toBe('edited');

@@ -110,28 +110,114 @@ describe('appReducer', () => {
       oldDomain: 'category',
       oldNicename: 'news',
       targetTableId: 'categories',
-      targetTermId: 'cat-news',
+      targetTermIds: ['cat-news'],
+      excluded: false,
       origin: 'suggested',
       score: 1,
     });
   });
 
-  it('handles SET_TERM_MAPPING with user origin', () => {
+  it('handles SET_TERM_ACTION with user origin, clearing prior destinations', () => {
     const next = appReducer(initialState, {
-      type: 'SET_TERM_MAPPING',
+      type: 'SET_TERM_ACTION',
       oldDomain: 'category',
       oldNicename: 'news',
       targetTableId: 'categories',
-      targetTermId: 'custom-id',
     });
 
     expect(next.mappings['category:news']).toEqual({
       oldDomain: 'category',
       oldNicename: 'news',
       targetTableId: 'categories',
-      targetTermId: 'custom-id',
+      targetTermIds: [],
+      excluded: false,
       origin: 'user',
     });
+  });
+
+  it('handles ADD_TERM_DESTINATION and REMOVE_TERM_DESTINATION', () => {
+    const withAction = appReducer(initialState, {
+      type: 'SET_TERM_ACTION',
+      oldDomain: 'category',
+      oldNicename: 'news',
+      targetTableId: 'categories',
+    });
+    const added = appReducer(withAction, {
+      type: 'ADD_TERM_DESTINATION',
+      oldDomain: 'category',
+      oldNicename: 'news',
+      targetTermId: 'custom-id',
+    });
+    expect(added.mappings['category:news'].targetTermIds).toEqual(['custom-id']);
+    expect(added.mappings['category:news'].origin).toBe('user');
+
+    // Adding the same id again is a no-op (deduped)
+    const addedAgain = appReducer(added, {
+      type: 'ADD_TERM_DESTINATION',
+      oldDomain: 'category',
+      oldNicename: 'news',
+      targetTermId: 'custom-id',
+    });
+    expect(addedAgain.mappings['category:news'].targetTermIds).toEqual(['custom-id']);
+
+    const removed = appReducer(added, {
+      type: 'REMOVE_TERM_DESTINATION',
+      oldDomain: 'category',
+      oldNicename: 'news',
+      targetTermId: 'custom-id',
+    });
+    expect(removed.mappings['category:news'].targetTermIds).toEqual([]);
+  });
+
+  it('handles SET_TERM_EXCLUDED, preserving destinations for undo', () => {
+    const withAction = appReducer(initialState, {
+      type: 'SET_TERM_ACTION',
+      oldDomain: 'category',
+      oldNicename: 'news',
+      targetTableId: 'categories',
+    });
+    const added = appReducer(withAction, {
+      type: 'ADD_TERM_DESTINATION',
+      oldDomain: 'category',
+      oldNicename: 'news',
+      targetTermId: 'custom-id',
+    });
+
+    const excluded = appReducer(added, {
+      type: 'SET_TERM_EXCLUDED',
+      oldDomain: 'category',
+      oldNicename: 'news',
+      excluded: true,
+    });
+    expect(excluded.mappings['category:news'].excluded).toBe(true);
+    expect(excluded.mappings['category:news'].targetTermIds).toEqual(['custom-id']);
+
+    const undone = appReducer(excluded, {
+      type: 'SET_TERM_EXCLUDED',
+      oldDomain: 'category',
+      oldNicename: 'news',
+      excluded: false,
+    });
+    expect(undone.mappings['category:news'].excluded).toBe(false);
+    expect(undone.mappings['category:news'].targetTermIds).toEqual(['custom-id']);
+  });
+
+  it('handles CLEAR_ALL_MAPPINGS', () => {
+    const withAction = appReducer(initialState, {
+      type: 'SET_TERM_ACTION',
+      oldDomain: 'category',
+      oldNicename: 'news',
+      targetTableId: 'categories',
+    });
+    const cleared = appReducer(withAction, { type: 'CLEAR_ALL_MAPPINGS' });
+    expect(cleared.mappings).toEqual({});
+  });
+
+  it('handles SET_DESTINATION_PICKER', () => {
+    const opened = appReducer(initialState, { type: 'SET_DESTINATION_PICKER', termId: 'category:news' });
+    expect(opened.ui.pickers.destinationTermId).toBe('category:news');
+    const closed = appReducer(opened, { type: 'SET_DESTINATION_PICKER', termId: null });
+    expect(closed.ui.pickers.destinationTermId).toBeNull();
   });
 
   it('handles SET_ARTICLE_EXCLUDED and removes auto flag', () => {

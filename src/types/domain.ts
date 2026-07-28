@@ -101,7 +101,8 @@ export interface TermMapping {
   oldDomain: string;
   oldNicename: string;
   targetTableId: string | null;
-  targetTermId: string | null;
+  targetTermIds: string[];
+  excluded: boolean;
   origin: MappingOrigin;
   score?: number;
 }
