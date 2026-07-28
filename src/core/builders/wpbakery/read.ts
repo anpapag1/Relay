@@ -1,11 +1,14 @@
 import type { IRNode } from '../../ir/nodes';
 import type { ReadInput, ReadResult } from '../types';
-import { tokenizeShortcodes, type ShortcodeElement, type ShortcodeNode } from '../shortcode/tokenize';
+import { tokenizeShortcodes, textContent, type ShortcodeElement, type ShortcodeNode } from '../shortcode/tokenize';
 import { readPlainHtml } from '../plainHtml/read';
 
 const ROW_TAGS = new Set(['vc_row', 'vc_row_inner']);
 const COLUMN_TAGS = new Set(['vc_column', 'vc_column_inner']);
-const VOID_TAGS = new Set(['vc_single_image', 'vc_gallery', 'vc_btn', 'vc_video', 'vc_separator', 'vc_empty_space']);
+// vc_icon is void: real WPBakery output never wraps it in a closing tag, so
+// without this the tokenizer would swallow every following sibling shortcode
+// as its "children" until an unrelated closing tag happened to pop it.
+const VOID_TAGS = new Set(['vc_single_image', 'vc_gallery', 'vc_btn', 'vc_video', 'vc_separator', 'vc_empty_space', 'vc_icon']);
 
 /** WPBakery encodes a button/link target as
  * `url:https%3A%2F%2Fx.com|title:Text|target:_blank` inside the `link`
@@ -98,6 +101,37 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
   if (el.tag === 'vc_empty_space') {
     const height = Number.parseInt(el.attrs.height ?? '', 10);
     return [{ kind: 'spacer', height: Number.isFinite(height) ? height : 20 }];
+  }
+
+  if (el.tag === 'vc_raw_html') {
+    // WPBakery stores vc_raw_html's body as its real markup, URL-encoded
+    // then base64-encoded, as the shortcode's text content (not an attr).
+    const encoded = textContent(el.children).trim();
+    if (!encoded) {
+      warnings.push('vc_raw_html with no content — dropped.');
+      return [];
+    }
+    try {
+      const decoded = decodeURIComponent(atob(encoded));
+      warnings.push('vc_raw_html decoded and kept as raw HTML.');
+      return [{ kind: 'raw', html: decoded, note: 'vc_raw_html (decoded)' }];
+    } catch {
+      warnings.push('vc_raw_html payload could not be decoded — kept as raw shortcode text.');
+      return [{ kind: 'raw', html: textFallback(el), note: 'vc_raw_html: undecodable payload' }];
+    }
+  }
+
+  if (el.tag === 'vc_icon') {
+    // A bare decorative icon glyph has no Gutenberg equivalent worth
+    // fabricating; a linked one is functionally a button, just missing the
+    // icon's own visual (icon fonts/SVGs aren't portable across builders).
+    const href = parseVcLinkUrl(el.attrs.link);
+    if (href) {
+      warnings.push('vc_icon with a link converted to a button — the icon glyph itself is not preserved.');
+      return [{ kind: 'button', text: el.attrs.title || 'Learn more', href }];
+    }
+    warnings.push('vc_icon dropped — decorative icon shortcode has no Gutenberg equivalent.');
+    return [];
   }
 
   warnings.push(`Unrecognised WPBakery shortcode [${el.tag}] — kept as raw.`);

@@ -61,4 +61,37 @@ describe('readWpbakery', () => {
     expect(nodes[0].kind).toBe('raw');
     expect(warnings.some((w) => w.includes('vc_testimonial'))).toBe(true);
   });
+
+  it('decodes vc_raw_html\'s base64+urlencoded payload into real HTML instead of a literal placeholder', () => {
+    // Payload is base64("<div id=\"sidebar-at-visual\"></div>" urlencoded) — the exact
+    // encoding WPBakery itself produces for this shortcode's body.
+    const { nodes, warnings } = readWpbakery({
+      contentHtml: '[vc_raw_html]JTNDZGl2JTIwaWQlM0QlMjJzaWRlYmFyLWF0LXZpc3VhbCUyMiUzRSUzQyUyRmRpdiUzRQ==[/vc_raw_html]',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([{ kind: 'raw', html: '<div id="sidebar-at-visual"></div>', note: 'vc_raw_html (decoded)' }]);
+    expect(warnings).toEqual(['vc_raw_html decoded and kept as raw HTML.']);
+  });
+
+  it('drops an empty vc_raw_html and reports an undecodable payload rather than crashing', () => {
+    const empty = readWpbakery({ contentHtml: '[vc_raw_html][/vc_raw_html]', postmeta: {} });
+    expect(empty.nodes).toEqual([]);
+    expect(empty.warnings).toEqual(['vc_raw_html with no content — dropped.']);
+
+    const garbage = readWpbakery({ contentHtml: '[vc_raw_html]not-valid-base64!!![/vc_raw_html]', postmeta: {} });
+    expect(garbage.nodes[0].kind).toBe('raw');
+    expect(garbage.warnings.some((w) => w.includes('could not be decoded'))).toBe(true);
+  });
+
+  it('drops a bare vc_icon with a warning, and converts a linked one to a button', () => {
+    const bare = readWpbakery({ contentHtml: '[vc_row][vc_column][vc_icon][/vc_column][/vc_row]', postmeta: {} });
+    expect(bare.nodes).toEqual([{ kind: 'columns', columns: [[]] }]);
+    expect(bare.warnings.some((w) => w.includes('vc_icon dropped'))).toBe(true);
+
+    const linked = readWpbakery({
+      contentHtml: '[vc_icon title="Go" link="url:https%3A%2F%2Fexample.com|title:Go|target:_blank"]',
+      postmeta: {},
+    });
+    expect(linked.nodes).toEqual([{ kind: 'button', text: 'Go', href: 'https://example.com' }]);
+  });
 });
