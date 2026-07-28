@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import type { DerivedArticle } from '../../state/types';
-import { getArticlePreviewHtml, getFeaturedImageUrl } from '../../state/selectors';
+import { getArticlePreviewHtml } from '../../state/selectors';
+import { resolveFeaturedImage } from '../../core/media/resolveFeaturedImage';
 import { Badge } from '../../ui/Badge';
 
 export interface ArticleDrawerProps {
@@ -33,10 +34,22 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
     return getArticlePreviewHtml(article, article.editedHtml, state);
   }, [article, state.settings, state.builderId]);
 
-  const featuredImageUrl = useMemo(() => {
-    if (!article) return null;
-    return getFeaturedImageUrl(article, state);
-  }, [article, state.source]);
+  const [featuredImageUrl, setFeaturedImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setFeaturedImageUrl(null);
+    if (!article) return;
+    resolveFeaturedImage(article, state.source?.attachments ?? [], {
+      liveFetchEnabled: state.liveFetchEnabled,
+      fetchImpl: window.fetch ? window.fetch.bind(window) : (async () => new Response()) as any,
+    }).then((url) => {
+      if (!cancelled) setFeaturedImageUrl(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [article, state.source, state.liveFetchEnabled]);
 
   useEffect(() => {
     if (article) {

@@ -4,6 +4,7 @@ import { getReader } from '../builders';
 import { writeBlocks } from '../gutenberg/writeBlocks';
 import { generateWxr } from '../wxr/generateWxr';
 import { resolveMediaRefs } from '../media/resolveMedia';
+import { resolveFeaturedImage } from '../media/resolveFeaturedImage';
 import type { FetchLike } from '../media/mediaClient';
 import { collectMediaRefs, rewriteMediaRefs } from './collectMediaRefs';
 import { resolveArticleTerms } from './resolveTerms';
@@ -51,7 +52,12 @@ function yieldToEventLoop(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-function toExportArticle(article: ParsedArticle, contentHtml: string, terms: ExportArticle['terms']): ExportArticle {
+function toExportArticle(
+  article: ParsedArticle,
+  contentHtml: string,
+  terms: ExportArticle['terms'],
+  featuredAttachmentUrl: string | null,
+): ExportArticle {
   return {
     postId: article.postId ?? 0,
     title: article.title,
@@ -61,6 +67,7 @@ function toExportArticle(article: ParsedArticle, contentHtml: string, terms: Exp
     authorLogin: article.creator || 'admin',
     contentHtml,
     terms,
+    featuredAttachmentUrl,
   };
 }
 
@@ -70,10 +77,14 @@ async function buildOneArticle(
 ): Promise<{ exportArticle: ExportArticle; result: BuildArticleResult }> {
   const { article } = input;
   const terms = resolveArticleTerms(article.terms, options.mappings, options.newTables);
+  const featuredAttachmentUrl = await resolveFeaturedImage(article, options.attachments, {
+    liveFetchEnabled: options.liveFetchEnabled,
+    fetchImpl: options.fetchImpl,
+  });
 
   if (input.editedHtml != null) {
     return {
-      exportArticle: toExportArticle(article, input.editedHtml, terms),
+      exportArticle: toExportArticle(article, input.editedHtml, terms, featuredAttachmentUrl),
       result: { postId: article.postId, title: article.title, status: 'ready', warnings: [] },
     };
   }
@@ -97,7 +108,7 @@ async function buildOneArticle(
   const warnings = [...readerWarnings, ...mediaWarnings];
 
   return {
-    exportArticle: toExportArticle(article, contentHtml, terms),
+    exportArticle: toExportArticle(article, contentHtml, terms, featuredAttachmentUrl),
     result: {
       postId: article.postId,
       title: article.title,

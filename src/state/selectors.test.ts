@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getArticlePreviewHtml, getDerivedArticles, getFeaturedImageUrl, getFilteredArticles, getMappingProgress, getMediaStats, getStatusCounts } from './selectors';
+import { getArticlePreviewHtml, getDerivedArticles, getFilteredArticles, getMappingProgress, getMediaStats, getStatusCounts } from './selectors';
 import { appReducer, initialState } from './reducer';
 import type { ParseResult, TermTable } from '../types/domain';
 
@@ -211,52 +211,6 @@ describe('selectors', () => {
     expect(html).toContain('https://old.example/wp-content/uploads/photo.jpg');
     expect(html).not.toContain('attachment:55');
     expect(warnings).toHaveLength(0);
-  });
-
-  it('resolves a featured image from the _thumbnail_id postmeta value, which never appears in contentHtml', () => {
-    // _thumbnail_id points at an attachment post entirely separate from the
-    // article's own content - collectMediaRefs/resolveStage1Media never see
-    // it, since they only scan the converted content tree.
-    const parseResult: ParseResult = {
-      ...MOCK_PARSE_RESULT,
-      articles: [
-        {
-          postId: 301,
-          postType: 'post',
-          status: 'publish',
-          title: 'Article With Featured Image',
-          link: 'https://old.example/featured/',
-          postDate: '2026-01-06',
-          postName: 'featured-article',
-          creator: 'alice',
-          contentHtml: '<p>No image inline here.</p>',
-          excerptHtml: '',
-          terms: [],
-          postmeta: { _thumbnail_id: '77' },
-        },
-      ],
-      attachments: [
-        { postId: 77, title: 'Hero', attachmentUrl: 'https://old.example/wp-content/uploads/hero.jpg', postParent: 301 },
-      ],
-    };
-    const s = appReducer(initialState, {
-      type: 'LOAD_SOURCE',
-      result: parseResult,
-      defaultBuilder: 'plainHtml',
-      confidence: 90,
-    });
-
-    const article = s.source!.articles.find((a) => a.postId === 301)!;
-    expect(getFeaturedImageUrl(article, s)).toBe('https://old.example/wp-content/uploads/hero.jpg');
-  });
-
-  it('returns null for a featured image, never a fabricated URL, when there is no thumbnail or no matching attachment', () => {
-    const s = getTestState();
-    const noThumbnail = s.source!.articles.find((a) => a.postId === 101)!;
-    expect(getFeaturedImageUrl(noThumbnail, s)).toBeNull();
-
-    const withUnmatchedThumbnail = { ...noThumbnail, postmeta: { _thumbnail_id: '999' } };
-    expect(getFeaturedImageUrl(withUnmatchedThumbnail, s)).toBeNull();
   });
 
   it('warns instead of silently rendering a broken image when the export has no matching attachment item', () => {

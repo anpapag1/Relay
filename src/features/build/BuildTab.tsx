@@ -100,7 +100,7 @@ export const BuildTab: React.FC = () => {
         builderId: state.builderId || 'plainHtml',
         siteTitle: 'Relay Migration Site',
         siteUrl: state.source.siteUrl || 'https://example.com',
-        liveFetchEnabled: false,
+        liveFetchEnabled: state.liveFetchEnabled,
         fetchImpl: window.fetch ? window.fetch.bind(window) : (async () => new Response()) as any,
         onProgress: ({ completed, total }) => {
           const pct = Math.round((completed / Math.max(total, 1)) * 100);

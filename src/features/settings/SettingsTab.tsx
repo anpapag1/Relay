@@ -232,6 +232,22 @@ export const SettingsTab: React.FC = () => {
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
+              <div style={{ fontSize: '13px', fontWeight: 600 }}>Scrape the old site for missing images</div>
+              <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
+                When the export is missing media data (e.g. featured images), fetch the live old-site
+                page and use its og:image / inline images instead. Makes real requests to the old site.
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={state.liveFetchEnabled}
+              onChange={(e) => dispatch({ type: 'SET_LIVE_FETCH_ENABLED', enabled: e.target.checked })}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
               <div style={{ fontSize: '13px', fontWeight: 600 }}>Combine consecutive photos into a gallery</div>
               <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
                 Two or more images in a row become a single gallery block instead of separate images
