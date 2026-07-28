@@ -5,6 +5,7 @@ import { getReader } from '../core/builders';
 import { collectMediaRefs, rewriteMediaRefs } from '../core/build/collectMediaRefs';
 import { resolveArticleTerms } from '../core/build/resolveTerms';
 import { writeBlocks } from '../core/gutenberg/writeBlocks';
+import { buildAttachmentIndex, matchAttachment } from '../core/media/attachmentIndex';
 
 export function getArticleId(article: ParsedArticle, index: number): number {
   return article.postId ?? -(index + 1);
@@ -107,6 +108,20 @@ export function getDerivedArticles(state: AppState): DerivedArticle[] {
       destinationTerms: resolveArticleTerms(art.terms, state.mappings, newTables),
     };
   });
+}
+
+/** WordPress stores an article's featured image as a `_thumbnail_id`
+ * postmeta value (an attachment post ID), not inline in contentHtml — so
+ * it's invisible to collectMediaRefs/resolveStage1Media, which only scan
+ * an article's converted content. Resolved separately here, the same way
+ * an inline `attachment:<id>` ref is (matchAttachment against this
+ * export's own attachment index); returns null when there's no thumbnail
+ * set or the WXR has no matching attachment item, never a fabricated URL. */
+export function getFeaturedImageUrl(article: ParsedArticle, state: AppState): string | null {
+  const thumbnailId = article.postmeta['_thumbnail_id'];
+  if (!thumbnailId || !state.source) return null;
+  const index = buildAttachmentIndex(state.source.attachments);
+  return matchAttachment(index, `attachment:${thumbnailId}`);
 }
 
 /** Converts one article's content through the exact same reader ->
