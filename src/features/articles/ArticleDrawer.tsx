@@ -147,7 +147,7 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', gap: '16px' }}
+            style={{ width: '900px', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}
           >
             <div
               className="wp-preview"
@@ -156,7 +156,8 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
                 borderRadius: '14px',
                 boxShadow: '0 12px 40px oklch(0% 0 0 / 0.15)',
                 padding: '32px',
-                maxHeight: '70vh',
+                width: '100%',
+                height: '700px',
                 overflowY: 'auto',
               }}
             >
