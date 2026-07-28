@@ -47,5 +47,12 @@ export function writeImage(
   if (settings.imageAlign !== 'none') classes.push(`align${capitalize(settings.imageAlign)}`);
   if (settings.imageSize !== 'custom') classes.push(`size-${settings.imageSize}`);
 
-  return `<!-- wp:image ${JSON.stringify(attrs)} -->\n<figure class="${classes.join(' ')}">${linked}${figcaption}</figure>\n<!-- /wp:image -->`;
+  // A floated (left/right-aligned) image butts straight up against
+  // wrapped text with no theme CSS guaranteeing a gap — autoSpacing adds
+  // one explicitly, on the side the text wraps against.
+  let style = '';
+  if (settings.autoSpacing && settings.imageAlign === 'left') style = ` style="margin-right:${settings.spacerSize}px"`;
+  else if (settings.autoSpacing && settings.imageAlign === 'right') style = ` style="margin-left:${settings.spacerSize}px"`;
+
+  return `<!-- wp:image ${JSON.stringify(attrs)} -->\n<figure class="${classes.join(' ')}"${style}>${linked}${figcaption}</figure>\n<!-- /wp:image -->`;
 }

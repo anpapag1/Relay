@@ -57,6 +57,21 @@ describe('writeBlocks', () => {
     expect(out).toContain('size-large');
   });
 
+  it('adds a margin on the wrap side when autoSpacing is on for a left/right-aligned image', () => {
+    const node: IRNode = { kind: 'image', src: 'https://x/a.jpg', alt: '' };
+    const left = writeBlocks([node], { ...DEFAULT_SETTINGS, imageAlign: 'left', autoSpacing: true, spacerSize: 24 });
+    expect(left).toContain('style="margin-right:24px"');
+
+    const right = writeBlocks([node], { ...DEFAULT_SETTINGS, imageAlign: 'right', autoSpacing: true, spacerSize: 24 });
+    expect(right).toContain('style="margin-left:24px"');
+
+    const centered = writeBlocks([node], { ...DEFAULT_SETTINGS, imageAlign: 'center', autoSpacing: true, spacerSize: 24 });
+    expect(centered).not.toContain('style=');
+
+    const off = writeBlocks([node], { ...DEFAULT_SETTINGS, imageAlign: 'left', autoSpacing: false });
+    expect(off).not.toContain('style=');
+  });
+
   it('scales the missing custom dimension proportionally', () => {
     const out = writeBlocks(
       [{ kind: 'image', src: 'https://x/a.jpg', alt: '', width: 200, height: 100 }],

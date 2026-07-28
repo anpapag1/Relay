@@ -6,6 +6,7 @@ import { runBuild, type BuildArticleInput } from '../../core/build/runBuild';
 export const BuildTab: React.FC = () => {
   const { state, dispatch } = useAppState();
   const [hasCheckResults, setHasCheckResults] = useState<boolean>(false);
+  const [copied, setCopied] = useState<boolean>(false);
   const [isBuilding, setIsBuilding] = useState<boolean>(false);
   const [buildPercent, setBuildPercent] = useState<number>(0);
   const [buildLog, setBuildLog] = useState<string[]>([]);
@@ -51,6 +52,19 @@ export const BuildTab: React.FC = () => {
 
   const runCheck = () => {
     setHasCheckResults(true);
+  };
+
+  const copyCheckResults = async () => {
+    const text = checkWarnings.length > 0
+      ? checkWarnings.map((w) => `${w.title}: ${w.text}`).join('\n')
+      : 'No problems found — ready to build.';
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard access can be denied by the browser sandbox — nothing else to do.
+    }
   };
 
   const cancelBuild = () => {
@@ -183,6 +197,16 @@ export const BuildTab: React.FC = () => {
         </div>
         {hasCheckResults && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2px' }}>
+              <button
+                type="button"
+                onClick={copyCheckResults}
+                className="btn btn-secondary"
+                style={{ padding: '6px 12px', fontSize: '12px' }}
+              >
+                {copied ? 'Copied!' : 'Copy to clipboard'}
+              </button>
+            </div>
             {checkWarnings.length > 0 ? (
               checkWarnings.map((w, idx) => (
                 <div
