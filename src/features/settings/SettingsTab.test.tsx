@@ -68,6 +68,20 @@ describe('SettingsTab live preview', () => {
     expect(preview!.innerHTML).toContain('<!-- wp:image');
   });
 
+  it('embeds a real self-contained PDF instead of pointing at a URL that can never resolve', async () => {
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false} initialStateOverride={stateWithImport()}>
+          <SettingsTab />
+        </AppStateProvider>,
+      );
+    });
+
+    const embed = container.querySelector('.wp-block-file__embed') as HTMLObjectElement | null;
+    expect(embed).not.toBeNull();
+    expect(embed!.getAttribute('data')).toMatch(/^data:application\/pdf;base64,/);
+  });
+
   it('reacts to the buttonRender setting, matching the real writeButton output', async () => {
     await act(async () => {
       root.render(
