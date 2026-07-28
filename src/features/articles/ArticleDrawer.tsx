@@ -6,13 +6,26 @@ import { Badge } from '../../ui/Badge';
 export interface ArticleDrawerProps {
   article: DerivedArticle | null;
   onClose: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+  hasPrev: boolean;
+  hasNext: boolean;
 }
 
-export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({ article, onClose }) => {
+type PendingAction = 'close' | 'prev' | 'next' | null;
+
+export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
+  article,
+  onClose,
+  onPrev,
+  onNext,
+  hasPrev,
+  hasNext,
+}) => {
   const { dispatch } = useAppState();
   const [draftHtml, setDraftHtml] = useState<string>('');
   const [isDirty, setIsDirty] = useState<boolean>(false);
-  const [showDiscardConfirm, setShowDiscardConfirm] = useState<boolean>(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   useEffect(() => {
     if (article) {
@@ -20,6 +33,57 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({ article, onClose }
       setIsDirty(false);
     }
   }, [article]);
+
+  const requestClose = () => {
+    if (isDirty) {
+      setPendingAction('close');
+    } else {
+      onClose();
+    }
+  };
+
+  const requestPrev = () => {
+    if (!hasPrev) return;
+    if (isDirty) {
+      setPendingAction('prev');
+    } else {
+      onPrev();
+    }
+  };
+
+  const requestNext = () => {
+    if (!hasNext) return;
+    if (isDirty) {
+      setPendingAction('next');
+    } else {
+      onNext();
+    }
+  };
+
+  const confirmDiscard = () => {
+    const action = pendingAction;
+    setPendingAction(null);
+    if (action === 'close') onClose();
+    else if (action === 'prev') onPrev();
+    else if (action === 'next') onNext();
+  };
+
+  useEffect(() => {
+    if (!article) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const active = document.activeElement;
+      const tag = active?.tagName;
+      const isEditable =
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        (active instanceof HTMLElement && active.isContentEditable);
+      if (isEditable) return;
+      if (e.key === 'ArrowLeft') requestPrev();
+      else if (e.key === 'ArrowRight') requestNext();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [article, requestPrev, requestNext]);
 
   if (!article) return null;
 
@@ -54,14 +118,6 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({ article, onClose }
     });
   };
 
-  const requestClose = () => {
-    if (isDirty) {
-      setShowDiscardConfirm(true);
-    } else {
-      onClose();
-    }
-  };
-
   const isExcluded = article.status.startsWith('excluded');
 
   return (
@@ -76,10 +132,63 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({ article, onClose }
           background: 'oklch(0% 0 0 / 0.3)',
           zIndex: 50,
           display: 'flex',
-          justifyContent: 'flex-end',
         }}
         onClick={requestClose}
       >
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '40px',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', gap: '16px' }}
+          >
+            <div
+              className="wp-preview"
+              style={{
+                background: 'white',
+                borderRadius: '14px',
+                boxShadow: '0 12px 40px oklch(0% 0 0 / 0.15)',
+                padding: '32px',
+                maxHeight: '70vh',
+                overflowY: 'auto',
+              }}
+            >
+              {draftHtml.trim() ? (
+                <div dangerouslySetInnerHTML={{ __html: draftHtml }} />
+              ) : (
+                <div className="wp-preview-empty">Nothing to preview yet</div>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={requestPrev}
+                disabled={!hasPrev}
+                className="btn btn-secondary"
+                style={{ padding: '10px 24px' }}
+              >
+                ← Previous
+              </button>
+              <button
+                type="button"
+                onClick={requestNext}
+                disabled={!hasNext}
+                className="btn btn-secondary"
+                style={{ padding: '10px 24px' }}
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div
           style={{
             width: '640px',
@@ -236,30 +345,27 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({ article, onClose }
         </div>
       </div>
 
-      {showDiscardConfirm && (
+      {pendingAction !== null && (
         <div style={{ position: 'fixed', inset: 0, background: 'oklch(20% 0 0 / 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70 }}>
           <div style={{ background: 'white', borderRadius: '14px', padding: '26px', width: '400px' }}>
             <div style={{ fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>Discard unsaved edit?</div>
             <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginBottom: '20px', lineHeight: 1.5 }}>
-              You made manual edits to the converted HTML. Closing now will discard them.
+              You made manual edits to the converted HTML. {pendingAction === 'close' ? 'Closing' : 'Navigating away'} now will discard them.
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button
                 type="button"
-                onClick={() => setShowDiscardConfirm(false)}
+                onClick={() => setPendingAction(null)}
                 className="btn btn-secondary"
               >
                 Keep editing
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setShowDiscardConfirm(false);
-                  onClose();
-                }}
+                onClick={confirmDiscard}
                 className="btn btn-danger"
               >
-                Discard & close
+                {pendingAction === 'close' ? 'Discard & close' : 'Discard & continue'}
               </button>
             </div>
           </div>

@@ -32,6 +32,10 @@ export default [
         HTMLTextAreaElement: 'readonly',
         HTMLInputElement: 'readonly',
         HTMLDivElement: 'readonly',
+        HTMLElement: 'readonly',
+        HTMLButtonElement: 'readonly',
+        KeyboardEvent: 'readonly',
+        Event: 'readonly',
       },
     },
     plugins: {
