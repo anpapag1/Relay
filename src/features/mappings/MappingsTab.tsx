@@ -1,14 +1,218 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import type { Action } from '../../state/actions';
 import { useAppState } from '../../state/AppStateContext';
 import { termMappingId } from '../../core/mappings/termId';
 import { createSessionBackup } from '../../state/session';
+import type { NewSiteTerm, TaxonomyTermSummary, TermMapping, TermTable } from '../../types/domain';
 
 const CORE_DOMAINS = new Set(['category', 'post_tag']);
+
+const ROW_GRID_COLUMNS = '2fr 0.6fr 0.9fr 1.8fr 0.8fr';
+
+interface TermRowProps {
+  domainName: string;
+  nicename: string;
+  term: NewSiteTerm;
+  mapping: TermMapping | undefined;
+  targetTables: TermTable[];
+  targetTermsById: Map<string, Map<string, NewSiteTerm>>;
+  siteMatch: TaxonomyTermSummary | undefined;
+  pickerOpen: boolean;
+  pickerSearch: string;
+  dispatch: React.Dispatch<Action>;
+  onOpenPicker: (key: string) => void;
+  onClosePicker: () => void;
+  onPickerSearchChange: (value: string) => void;
+}
+
+/** Memoized so excluding, mapping, or searching one term only re-renders
+ * that row instead of the whole taxonomy list — with large taxonomies
+ * (thousands of terms) re-rendering every row on every click was the
+ * actual freeze; the per-row work itself was already cheap. */
+const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
+  domainName,
+  nicename,
+  term,
+  mapping,
+  targetTables,
+  targetTermsById,
+  siteMatch,
+  pickerOpen,
+  pickerSearch,
+  dispatch,
+  onOpenPicker,
+  onClosePicker,
+  onPickerSearchChange,
+}) {
+  const key = termMappingId(domainName, nicename);
+  const targetTableId = mapping?.targetTableId ?? null;
+  const targetTermIds = mapping?.targetTermIds ?? [];
+  const excluded = mapping?.excluded ?? false;
+  const selectedTable = targetTables.find((t) => t.id === targetTableId) ?? null;
+  const selectedTableTermsById = targetTableId ? targetTermsById.get(targetTableId) : undefined;
+  const chipTerms = selectedTableTermsById
+    ? targetTermIds.map((id) => selectedTableTermsById.get(id)).filter((t): t is NewSiteTerm => t != null)
+    : [];
+  const pickerOptions =
+    pickerOpen && selectedTable
+      ? selectedTable.terms.filter(
+          (t) => !targetTermIds.includes(t.id) && t.name.toLowerCase().includes(pickerSearch.toLowerCase()),
+        )
+      : [];
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: ROW_GRID_COLUMNS,
+        gap: '12px',
+        padding: '12px 20px',
+        alignItems: 'center',
+        borderTop: '1px solid oklch(95% 0.005 250)',
+      }}
+    >
+      <div>
+        <div style={{ fontSize: '14px', fontWeight: 500 }}>{term.name}</div>
+        {mapping?.origin === 'suggested' && chipTerms.length > 0 && (
+          <div style={{ fontSize: '11px', color: 'oklch(50% 0.14 150)', marginTop: '2px' }}>
+            suggested: {chipTerms.map((t) => t.name).join(', ')}
+          </div>
+        )}
+      </div>
+
+      <div style={{ fontSize: '13px' }}>
+        {siteMatch ? (
+          <span style={{ color: 'oklch(55% 0.01 250)' }}>{siteMatch.count}</span>
+        ) : (
+          <span style={{ color: 'oklch(60% 0.01 250)', fontStyle: 'italic' }}>not in this import</span>
+        )}
+      </div>
+
+      {excluded ? (
+        <div style={{ fontSize: '13px', color: 'oklch(60% 0.01 250)', gridColumn: 'span 2' }}>
+          Won't be migrated
+        </div>
+      ) : (
+        <>
+          <select
+            value={targetTableId ?? ''}
+            onChange={(e) => {
+              const val = e.target.value || null;
+              dispatch({ type: 'SET_TERM_ACTION', oldDomain: domainName, oldNicename: nicename, targetTableId: val });
+            }}
+            style={{ padding: '7px 8px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '13px' }}
+          >
+            <option value="">-- Choose --</option>
+            {targetTables.map((tbl) => (
+              <option key={tbl.id} value={tbl.id}>
+                {tbl.label}
+              </option>
+            ))}
+          </select>
+
+          <div style={{ position: 'relative' }}>
+            {selectedTable ? (
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', padding: '4px 6px' }}>
+                {chipTerms.map((chip) => (
+                  <div
+                    key={chip.id}
+                    style={{ display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: 600, background: 'oklch(94% 0.03 265)', color: 'oklch(40% 0.16 265)', padding: '3px 8px', borderRadius: '999px' }}
+                  >
+                    {chip.name}
+                    <span
+                      onClick={() =>
+                        dispatch({ type: 'REMOVE_TERM_DESTINATION', oldDomain: domainName, oldNicename: nicename, targetTermId: chip.id })
+                      }
+                      style={{ cursor: 'pointer', marginLeft: '5px', opacity: 0.7 }}
+                    >
+                      ✕
+                    </span>
+                  </div>
+                ))}
+                <input
+                  value={pickerOpen ? pickerSearch : ''}
+                  onChange={(e) => onPickerSearchChange(e.target.value)}
+                  onFocus={() => onOpenPicker(key)}
+                  onBlur={() => window.setTimeout(onClosePicker, 150)}
+                  placeholder={`Add ${selectedTable.label}…`}
+                  style={{ flex: 1, minWidth: '80px', border: 'none', outline: 'none', padding: '4px 2px', fontSize: '12px' }}
+                />
+              </div>
+            ) : (
+              <div style={{ fontSize: '12px', color: 'oklch(60% 0.01 250)' }}>Choose an action first</div>
+            )}
+            {pickerOpen && selectedTable && (
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '2px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', boxShadow: '0 4px 14px oklch(0% 0 0 / .1)', maxHeight: '150px', overflowY: 'auto', zIndex: 5 }}>
+                {pickerOptions.map((opt) => (
+                  <div
+                    key={opt.id}
+                    onMouseDown={() =>
+                      dispatch({ type: 'ADD_TERM_DESTINATION', oldDomain: domainName, oldNicename: nicename, targetTermId: opt.id })
+                    }
+                    style={{ padding: '8px 10px', fontSize: '13px', cursor: 'pointer' }}
+                  >
+                    {opt.name}
+                  </div>
+                ))}
+                {pickerOptions.length === 0 && (
+                  <div style={{ padding: '8px 10px', fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>No matching terms</div>
+                )}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      <button
+        type="button"
+        onClick={() =>
+          dispatch({ type: 'SET_TERM_EXCLUDED', oldDomain: domainName, oldNicename: nicename, excluded: !excluded })
+        }
+        style={
+          excluded
+            ? { padding: '6px 10px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: 'oklch(45% 0.01 250)' }
+            : { padding: '6px 10px', background: 'white', border: '1px solid oklch(85% 0.1 25)', borderRadius: '7px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: 'oklch(50% 0.18 25)' }
+        }
+      >
+        {excluded ? 'Undo' : 'Exclude'}
+      </button>
+    </div>
+  );
+});
 
 export const MappingsTab: React.FC = () => {
   const { state, dispatch } = useAppState();
   const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>({ category: true, post_tag: true });
   const [pickerSearch, setPickerSearch] = useState('');
+
+  const { source, mappings, target, oldTables } = state;
+  const openPickerTermId = state.ui.pickers.destinationTermId;
+
+  const targetTables = useMemo(() => Object.values(target.tables), [target.tables]);
+  const targetTermsById = useMemo(
+    () => new Map(targetTables.map((tbl) => [tbl.id, new Map(tbl.terms.map((t) => [t.id, t]))])),
+    [targetTables],
+  );
+  const siteTermsByDomain = useMemo(() => {
+    const byDomain = new Map<string, Map<string, TaxonomyTermSummary>>();
+    for (const [domain, terms] of Object.entries(source?.taxonomies ?? {})) {
+      byDomain.set(domain, new Map(terms.map((t) => [t.nicename, t])));
+    }
+    return byDomain;
+  }, [source?.taxonomies]);
+
+  const toggleDomain = useCallback((domain: string) => {
+    setExpandedDomains((prev) => ({ ...prev, [domain]: !prev[domain] }));
+  }, []);
+
+  const openPicker = useCallback(
+    (termId: string) => {
+      setPickerSearch('');
+      dispatch({ type: 'SET_DESTINATION_PICKER', termId });
+    },
+    [dispatch],
+  );
+  const closePicker = useCallback(() => dispatch({ type: 'SET_DESTINATION_PICKER', termId: null }), [dispatch]);
 
   if (!state.source) {
     return (
@@ -28,17 +232,7 @@ export const MappingsTab: React.FC = () => {
     );
   }
 
-  const { source, mappings, target, oldTables } = state;
   const oldTableList = Object.values(oldTables);
-  const targetTables = Object.values(target.tables);
-  const openPickerTermId = state.ui.pickers.destinationTermId;
-  const targetTermsById = new Map(
-    targetTables.map((tbl) => [tbl.id, new Map(tbl.terms.map((t) => [t.id, t]))]),
-  );
-
-  const toggleDomain = (domain: string) => {
-    setExpandedDomains((prev) => ({ ...prev, [domain]: !prev[domain] }));
-  };
 
   const exportFullBackup = () => {
     const backup = createSessionBackup(state);
@@ -50,12 +244,6 @@ export const MappingsTab: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
-
-  const openPicker = (termId: string) => {
-    setPickerSearch('');
-    dispatch({ type: 'SET_DESTINATION_PICKER', termId });
-  };
-  const closePicker = () => dispatch({ type: 'SET_DESTINATION_PICKER', termId: null });
 
   if (oldTableList.length === 0) {
     return (
@@ -102,8 +290,7 @@ export const MappingsTab: React.FC = () => {
         const domainName = table.id;
         const isExpanded = expandedDomains[domainName] ?? true;
         const isCore = CORE_DOMAINS.has(domainName);
-        const siteTerms = source.taxonomies?.[domainName] ?? [];
-        const siteTermsByNicename = new Map(siteTerms.map((s) => [s.nicename, s]));
+        const siteTermsByNicename = siteTermsByDomain.get(domainName);
 
         return (
           <div
@@ -141,7 +328,7 @@ export const MappingsTab: React.FC = () => {
 
             {isExpanded && (
               <div style={{ borderTop: '1px solid oklch(93% 0.005 250)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 0.6fr 0.9fr 1.8fr 0.8fr', gap: '12px', padding: '10px 20px', fontSize: '11px', fontWeight: 600, color: 'oklch(55% 0.01 250)', textTransform: 'uppercase', letterSpacing: '0.03em', background: 'oklch(99% 0.002 250)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: ROW_GRID_COLUMNS, gap: '12px', padding: '10px 20px', fontSize: '11px', fontWeight: 600, color: 'oklch(55% 0.01 250)', textTransform: 'uppercase', letterSpacing: '0.03em', background: 'oklch(99% 0.002 250)' }}>
                   <div>Term</div>
                   <div>Count</div>
                   <div>Action</div>
@@ -152,142 +339,25 @@ export const MappingsTab: React.FC = () => {
                 {table.terms.map((term) => {
                   const nicename = term.slug || term.id;
                   const key = termMappingId(domainName, nicename);
-                  const mapping = mappings[key];
-                  const targetTableId = mapping?.targetTableId ?? null;
-                  const targetTermIds = mapping?.targetTermIds ?? [];
-                  const excluded = mapping?.excluded ?? false;
-                  const selectedTable = targetTables.find((t) => t.id === targetTableId) ?? null;
-                  const selectedTableTermsById = targetTableId ? targetTermsById.get(targetTableId) : undefined;
-                  const chipTerms = selectedTableTermsById
-                    ? targetTermIds.map((id) => selectedTableTermsById.get(id)).filter((t): t is NonNullable<typeof t> => t != null)
-                    : [];
                   const pickerOpen = openPickerTermId === key;
-                  const pickerOptions =
-                    pickerOpen && selectedTable
-                      ? selectedTable.terms.filter(
-                          (t) => !targetTermIds.includes(t.id) && t.name.toLowerCase().includes(pickerSearch.toLowerCase()),
-                        )
-                      : [];
-                  const siteMatch = siteTermsByNicename.get(nicename);
 
                   return (
-                    <div
+                    <TermRow
                       key={term.id}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '2fr 0.6fr 0.9fr 1.8fr 0.8fr',
-                        gap: '12px',
-                        padding: '12px 20px',
-                        alignItems: 'center',
-                        borderTop: '1px solid oklch(95% 0.005 250)',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: '14px', fontWeight: 500 }}>{term.name}</div>
-                        {mapping?.origin === 'suggested' && chipTerms.length > 0 && (
-                          <div style={{ fontSize: '11px', color: 'oklch(50% 0.14 150)', marginTop: '2px' }}>
-                            suggested: {chipTerms.map((t) => t.name).join(', ')}
-                          </div>
-                        )}
-                      </div>
-
-                      <div style={{ fontSize: '13px' }}>
-                        {siteMatch ? (
-                          <span style={{ color: 'oklch(55% 0.01 250)' }}>{siteMatch.count}</span>
-                        ) : (
-                          <span style={{ color: 'oklch(60% 0.01 250)', fontStyle: 'italic' }}>not in this import</span>
-                        )}
-                      </div>
-
-                      {excluded ? (
-                        <div style={{ fontSize: '13px', color: 'oklch(60% 0.01 250)', gridColumn: 'span 2' }}>
-                          Won't be migrated
-                        </div>
-                      ) : (
-                        <>
-                          <select
-                            value={targetTableId ?? ''}
-                            onChange={(e) => {
-                              const val = e.target.value || null;
-                              dispatch({ type: 'SET_TERM_ACTION', oldDomain: domainName, oldNicename: nicename, targetTableId: val });
-                            }}
-                            style={{ padding: '7px 8px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '13px' }}
-                          >
-                            <option value="">-- Choose --</option>
-                            {targetTables.map((tbl) => (
-                              <option key={tbl.id} value={tbl.id}>
-                                {tbl.label}
-                              </option>
-                            ))}
-                          </select>
-
-                          <div style={{ position: 'relative' }}>
-                            {selectedTable ? (
-                              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', padding: '4px 6px' }}>
-                                {chipTerms.map((chip) => (
-                                  <div
-                                    key={chip.id}
-                                    style={{ display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: 600, background: 'oklch(94% 0.03 265)', color: 'oklch(40% 0.16 265)', padding: '3px 8px', borderRadius: '999px' }}
-                                  >
-                                    {chip.name}
-                                    <span
-                                      onClick={() =>
-                                        dispatch({ type: 'REMOVE_TERM_DESTINATION', oldDomain: domainName, oldNicename: nicename, targetTermId: chip.id })
-                                      }
-                                      style={{ cursor: 'pointer', marginLeft: '5px', opacity: 0.7 }}
-                                    >
-                                      ✕
-                                    </span>
-                                  </div>
-                                ))}
-                                <input
-                                  value={pickerOpen ? pickerSearch : ''}
-                                  onChange={(e) => setPickerSearch(e.target.value)}
-                                  onFocus={() => openPicker(key)}
-                                  onBlur={() => window.setTimeout(closePicker, 150)}
-                                  placeholder={`Add ${selectedTable.label}…`}
-                                  style={{ flex: 1, minWidth: '80px', border: 'none', outline: 'none', padding: '4px 2px', fontSize: '12px' }}
-                                />
-                              </div>
-                            ) : (
-                              <div style={{ fontSize: '12px', color: 'oklch(60% 0.01 250)' }}>Choose an action first</div>
-                            )}
-                            {pickerOpen && selectedTable && (
-                              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '2px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', boxShadow: '0 4px 14px oklch(0% 0 0 / .1)', maxHeight: '150px', overflowY: 'auto', zIndex: 5 }}>
-                                {pickerOptions.map((opt) => (
-                                  <div
-                                    key={opt.id}
-                                    onMouseDown={() =>
-                                      dispatch({ type: 'ADD_TERM_DESTINATION', oldDomain: domainName, oldNicename: nicename, targetTermId: opt.id })
-                                    }
-                                    style={{ padding: '8px 10px', fontSize: '13px', cursor: 'pointer' }}
-                                  >
-                                    {opt.name}
-                                  </div>
-                                ))}
-                                {pickerOptions.length === 0 && (
-                                  <div style={{ padding: '8px 10px', fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>No matching terms</div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          dispatch({ type: 'SET_TERM_EXCLUDED', oldDomain: domainName, oldNicename: nicename, excluded: !excluded })
-                        }
-                        style={
-                          excluded
-                            ? { padding: '6px 10px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: 'oklch(45% 0.01 250)' }
-                            : { padding: '6px 10px', background: 'white', border: '1px solid oklch(85% 0.1 25)', borderRadius: '7px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: 'oklch(50% 0.18 25)' }
-                        }
-                      >
-                        {excluded ? 'Undo' : 'Exclude'}
-                      </button>
-                    </div>
+                      domainName={domainName}
+                      nicename={nicename}
+                      term={term}
+                      mapping={mappings[key]}
+                      targetTables={targetTables}
+                      targetTermsById={targetTermsById}
+                      siteMatch={siteTermsByNicename?.get(nicename)}
+                      pickerOpen={pickerOpen}
+                      pickerSearch={pickerOpen ? pickerSearch : ''}
+                      dispatch={dispatch}
+                      onOpenPicker={openPicker}
+                      onClosePicker={closePicker}
+                      onPickerSearchChange={setPickerSearch}
+                    />
                   );
                 })}
               </div>
