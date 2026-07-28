@@ -58,4 +58,30 @@ describe('readPlainHtml', () => {
     expect(nodes[0].kind).toBe('raw');
     expect(warnings).toHaveLength(1);
   });
+
+  it('groups bare text and inline tags with no wrapping <p> into one paragraph instead of fragmenting or dropping them', () => {
+    const { nodes, warnings } = readPlainHtml({
+      contentHtml: '<strong>Bold intro</strong> then a <a href="https://example.com">link</a> and plain trailing text',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      {
+        kind: 'paragraph',
+        html: '<strong>Bold intro</strong> then a <a href="https://example.com">link</a> and plain trailing text',
+      },
+    ]);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it('flushes buffered inline content as its own paragraph before a real block element', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml: 'Intro <em>text</em><h2>Heading</h2>after heading',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'paragraph', html: 'Intro <em>text</em>' },
+      { kind: 'heading', level: 2, html: 'Heading' },
+      { kind: 'paragraph', html: 'after heading' },
+    ]);
+  });
 });

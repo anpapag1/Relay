@@ -5,6 +5,17 @@ const HEADING_RE = /^H([1-6])$/;
 const CAPTION_SHORTCODE_RE = /\[caption[^\]]*\]([\s\S]*?)\[\/caption\]/g;
 const GALLERY_SHORTCODE_RE = /\[gallery([^\]]*)\]/g;
 
+/** Phrasing content — text and these tags — is legal directly inside a
+ * block-level container in real WordPress/WPBakery exports even without a
+ * wrapping <p> (a classic-editor line break, a bare link, bold text before
+ * the next real block). Treating each one as its own unrecognised top-level
+ * block, or silently dropping bare text between elements, is what fragments
+ * a normal paragraph into disconnected pieces — instead these are buffered
+ * and flushed as one implicit paragraph. */
+const INLINE_TAGS = new Set([
+  'A', 'STRONG', 'EM', 'B', 'I', 'U', 'S', 'SPAN', 'BR', 'CODE', 'SUB', 'SUP', 'SMALL', 'MARK', 'ABBR', 'Q', 'CITE', 'TIME',
+]);
+
 function escapeAttr(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -129,9 +140,28 @@ export function readPlainHtml(input: ReadInput): ReadResult {
   const warnings: string[] = [];
   const nodes: IRNode[] = [];
 
-  for (const child of Array.from(doc.body.children)) {
-    nodes.push(...readElement(child, warnings));
+  let inlineBuffer = '';
+  const flushInline = () => {
+    const html = inlineBuffer.trim();
+    inlineBuffer = '';
+    if (html) nodes.push({ kind: 'paragraph', html });
+  };
+
+  for (const child of Array.from(doc.body.childNodes)) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      inlineBuffer += child.textContent ?? '';
+      continue;
+    }
+    if (child.nodeType !== Node.ELEMENT_NODE) continue;
+    const el = child as Element;
+    if (INLINE_TAGS.has(el.tagName)) {
+      inlineBuffer += el.outerHTML;
+      continue;
+    }
+    flushInline();
+    nodes.push(...readElement(el, warnings));
   }
+  flushInline();
 
   return { nodes, warnings };
 }
