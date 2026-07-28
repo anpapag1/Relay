@@ -8,21 +8,54 @@ function placeholderImage(label: string, w: number, h: number): string {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
+/** Builds a minimal but genuinely valid single-page PDF (correct xref
+ * offsets computed from the actual object bytes, not hardcoded) so the
+ * "embed" pdfRender option has real content to render inline instead of
+ * a broken-plugin box pointing at a URL that can never resolve. */
+function samplePdfDataUri(): string {
+  const contentStream = 'BT /F1 18 Tf 40 150 Td (Sample PDF preview) Tj ET';
+  const objects = [
+    '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+    '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
+    '3 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 320 200] /Contents 5 0 R >>\nendobj\n',
+    '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n',
+    `5 0 obj\n<< /Length ${contentStream.length} >>\nstream\n${contentStream}\nendstream\nendobj\n`,
+  ];
+
+  let body = '%PDF-1.4\n';
+  const offsets: number[] = [];
+  for (const obj of objects) {
+    offsets.push(body.length);
+    body += obj;
+  }
+
+  const xrefStart = body.length;
+  let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (const offset of offsets) {
+    xref += `${offset.toString().padStart(10, '0')} 00000 n \n`;
+  }
+  const trailer = `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
+
+  return `data:application/pdf;base64,${window.btoa(body + xref + trailer)}`;
+}
+
 /** A fixed sample article covering every block kind a setting can affect
- * (headings, images, a gallery-eligible run of photos, a PDF, a button)
- * so toggling any setting visibly changes this same preview — run through
- * the exact writeBlocks function a real build uses (design spec §5.5),
- * never a hand-mocked approximation. */
+ * — title, a standalone image (resizing/alignment), two consecutive
+ * photos (gallery-combine), a PDF, and a button — so toggling any setting
+ * visibly changes this same preview, run through the exact writeBlocks
+ * function a real build uses (design spec §5.5), never a hand-mocked
+ * approximation. */
 const PREVIEW_NODES: IRNode[] = [
   { kind: 'heading', level: 1, html: 'How we rebuilt onboarding' },
   {
     kind: 'paragraph',
     html: 'The team spent six weeks rebuilding the onboarding flow from scratch, focusing on reducing drop-off at step three.',
   },
-  { kind: 'image', src: placeholderImage('Photo 1', 1024, 683), alt: 'Dashboard screenshot', width: 1024, height: 683 },
-  { kind: 'image', src: placeholderImage('Photo 2', 1024, 683), alt: 'Before/after chart', width: 1024, height: 683 },
-  { kind: 'paragraph', html: 'Read the full write-up and methodology in the report below.' },
-  { kind: 'file', href: 'https://example.com/report.pdf', fileName: 'full-report.pdf', isPdf: true },
+  { kind: 'image', src: placeholderImage('Resize me', 1024, 683), alt: 'Dashboard screenshot', width: 1024, height: 683 },
+  { kind: 'paragraph', html: 'Read the full write-up and methodology in the report below, alongside a few photos from the rollout.' },
+  { kind: 'image', src: placeholderImage('Photo 1', 1024, 683), alt: 'Rollout photo 1', width: 1024, height: 683 },
+  { kind: 'image', src: placeholderImage('Photo 2', 1024, 683), alt: 'Rollout photo 2', width: 1024, height: 683 },
+  { kind: 'file', href: samplePdfDataUri(), fileName: 'full-report.pdf', isPdf: true },
   { kind: 'button', text: 'Read full report', href: 'https://example.com/report' },
 ];
 
