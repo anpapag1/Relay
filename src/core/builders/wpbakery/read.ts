@@ -5,10 +5,11 @@ import { readPlainHtml } from '../plainHtml/read';
 
 const ROW_TAGS = new Set(['vc_row', 'vc_row_inner']);
 const COLUMN_TAGS = new Set(['vc_column', 'vc_column_inner']);
-// vc_icon is void: real WPBakery output never wraps it in a closing tag, so
-// without this the tokenizer would swallow every following sibling shortcode
-// as its "children" until an unrelated closing tag happened to pop it.
-const VOID_TAGS = new Set(['vc_single_image', 'vc_gallery', 'vc_btn', 'vc_video', 'vc_separator', 'vc_empty_space', 'vc_icon']);
+// vc_icon/video are void: real output never wraps them in a closing tag
+// (video is the classic WP shortcode, self-closing like [video src="x"]),
+// so without this the tokenizer would swallow every following sibling
+// shortcode as their "children" until an unrelated closing tag popped it.
+const VOID_TAGS = new Set(['vc_single_image', 'vc_gallery', 'vc_images_carousel', 'vc_btn', 'vc_video', 'vc_separator', 'vc_empty_space', 'vc_icon', 'video']);
 
 /** WPBakery encodes a button/link target as
  * `url:https%3A%2F%2Fx.com|title:Text|target:_blank` inside the `link`
@@ -73,6 +74,33 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
       return [{ kind: 'raw', html: `[vc_gallery]`, note: 'vc_gallery with no images attribute' }];
     }
     return [{ kind: 'gallery', images: ids.map((id) => ({ src: `attachment:${id}`, alt: '' })) }];
+  }
+
+  if (el.tag === 'vc_images_carousel') {
+    // Gutenberg has no native carousel block — a static gallery is the
+    // closest safe equivalent (same attachment-ID resolution as
+    // vc_gallery), but that's a real visual change: the sliding behavior
+    // is gone, not just re-implemented differently.
+    const ids = (el.attrs.images ?? '').split(',').map((id) => id.trim()).filter(Boolean);
+    if (ids.length === 0) {
+      warnings.push('vc_images_carousel with no image ids — kept as raw.');
+      return [{ kind: 'raw', html: textFallback(el), note: 'vc_images_carousel with no images attribute' }];
+    }
+    warnings.push('vc_images_carousel converted to a static image gallery — the sliding carousel behavior is not preserved.');
+    return [{ kind: 'gallery', images: ids.map((id) => ({ src: `attachment:${id}`, alt: '' })) }];
+  }
+
+  if (el.tag === 'video') {
+    // The classic WordPress [video] shortcode - distinct from WPBakery's
+    // own vc_video - stores its source directly as a shortcode attribute
+    // (src, or one of the format-specific fallbacks), unlike vc_raw_html's
+    // encoded body or [caption]'s embedded <img> tag.
+    const src = el.attrs.src ?? el.attrs.mp4 ?? el.attrs.m4v ?? el.attrs.webm ?? el.attrs.ogv ?? el.attrs.wmv ?? el.attrs.flv ?? '';
+    if (!src) {
+      warnings.push('video shortcode with no resolvable source — kept as raw.');
+      return [{ kind: 'raw', html: textFallback(el), note: 'video shortcode with no src/mp4/etc. attribute' }];
+    }
+    return [{ kind: 'video', src, provider: videoProvider(src) }];
   }
 
   if (el.tag === 'vc_btn') {

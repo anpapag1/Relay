@@ -4,6 +4,18 @@ import type { ReadInput, ReadResult } from '../types';
 const HEADING_RE = /^H([1-6])$/;
 const CAPTION_SHORTCODE_RE = /\[caption[^\]]*\]([\s\S]*?)\[\/caption\]/g;
 const GALLERY_SHORTCODE_RE = /\[gallery([^\]]*)\]/g;
+const VIDEO_SHORTCODE_RE = /\[video([^\]]*)\](?:[\s\S]*?\[\/video\])?/g;
+
+function attrValue(attrsString: string, name: string): string | null {
+  const match = new RegExp(`${name}=["']([^"']*)["']`).exec(attrsString);
+  return match ? match[1] : null;
+}
+
+function videoProvider(src: string): 'youtube' | 'vimeo' | 'file' {
+  if (/youtube\.com|youtu\.be/i.test(src)) return 'youtube';
+  if (/vimeo\.com/i.test(src)) return 'vimeo';
+  return 'file';
+}
 
 /** Phrasing content — text and these tags — is legal directly inside a
  * block-level container in real WordPress/WPBakery exports even without a
@@ -34,7 +46,14 @@ function preprocessShortcodes(html: string): string {
       .trim();
     return `<figure data-rl-caption="${escapeAttr(captionText)}">${imgMatch[0]}</figure>`;
   });
-  out = out.replace(GALLERY_SHORTCODE_RE, (full) => `<div data-rl-gallery-shortcode="${escapeAttr(full)}"></div>`);
+  out = out.replace(GALLERY_SHORTCODE_RE, (_full, attrs: string) => {
+    const ids = attrValue(attrs, 'ids') ?? '';
+    return `<div data-rl-gallery-ids="${escapeAttr(ids)}"></div>`;
+  });
+  out = out.replace(VIDEO_SHORTCODE_RE, (_full, attrs: string) => {
+    const src = attrValue(attrs, 'src') ?? attrValue(attrs, 'mp4') ?? attrValue(attrs, 'm4v') ?? attrValue(attrs, 'webm') ?? attrValue(attrs, 'ogv') ?? attrValue(attrs, 'wmv') ?? attrValue(attrs, 'flv') ?? '';
+    return `<div data-rl-video-src="${escapeAttr(src)}"></div>`;
+  });
   return out;
 }
 
@@ -84,13 +103,27 @@ function readBlockquote(el: Element): IRNode {
 }
 
 function readGalleryMarker(el: Element, warnings: string[]): IRNode {
-  const shortcode = el.getAttribute('data-rl-gallery-shortcode') ?? '[gallery]';
-  warnings.push(`Classic gallery shortcode kept as raw HTML — no attachment ID resolution available: ${shortcode}`);
-  return { kind: 'raw', html: shortcode, note: 'classic [gallery] shortcode: attachment IDs cannot be resolved to URLs by the reader' };
+  const idsAttr = el.getAttribute('data-rl-gallery-ids') ?? '';
+  const ids = idsAttr.split(',').map((id) => id.trim()).filter(Boolean);
+  if (ids.length === 0) {
+    warnings.push('Classic [gallery] shortcode with no ids attribute — kept as raw, never fabricating a URL.');
+    return { kind: 'raw', html: '[gallery]', note: 'classic [gallery] shortcode with no ids attribute' };
+  }
+  return { kind: 'gallery', images: ids.map((id) => ({ src: `attachment:${id}`, alt: '' })) };
+}
+
+function readVideoMarker(el: Element, warnings: string[]): IRNode {
+  const src = el.getAttribute('data-rl-video-src') ?? '';
+  if (!src) {
+    warnings.push('Classic [video] shortcode with no resolvable source — kept as raw.');
+    return { kind: 'raw', html: '[video]', note: 'classic [video] shortcode with no src/mp4/etc. attribute' };
+  }
+  return { kind: 'video', src, provider: videoProvider(src) };
 }
 
 function readElement(el: Element, warnings: string[]): IRNode[] {
-  if (el.hasAttribute('data-rl-gallery-shortcode')) return [readGalleryMarker(el, warnings)];
+  if (el.hasAttribute('data-rl-gallery-ids')) return [readGalleryMarker(el, warnings)];
+  if (el.hasAttribute('data-rl-video-src')) return [readVideoMarker(el, warnings)];
 
   const tag = el.tagName;
   const headingMatch = HEADING_RE.exec(tag);
@@ -123,6 +156,11 @@ function readElement(el: Element, warnings: string[]): IRNode[] {
       return [readBlockquote(el)];
     case 'HR':
       return [{ kind: 'separator' }];
+    case 'TABLE':
+      // Gutenberg's table block is just the original <table> wrapped in a
+      // figure (see writeTable) — no restructuring, so this is safe even
+      // for exotic colspan/rowspan layouts.
+      return [{ kind: 'table', html: el.outerHTML.trim() }];
     // Generic layout containers carry no Gutenberg-relevant meaning of
     // their own, but old-site page builders (WPBakery, Divi, plain theme
     // markup) wrap nearly everything in one — a <div> around a paragraph,

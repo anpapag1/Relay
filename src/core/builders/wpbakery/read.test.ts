@@ -115,4 +115,43 @@ describe('readWpbakery', () => {
     expect(nodes[0].kind).toBe('raw');
     expect(warnings.some((w) => w.includes('no <img>'))).toBe(true);
   });
+
+  it('converts vc_images_carousel image ids into a static gallery, with a warning that the slider behavior is lost', () => {
+    const { nodes, warnings } = readWpbakery({ contentHtml: '[vc_images_carousel images="10,11,12"]', postmeta: {} });
+    expect(nodes).toEqual([
+      {
+        kind: 'gallery',
+        images: [
+          { src: 'attachment:10', alt: '' },
+          { src: 'attachment:11', alt: '' },
+          { src: 'attachment:12', alt: '' },
+        ],
+      },
+    ]);
+    expect(warnings.some((w) => w.includes('carousel behavior is not preserved'))).toBe(true);
+  });
+
+  it('keeps a vc_images_carousel with no image ids as raw with a warning', () => {
+    const { nodes, warnings } = readWpbakery({ contentHtml: '[vc_images_carousel]', postmeta: {} });
+    expect(nodes[0].kind).toBe('raw');
+    expect(warnings.some((w) => w.includes('vc_images_carousel'))).toBe(true);
+  });
+
+  it('reads a top-level classic [video] shortcode (distinct from vc_video) as a video node', () => {
+    const { nodes, warnings } = readWpbakery({
+      contentHtml: '[video src="https://old.example/movie.mp4"]',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([{ kind: 'video', src: 'https://old.example/movie.mp4', provider: 'file' }]);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it('keeps a [video] shortcode with no resolvable source as raw with a warning, and does not swallow following siblings', () => {
+    const { nodes, warnings } = readWpbakery({ contentHtml: '[video][vc_separator]', postmeta: {} });
+    expect(nodes[0].kind).toBe('raw');
+    expect(warnings.some((w) => w.includes('video shortcode'))).toBe(true);
+    // [video] is void (VOID_TAGS) - it must not have swallowed vc_separator
+    // as its "child" the way a non-void unclosed tag would.
+    expect(nodes[1]).toEqual({ kind: 'separator' });
+  });
 });

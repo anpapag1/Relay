@@ -114,7 +114,7 @@ describe('runBuild', () => {
 
   it('marks an article "review" when its reader produces a warning', async () => {
     const articles: BuildArticleInput[] = [
-      { article: makeArticle({ contentHtml: '<table><tr><td>cell</td></tr></table>' }), excluded: false },
+      { article: makeArticle({ contentHtml: '<canvas width="10" height="10"></canvas>' }), excluded: false },
     ];
     const result = await runBuild({
       articles,

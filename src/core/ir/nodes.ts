@@ -23,4 +23,5 @@ export type IRNode =
   | { kind: 'separator' }
   | { kind: 'spacer'; height: number }
   | { kind: 'columns'; columns: IRNode[][] }
+  | { kind: 'table'; html: string }
   | { kind: 'raw'; html: string; note: string };

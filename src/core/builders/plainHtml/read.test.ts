@@ -40,18 +40,57 @@ describe('readPlainHtml', () => {
     expect(nodes[0]).toMatchObject({ kind: 'image', src: 'https://x/a.jpg', caption: 'My caption' });
   });
 
-  it('keeps the classic [gallery] shortcode as raw with a warning, never fabricating a URL', () => {
+  it('resolves the classic [gallery] shortcode\'s ids into a real gallery, the same way vc_gallery already does', () => {
     const { nodes, warnings } = readPlainHtml({
       contentHtml: '[gallery ids="1,2,3"]',
       postmeta: {},
     });
+    expect(nodes).toEqual([
+      {
+        kind: 'gallery',
+        images: [
+          { src: 'attachment:1', alt: '' },
+          { src: 'attachment:2', alt: '' },
+          { src: 'attachment:3', alt: '' },
+        ],
+      },
+    ]);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it('keeps a classic [gallery] shortcode with no ids as raw with a warning, never fabricating a URL', () => {
+    const { nodes, warnings } = readPlainHtml({ contentHtml: '[gallery]', postmeta: {} });
     expect(nodes[0].kind).toBe('raw');
     expect(warnings.some((w) => w.includes('gallery'))).toBe(true);
   });
 
-  it('keeps an unrecognised element as raw with a warning instead of dropping it', () => {
+  it('reads a <table> as a wp:table block instead of raw HTML', () => {
     const { nodes, warnings } = readPlainHtml({
       contentHtml: '<table><tr><td>cell</td></tr></table>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([{ kind: 'table', html: '<table><tbody><tr><td>cell</td></tr></tbody></table>' }]);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it('resolves the classic [video] shortcode\'s src into a real video block', () => {
+    const { nodes, warnings } = readPlainHtml({
+      contentHtml: '[video src="https://old.example/movie.mp4"]',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([{ kind: 'video', src: 'https://old.example/movie.mp4', provider: 'file' }]);
+    expect(warnings).toHaveLength(0);
+  });
+
+  it('keeps a classic [video] shortcode with no resolvable source as raw with a warning', () => {
+    const { nodes, warnings } = readPlainHtml({ contentHtml: '[video]', postmeta: {} });
+    expect(nodes[0].kind).toBe('raw');
+    expect(warnings.some((w) => w.includes('video'))).toBe(true);
+  });
+
+  it('keeps a genuinely unrecognised element as raw with a warning instead of dropping it', () => {
+    const { nodes, warnings } = readPlainHtml({
+      contentHtml: '<canvas width="10" height="10"></canvas>',
       postmeta: {},
     });
     expect(nodes).toHaveLength(1);
@@ -158,7 +197,7 @@ describe('readPlainHtml', () => {
 
   it('still keeps a genuinely unrecognised leaf element (not a generic container) as raw with a warning', () => {
     const { nodes, warnings } = readPlainHtml({
-      contentHtml: '<div><table><tr><td>cell</td></tr></table></div>',
+      contentHtml: '<div><canvas width="10" height="10"></canvas></div>',
       postmeta: {},
     });
     expect(nodes).toHaveLength(1);

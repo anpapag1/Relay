@@ -127,9 +127,21 @@ exports[`golden fixtures > converts the plainHtml fixture to the expected Gutenb
 <blockquote class="wp-block-quote"><p>A wise quote.</p><cite>Someone Notable</cite></blockquote>
 <!-- /wp:quote -->
 
-<!-- wp:html -->
-[gallery ids="10,11,12"]
-<!-- /wp:html -->
+<!-- wp:gallery {"linkTo":"none"} -->
+<figure class="wp-block-gallery has-nested-images columns-default is-cropped">
+<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<figure class="wp-block-image size-large"><img src="attachment:10" alt=""/></figure>
+<!-- /wp:image -->
+
+<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<figure class="wp-block-image size-large"><img src="attachment:11" alt=""/></figure>
+<!-- /wp:image -->
+
+<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<figure class="wp-block-image size-large"><img src="attachment:12" alt=""/></figure>
+<!-- /wp:image -->
+</figure>
+<!-- /wp:gallery -->
 
 <!-- wp:image {"align":"center","sizeSlug":"large"} -->
 <figure class="wp-block-image alignCenter size-large"><img src="https://old-plainhtml.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></figure>
@@ -140,11 +152,7 @@ exports[`golden fixtures > converts the plainHtml fixture to the expected Gutenb
 <!-- /wp:separator -->"
 `;
 
-exports[`golden fixtures > converts the plainHtml fixture to the expected Gutenberg markup > warnings 1`] = `
-[
-  "Classic gallery shortcode kept as raw HTML — no attachment ID resolution available: [gallery ids="10,11,12"]",
-]
-`;
+exports[`golden fixtures > converts the plainHtml fixture to the expected Gutenberg markup > warnings 1`] = `[]`;
 
 exports[`golden fixtures > converts the wpbakery fixture to the expected Gutenberg markup > blocks 1`] = `
 "<!-- wp:columns -->

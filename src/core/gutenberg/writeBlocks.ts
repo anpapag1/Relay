@@ -12,6 +12,7 @@ import { writeVideo } from './blocks/video';
 import { writeSeparator } from './blocks/separator';
 import { writeSpacer } from './blocks/spacer';
 import { writeColumns } from './blocks/columns';
+import { writeTable } from './blocks/table';
 import { writeRaw } from './blocks/raw';
 
 function writeOne(node: IRNode, settings: ConversionSettings): string {
@@ -40,6 +41,8 @@ function writeOne(node: IRNode, settings: ConversionSettings): string {
       return writeSpacer(node);
     case 'columns':
       return writeColumns(node, (inner) => writeBlocks(inner, settings));
+    case 'table':
+      return writeTable(node);
     case 'raw':
       return writeRaw(node);
   }
