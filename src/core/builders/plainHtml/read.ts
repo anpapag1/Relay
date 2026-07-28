@@ -132,6 +132,37 @@ function readElement(el: Element, warnings: string[]): IRNode[] {
   }
 }
 
+/** A blank line (2+ newlines, optionally with whitespace) is the only
+ * paragraph break real classic-editor content gives us when it has no
+ * wrapping <p> tags at all — the same signal WordPress's own `wpautop`
+ * splits on at render time. Without this, an old post's several loose
+ * paragraphs (and any images sitting between them) collapse into one
+ * giant blob: every image loses its standalone `wp-block-image` wrapper
+ * (and with it the CSS that constrains its width) and every caption/body
+ * paragraph runs together with no break. */
+const BLANK_LINE_RE = /\n\s*\n+/;
+
+/** Splits a buffered run of bare text/inline-tag HTML on blank lines and
+ * emits one node per chunk: a chunk that's only an image (optionally
+ * wrapped in inline formatting/an anchor, exactly like the `<p>` image
+ * -promotion case above) becomes a standalone image node; everything else
+ * becomes a paragraph. */
+function flushInlineChunks(html: string, nodes: IRNode[]): void {
+  for (const chunk of html.split(BLANK_LINE_RE)) {
+    const trimmed = chunk.trim();
+    if (!trimmed) continue;
+
+    const doc = new DOMParser().parseFromString(`<body>${trimmed}</body>`, 'text/html');
+    const imgs = Array.from(doc.body.querySelectorAll('img'));
+    const textOnly = doc.body.textContent?.trim() ?? '';
+    if (imgs.length > 0 && !textOnly) {
+      for (const img of imgs) nodes.push(readImageElement(img));
+    } else {
+      nodes.push({ kind: 'paragraph', html: trimmed });
+    }
+  }
+}
+
 /** The baseline reader: standard HTML elements plus the classic
  * [caption]/[gallery] shortcodes. Every other builder's `vc_column_text`
  * / `et_pb_text` / rich-text widget delegates its inner HTML here. */
@@ -142,9 +173,9 @@ export function readPlainHtml(input: ReadInput): ReadResult {
 
   let inlineBuffer = '';
   const flushInline = () => {
-    const html = inlineBuffer.trim();
+    const html = inlineBuffer;
     inlineBuffer = '';
-    if (html) nodes.push({ kind: 'paragraph', html });
+    if (html.trim()) flushInlineChunks(html, nodes);
   };
 
   for (const child of Array.from(doc.body.childNodes)) {

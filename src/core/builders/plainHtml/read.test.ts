@@ -84,4 +84,48 @@ describe('readPlainHtml', () => {
       { kind: 'paragraph', html: 'after heading' },
     ]);
   });
+
+  it('splits blank-line-separated bare paragraphs instead of gluing them into one block', () => {
+    // Real classic-editor content: no <p> tags at all, WordPress's own
+    // wpautop splits on blank lines at render time. Gluing these into one
+    // paragraph (the pre-fix behavior) ran unrelated paragraphs together
+    // with no visual break.
+    const { nodes } = readPlainHtml({
+      contentHtml: 'First paragraph text.\n\nSecond paragraph <strong>with bold</strong>.\n\nThird paragraph.',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'paragraph', html: 'First paragraph text.' },
+      { kind: 'paragraph', html: 'Second paragraph <strong>with bold</strong>.' },
+      { kind: 'paragraph', html: 'Third paragraph.' },
+    ]);
+  });
+
+  it('promotes a bare (unwrapped) image-only chunk to a standalone image block, even wrapped in <strong><a>', () => {
+    // The exact real-world shape: <strong><a><img></a></strong> sitting
+    // directly in the body with no <p>, followed by a blank line and then
+    // caption/body text. Before this fix, the image stayed inline inside
+    // one giant paragraph and lost the wp-block-image wrapper that
+    // constrains its width in the preview.
+    const { nodes } = readPlainHtml({
+      contentHtml:
+        '<strong><a href="https://x/full.jpg"><img src="https://x/a.jpg" alt="" width="640" height="426"></a></strong>\n\n<strong>A bold caption line</strong>\n\nBody paragraph text.',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'image', src: 'https://x/a.jpg', alt: '', caption: undefined, href: 'https://x/full.jpg', width: 640, height: 426 },
+      { kind: 'paragraph', html: '<strong>A bold caption line</strong>' },
+      { kind: 'paragraph', html: 'Body paragraph text.' },
+    ]);
+  });
+
+  it('promotes multiple bare images in the same blank-line-separated chunk to separate image blocks', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml: '<img src="https://x/a.jpg" alt="A"><img src="https://x/b.jpg" alt="B">\n\nSome text.',
+      postmeta: {},
+    });
+    expect(nodes[0]).toMatchObject({ kind: 'image', src: 'https://x/a.jpg' });
+    expect(nodes[1]).toMatchObject({ kind: 'image', src: 'https://x/b.jpg' });
+    expect(nodes[2]).toEqual({ kind: 'paragraph', html: 'Some text.' });
+  });
 });
