@@ -70,7 +70,7 @@ describe('appReducer', () => {
     expect(appReducer(undefined, { type: 'CLEAR_SOURCE' })).toEqual(initialState);
   });
 
-  it('handles LOAD_SOURCE, computing initial mappings and auto-exclusions', () => {
+  it('handles LOAD_SOURCE, computing auto-exclusions, and leaves oldTables/mappings untouched', () => {
     const next = appReducer(initialState, {
       type: 'LOAD_SOURCE',
       result: MOCK_PARSE_RESULT,
@@ -82,10 +82,32 @@ describe('appReducer', () => {
     expect(next.builderId).toBe('plainHtml');
     expect(next.builderConfidence).toBe(95);
 
+    // LOAD_SOURCE no longer auto-populates old-site tables or mappings —
+    // that's now the reconciliation hint's job (see reconcileOldTables.ts).
+    expect(next.oldTables).toEqual({});
+    expect(next.mappings).toEqual({});
+
     // Check auto exclusions
     expect(next.articles[1]).toBeUndefined();
     expect(next.articles[2]).toEqual({ excluded: true, reason: 'Duplicate slug: "first-post"', auto: true });
     expect(next.articles[3]).toEqual({ excluded: true, reason: 'Empty content', auto: true });
+  });
+
+  it('preserves oldTables that already exist (e.g. from a JSON import) across LOAD_SOURCE', () => {
+    const withOldTables = {
+      ...initialState,
+      oldTables: {
+        category: { id: 'category', label: 'Category', terms: [{ id: 'category:news', name: 'News', slug: 'news' }] },
+      },
+    };
+    const next = appReducer(withOldTables, {
+      type: 'LOAD_SOURCE',
+      result: MOCK_PARSE_RESULT,
+      defaultBuilder: 'plainHtml',
+      confidence: 95,
+    });
+
+    expect(next.oldTables).toEqual(withOldTables.oldTables);
   });
 
   it('handles SET_TARGET_TABLES and updates mappings', () => {

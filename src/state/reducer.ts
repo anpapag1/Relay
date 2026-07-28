@@ -1,6 +1,6 @@
 import type { Action } from './actions';
 import type { AppState, ArticleOverride } from './types';
-import type { ConversionSettings, MediaResolution, ParsedArticle, ParsedAttachment, TermTable, TermMapping } from '../types/domain';
+import type { ConversionSettings, MediaResolution, ParsedArticle, ParsedAttachment } from '../types/domain';
 import { suggestTerms } from '../core/mappings/suggestTerms';
 import { applyMappings } from '../core/mappings/applyMappings';
 import { termMappingId } from '../core/mappings/termId';
@@ -117,32 +117,6 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
       return { ...state, ui: { ...state.ui, modals: { ...state.ui.modals, [action.modal]: false } } };
     case 'LOAD_SOURCE': {
       const { result, defaultBuilder, confidence } = action;
-      const oldTables: Record<string, TermTable> = {};
-      const initialMappings: Record<string, TermMapping> = {};
-
-      for (const [domain, list] of Object.entries(result.taxonomies || {})) {
-        oldTables[domain] = {
-          id: domain,
-          label: domain.charAt(0).toUpperCase() + domain.slice(1),
-          terms: list.map((item) => ({
-            id: `${domain}:${item.nicename}`,
-            name: item.name,
-            slug: item.nicename,
-          })),
-        };
-        for (const item of list) {
-          const key = `${domain}:${item.nicename}`;
-          initialMappings[key] = {
-            oldDomain: domain,
-            oldNicename: item.nicename,
-            targetTableId: domain,
-            targetTermIds: [`${domain}:${item.nicename}`],
-            excluded: false,
-            origin: 'suggested',
-            score: 1.0,
-          };
-        }
-      }
 
       const articlesOverrides: Record<number, ArticleOverride> = {};
       const seenSlugs = new Set<string>();
@@ -174,8 +148,6 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
         source: result,
         builderId: defaultBuilder,
         builderConfidence: confidence,
-        oldTables,
-        mappings: initialMappings,
         articles: articlesOverrides,
         media: { ...state.media, resolved: resolvedMedia },
       };
