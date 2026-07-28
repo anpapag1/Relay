@@ -28,8 +28,8 @@ export const MappingsTab: React.FC = () => {
     );
   }
 
-  const { source, mappings, target } = state;
-  const taxonomies = source.taxonomies ?? {};
+  const { source, mappings, target, oldTables } = state;
+  const oldTableList = Object.values(oldTables);
   const targetTables = Object.values(target.tables);
   const openPickerTermId = state.ui.pickers.destinationTermId;
 
@@ -54,6 +54,24 @@ export const MappingsTab: React.FC = () => {
   };
   const closePicker = () => dispatch({ type: 'SET_DESTINATION_PICKER', termId: null });
 
+  if (oldTableList.length === 0) {
+    return (
+      <div style={{ maxWidth: '960px', margin: '60px auto', textAlign: 'center', padding: '40px', background: 'white', borderRadius: '12px', border: '1px solid oklch(90% 0.005 250)' }}>
+        <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>No old-site taxonomies yet</div>
+        <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginBottom: '20px' }}>
+          Head to the Import tab to add old-site categories, tags, or custom taxonomies before mapping them.
+        </div>
+        <button
+          type="button"
+          onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', tab: 'import' })}
+          className="btn btn-primary"
+        >
+          Go to Import tab →
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '960px', width: '100%', margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -77,9 +95,11 @@ export const MappingsTab: React.FC = () => {
         </div>
       </div>
 
-      {Object.entries(taxonomies).map(([domainName, terms]) => {
+      {oldTableList.map((table) => {
+        const domainName = table.id;
         const isExpanded = expandedDomains[domainName] ?? true;
         const isCore = CORE_DOMAINS.has(domainName);
+        const siteTerms = source.taxonomies?.[domainName] ?? [];
 
         return (
           <div
@@ -112,7 +132,7 @@ export const MappingsTab: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{terms.length} terms</div>
+              <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{table.terms.length} terms</div>
             </div>
 
             {isExpanded && (
@@ -125,8 +145,9 @@ export const MappingsTab: React.FC = () => {
                   <div></div>
                 </div>
 
-                {terms.map((term) => {
-                  const key = termMappingId(domainName, term.nicename);
+                {table.terms.map((term) => {
+                  const nicename = term.slug || term.id;
+                  const key = termMappingId(domainName, nicename);
                   const mapping = mappings[key];
                   const targetTableId = mapping?.targetTableId ?? null;
                   const targetTermIds = mapping?.targetTermIds ?? [];
@@ -139,10 +160,11 @@ export const MappingsTab: React.FC = () => {
                         (t) => !targetTermIds.includes(t.id) && t.name.toLowerCase().includes(pickerSearch.toLowerCase()),
                       )
                     : [];
+                  const siteMatch = siteTerms.find((s) => s.nicename === nicename);
 
                   return (
                     <div
-                      key={term.nicename}
+                      key={term.id}
                       style={{
                         display: 'grid',
                         gridTemplateColumns: '2fr 0.6fr 0.9fr 1.8fr 0.8fr',
@@ -161,8 +183,12 @@ export const MappingsTab: React.FC = () => {
                         )}
                       </div>
 
-                      <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>
-                        {term.count !== undefined ? term.count : '—'}
+                      <div style={{ fontSize: '13px' }}>
+                        {siteMatch ? (
+                          <span style={{ color: 'oklch(55% 0.01 250)' }}>{siteMatch.count}</span>
+                        ) : (
+                          <span style={{ color: 'oklch(60% 0.01 250)', fontStyle: 'italic' }}>not in this import</span>
+                        )}
                       </div>
 
                       {excluded ? (
@@ -175,7 +201,7 @@ export const MappingsTab: React.FC = () => {
                             value={targetTableId ?? ''}
                             onChange={(e) => {
                               const val = e.target.value || null;
-                              dispatch({ type: 'SET_TERM_ACTION', oldDomain: domainName, oldNicename: term.nicename, targetTableId: val });
+                              dispatch({ type: 'SET_TERM_ACTION', oldDomain: domainName, oldNicename: nicename, targetTableId: val });
                             }}
                             style={{ padding: '7px 8px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '13px' }}
                           >
@@ -198,7 +224,7 @@ export const MappingsTab: React.FC = () => {
                                     {chip.name}
                                     <span
                                       onClick={() =>
-                                        dispatch({ type: 'REMOVE_TERM_DESTINATION', oldDomain: domainName, oldNicename: term.nicename, targetTermId: chip.id })
+                                        dispatch({ type: 'REMOVE_TERM_DESTINATION', oldDomain: domainName, oldNicename: nicename, targetTermId: chip.id })
                                       }
                                       style={{ cursor: 'pointer', marginLeft: '5px', opacity: 0.7 }}
                                     >
@@ -224,7 +250,7 @@ export const MappingsTab: React.FC = () => {
                                   <div
                                     key={opt.id}
                                     onMouseDown={() =>
-                                      dispatch({ type: 'ADD_TERM_DESTINATION', oldDomain: domainName, oldNicename: term.nicename, targetTermId: opt.id })
+                                      dispatch({ type: 'ADD_TERM_DESTINATION', oldDomain: domainName, oldNicename: nicename, targetTermId: opt.id })
                                     }
                                     style={{ padding: '8px 10px', fontSize: '13px', cursor: 'pointer' }}
                                   >
@@ -243,7 +269,7 @@ export const MappingsTab: React.FC = () => {
                       <button
                         type="button"
                         onClick={() =>
-                          dispatch({ type: 'SET_TERM_EXCLUDED', oldDomain: domainName, oldNicename: term.nicename, excluded: !excluded })
+                          dispatch({ type: 'SET_TERM_EXCLUDED', oldDomain: domainName, oldNicename: nicename, excluded: !excluded })
                         }
                         style={
                           excluded

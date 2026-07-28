@@ -34,6 +34,13 @@ describe('App UI & Workflow', () => {
     expect(container.textContent).toContain('Import detected');
     expect(container.textContent).toContain('sample-old-site.xml');
 
+    // Old-site tables start empty until the reconciliation hint is accepted
+    const addMissingBtn = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent === 'Add',
+    );
+    expect(addMissingBtn).toBeDefined();
+    await act(async () => { addMissingBtn?.click(); });
+
     // Mappings tab
     const mappingsTabBtn = Array.from(container.querySelectorAll('button')).find(
       (btn) => btn.textContent === 'Mappings',
