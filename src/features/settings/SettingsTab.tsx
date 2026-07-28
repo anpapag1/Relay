@@ -1,9 +1,35 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAppState } from '../../state/AppStateContext';
+import { writeBlocks } from '../../core/gutenberg/writeBlocks';
+import type { IRNode } from '../../core/ir/nodes';
+
+function placeholderImage(label: string, w: number, h: number): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="#dbe4f5"/><text x="50%" y="50%" font-family="sans-serif" font-size="${Math.round(w / 14)}" fill="#4d5fb0" text-anchor="middle" dominant-baseline="middle">${label}</text></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+}
+
+/** A fixed sample article covering every block kind a setting can affect
+ * (headings, images, a gallery-eligible run of photos, a PDF, a button)
+ * so toggling any setting visibly changes this same preview — run through
+ * the exact writeBlocks function a real build uses (design spec §5.5),
+ * never a hand-mocked approximation. */
+const PREVIEW_NODES: IRNode[] = [
+  { kind: 'heading', level: 1, html: 'How we rebuilt onboarding' },
+  {
+    kind: 'paragraph',
+    html: 'The team spent six weeks rebuilding the onboarding flow from scratch, focusing on reducing drop-off at step three.',
+  },
+  { kind: 'image', src: placeholderImage('Photo 1', 1024, 683), alt: 'Dashboard screenshot', width: 1024, height: 683 },
+  { kind: 'image', src: placeholderImage('Photo 2', 1024, 683), alt: 'Before/after chart', width: 1024, height: 683 },
+  { kind: 'paragraph', html: 'Read the full write-up and methodology in the report below.' },
+  { kind: 'file', href: 'https://example.com/report.pdf', fileName: 'full-report.pdf', isPdf: true },
+  { kind: 'button', text: 'Read full report', href: 'https://example.com/report' },
+];
 
 export const SettingsTab: React.FC = () => {
   const { state, dispatch } = useAppState();
   const [previewTab, setPreviewTab] = useState<'before' | 'after'>('after');
+  const previewHtml = useMemo(() => writeBlocks(PREVIEW_NODES, state.settings), [state.settings]);
 
   if (!state.source) {
     return (
@@ -79,7 +105,39 @@ export const SettingsTab: React.FC = () => {
               <option value="medium">Medium</option>
               <option value="large">Large</option>
               <option value="full">Full size</option>
+              <option value="custom">Custom</option>
             </select>
+            {settings.imageSize === 'custom' && (
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)', marginBottom: '4px' }}>Width (px)</div>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="auto"
+                    value={settings.customWidth ?? ''}
+                    onChange={(e) => updateSetting('customWidth', e.target.value ? Number(e.target.value) : undefined)}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px' }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)', marginBottom: '4px' }}>Height (px)</div>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="auto"
+                    value={settings.customHeight ?? ''}
+                    onChange={(e) => updateSetting('customHeight', e.target.value ? Number(e.target.value) : undefined)}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px' }}
+                  />
+                </div>
+              </div>
+            )}
+            {settings.imageSize === 'custom' && (
+              <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)', marginTop: '6px' }}>
+                Set one — the other scales proportionally, just like in WordPress.
+              </div>
+            )}
           </div>
 
           <div>
@@ -139,15 +197,18 @@ export const SettingsTab: React.FC = () => {
             </div>
           )}
 
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>Gallery columns: {settings.galleryCols}</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 600 }}>Combine consecutive photos into a gallery</div>
+              <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
+                Two or more images in a row become a single gallery block instead of separate images
+              </div>
+            </div>
             <input
-              type="range"
-              min="1"
-              max="6"
-              value={settings.galleryCols}
-              onChange={(e) => updateSetting('galleryCols', Number(e.target.value))}
-              style={{ width: '100%' }}
+              type="checkbox"
+              checked={settings.combineConsecutiveImages}
+              onChange={(e) => updateSetting('combineConsecutiveImages', e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
             />
           </div>
 
@@ -329,67 +390,7 @@ export const SettingsTab: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div style={{ fontSize: '14px', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ textAlign: settings.imageAlign === 'none' ? 'left' : (settings.imageAlign as any), marginBottom: settings.autoSpacing ? `${settings.spacerSize}px` : '0' }}>
-                  <div
-                    style={{
-                      width: settings.imageSize === 'thumbnail' ? '150px' : settings.imageSize === 'medium' ? '300px' : settings.imageSize === 'large' ? '500px' : '100%',
-                      height: settings.imageSize === 'thumbnail' ? '100px' : '220px',
-                      background: 'oklch(94% 0.02 265)',
-                      border: '2px solid oklch(85% 0.05 265)',
-                      borderRadius: '8px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'oklch(50% 0.16 265)',
-                      fontWeight: 600,
-                      fontSize: '13px',
-                      maxWidth: '100%',
-                    }}
-                  >
-                    Gutenberg Image Block ({settings.imageSize}, align: {settings.imageAlign})
-                  </div>
-                </div>
-
-                <div style={{ fontSize: settings.headingShift > 0 ? '16px' : '20px', fontWeight: 700 }}>
-                  Converted Heading (H{1 + settings.headingShift})
-                </div>
-
-                <p style={{ margin: '0 0 8px', color: 'oklch(25% 0.01 250)' }}>
-                  The team spent six weeks rebuilding the onboarding flow from scratch, focusing on reducing drop-off at step three...
-                </p>
-
-                <div>
-                  {settings.buttonRender === 'button' ? (
-                    <a
-                      href="https://example.com/report"
-                      target={settings.linksNewTab ? '_blank' : '_self'}
-                      rel={settings.linksNewTab ? 'noreferrer' : undefined}
-                      style={{
-                        display: 'inline-block',
-                        background: 'oklch(50% 0.16 265)',
-                        color: 'white',
-                        padding: '10px 18px',
-                        borderRadius: '6px',
-                        fontWeight: 600,
-                        fontSize: '13px',
-                        textDecoration: 'none',
-                      }}
-                    >
-                      Read full report {settings.linksNewTab && '↗'}
-                    </a>
-                  ) : (
-                    <a
-                      href="https://example.com/report"
-                      target={settings.linksNewTab ? '_blank' : '_self'}
-                      rel={settings.linksNewTab ? 'noreferrer' : undefined}
-                      style={{ color: 'oklch(50% 0.16 265)', fontWeight: 600, textDecoration: 'underline' }}
-                    >
-                      Read full report {settings.linksNewTab && '↗'}
-                    </a>
-                  )}
-                </div>
-              </div>
+              <div className="wp-preview" dangerouslySetInnerHTML={{ __html: previewHtml }} />
             )}
           </div>
         </div>

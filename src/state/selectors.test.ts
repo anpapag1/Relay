@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getDerivedArticles, getFilteredArticles, getMappingProgress, getMediaStats, getStatusCounts } from './selectors';
+import { getArticlePreviewHtml, getDerivedArticles, getFilteredArticles, getMappingProgress, getMediaStats, getStatusCounts } from './selectors';
 import { appReducer, initialState } from './reducer';
 import type { ParseResult, TermTable } from '../types/domain';
 
@@ -130,6 +130,37 @@ describe('selectors', () => {
     const excluded = derived.find((a) => a.id === 104);
     expect(excluded?.status).toBe('excluded_auto');
     expect(excluded?.isExcluded).toBe(true);
+  });
+
+  it('resolves destinationTerms to the mapped new-site term, not the raw old-site term', () => {
+    const s = getTestState();
+    const derived = getDerivedArticles(s);
+
+    const ready = derived.find((a) => a.id === 101);
+    expect(ready?.terms).toEqual([{ domain: 'category', nicename: 'news', name: 'News' }]);
+    expect(ready?.destinationTerms).toEqual([{ domain: 'cats', nicename: 'news', name: 'News' }]);
+
+    // Unmapped old term resolves to no destination terms at all.
+    const review = derived.find((a) => a.id === 102);
+    expect(review?.destinationTerms).toEqual([]);
+  });
+
+  it('converts an article through the real reader/writeBlocks pipeline for preview', () => {
+    const s = getTestState();
+    const article = s.source!.articles.find((a) => a.postId === 101)!;
+
+    const { html } = getArticlePreviewHtml(article, undefined, s);
+    expect(html).toContain('wp:paragraph');
+    expect(html).toContain('Standard content');
+  });
+
+  it('lets a saved editedHtml override bypass conversion entirely, like runBuild does', () => {
+    const s = getTestState();
+    const article = s.source!.articles.find((a) => a.postId === 101)!;
+
+    const { html, warnings } = getArticlePreviewHtml(article, '<p>manual override</p>', s);
+    expect(html).toBe('<p>manual override</p>');
+    expect(warnings).toEqual([]);
   });
 
   it('computes status counts', () => {

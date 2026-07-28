@@ -13,7 +13,7 @@ export const DEFAULT_SETTINGS: ConversionSettings = {
   imageAlign: 'center',
   autoSpacing: true,
   spacerSize: 30,
-  galleryCols: 3,
+  combineConsecutiveImages: false,
   pdfRender: 'embed',
   buttonRender: 'button',
   headingShift: 0,
@@ -186,9 +186,13 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
     }
     case 'SET_OLD_TABLES': {
       const oldTablesMap = Object.fromEntries(action.tables.map((t) => [t.id, t]));
+      const updatedMappings = state.source
+        ? applyMappings(getAllTerms(state.source), Object.values(state.target.tables), state.mappings)
+        : state.mappings;
       return {
         ...state,
         oldTables: oldTablesMap,
+        mappings: updatedMappings,
       };
     }
     case 'SET_TERM_ACTION': {

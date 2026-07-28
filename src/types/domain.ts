@@ -124,7 +124,10 @@ export interface ConversionSettings {
   imageAlign: ImageAlign;
   autoSpacing: boolean;
   spacerSize: number;
-  galleryCols: number;
+  /** When true, writeBlocks groups runs of two or more consecutive
+   * standalone images into a single wp:gallery block instead of emitting
+   * each as its own wp:image. */
+  combineConsecutiveImages: boolean;
   pdfRender: FileRender;
   buttonRender: ButtonRender;
   headingShift: number;

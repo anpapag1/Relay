@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS: ConversionSettings = {
   imageAlign: 'center',
   autoSpacing: true,
   spacerSize: 30,
-  galleryCols: 3,
+  combineConsecutiveImages: false,
   pdfRender: 'button',
   buttonRender: 'button',
   headingShift: 0,
@@ -57,6 +57,21 @@ describe('writeBlocks', () => {
     expect(out).toContain('size-large');
   });
 
+  it('adds a margin on the wrap side when autoSpacing is on for a left/right-aligned image', () => {
+    const node: IRNode = { kind: 'image', src: 'https://x/a.jpg', alt: '' };
+    const left = writeBlocks([node], { ...DEFAULT_SETTINGS, imageAlign: 'left', autoSpacing: true, spacerSize: 24 });
+    expect(left).toContain('style="margin-right:24px"');
+
+    const right = writeBlocks([node], { ...DEFAULT_SETTINGS, imageAlign: 'right', autoSpacing: true, spacerSize: 24 });
+    expect(right).toContain('style="margin-left:24px"');
+
+    const centered = writeBlocks([node], { ...DEFAULT_SETTINGS, imageAlign: 'center', autoSpacing: true, spacerSize: 24 });
+    expect(centered).not.toContain('style=');
+
+    const off = writeBlocks([node], { ...DEFAULT_SETTINGS, imageAlign: 'left', autoSpacing: false });
+    expect(off).not.toContain('style=');
+  });
+
   it('scales the missing custom dimension proportionally', () => {
     const out = writeBlocks(
       [{ kind: 'image', src: 'https://x/a.jpg', alt: '', width: 200, height: 100 }],
@@ -74,14 +89,47 @@ describe('writeBlocks', () => {
     expect(out).toContain('<a href="https://x/full.jpg"><img');
   });
 
-  it('writes a gallery using galleryCols', () => {
+  it('writes a gallery with WordPress-default columns and per-image sizeSlug', () => {
     const out = writeBlocks(
       [{ kind: 'gallery', images: [{ src: 'a.jpg', alt: '' }, { src: 'b.jpg', alt: '' }] }],
-      { ...DEFAULT_SETTINGS, galleryCols: 4 },
+      DEFAULT_SETTINGS,
     );
-    expect(out).toContain('"columns":4');
-    expect(out).toContain('columns-4');
-    expect(out.match(/<!-- wp:image -->/g)).toHaveLength(2);
+    expect(out).toContain('columns-default');
+    expect(out).toContain('is-cropped');
+    expect(out).toContain('"linkTo":"none"');
+    expect(out.match(/<!-- wp:image \{"linkDestination":"none","sizeSlug":"large"\} -->/g)).toHaveLength(2);
+  });
+
+  it('combines consecutive standalone images into a gallery when combineConsecutiveImages is on', () => {
+    const nodes: IRNode[] = [
+      { kind: 'paragraph', html: 'Intro' },
+      { kind: 'image', src: 'a.jpg', alt: '' },
+      { kind: 'image', src: 'b.jpg', alt: '' },
+      { kind: 'image', src: 'c.jpg', alt: '' },
+      { kind: 'paragraph', html: 'Outro' },
+    ];
+    const out = writeBlocks(nodes, { ...DEFAULT_SETTINGS, combineConsecutiveImages: true });
+    expect(out).toContain('wp:gallery');
+    expect(out.match(/<!-- wp:image /g)).toHaveLength(3);
+    expect(out.indexOf('Intro')).toBeLessThan(out.indexOf('wp:gallery'));
+    expect(out.indexOf('wp:gallery')).toBeLessThan(out.indexOf('Outro'));
+  });
+
+  it('leaves a lone image alone even with combineConsecutiveImages on', () => {
+    const nodes: IRNode[] = [{ kind: 'image', src: 'a.jpg', alt: '' }];
+    const out = writeBlocks(nodes, { ...DEFAULT_SETTINGS, combineConsecutiveImages: true });
+    expect(out).not.toContain('wp:gallery');
+    expect(out).toContain('wp:image');
+  });
+
+  it('does not combine images when combineConsecutiveImages is off', () => {
+    const nodes: IRNode[] = [
+      { kind: 'image', src: 'a.jpg', alt: '' },
+      { kind: 'image', src: 'b.jpg', alt: '' },
+    ];
+    const out = writeBlocks(nodes, DEFAULT_SETTINGS);
+    expect(out).not.toContain('wp:gallery');
+    expect(out.match(/<!-- wp:image /g)).toHaveLength(2);
   });
 
   it('renders a button as wp:buttons by default and as a link when configured', () => {

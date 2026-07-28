@@ -1,4 +1,4 @@
-import type { ConversionSettings, MediaResolution, ParseResult, ParsedArticle, TermMapping, TermTable } from '../types/domain';
+import type { ConversionSettings, ExportTermRef, MediaResolution, ParseResult, ParsedArticle, TermMapping, TermTable } from '../types/domain';
 import type { BuilderId } from '../core/builders/types';
 import type { BuildArticleResult } from '../core/build/runBuild';
 
@@ -70,4 +70,8 @@ export interface DerivedArticle extends ParsedArticle {
   isEdited: boolean;
   isExcluded: boolean;
   editedHtml?: string;
+  /** The article's terms resolved through the mapping table to their
+   * new-site destination — what will actually ship in the export, as
+   * opposed to `terms`, which stays the raw old-site values. */
+  destinationTerms: ExportTermRef[];
 }
