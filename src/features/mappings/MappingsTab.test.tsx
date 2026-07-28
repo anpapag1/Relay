@@ -98,3 +98,28 @@ describe('MappingsTab large-taxonomy rendering', () => {
     expect(domNodeCount).toBeLessThan(2000);
   });
 });
+
+describe('MappingsTab auto-match', () => {
+  it('opens a confirm modal, and confirming replaces mappings and closes the modal', async () => {
+    const seeded = stateWithTerms(20);
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false} initialStateOverride={seeded}>
+          <MappingsTab />
+        </AppStateProvider>,
+      );
+    });
+
+    const autoMatchButton = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Auto-match all') as HTMLButtonElement;
+    await act(async () => { autoMatchButton.click(); });
+
+    expect(container.textContent).toContain('Auto-match all taxonomies?');
+
+    const confirmButtons = Array.from(container.querySelectorAll('button')).filter((b) => b.textContent === 'Auto-match all');
+    // Two buttons now share the label: the toolbar trigger and the modal's confirm button.
+    expect(confirmButtons).toHaveLength(2);
+    await act(async () => { confirmButtons[1].click(); });
+
+    expect(container.textContent).not.toContain('Auto-match all taxonomies?');
+  });
+});

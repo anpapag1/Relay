@@ -314,4 +314,52 @@ describe('appReducer', () => {
     expect(cancel.build.running).toBe(false);
     expect(cancel.build.cancelled).toBe(true);
   });
+
+  describe('AUTO_MATCH_MAPPINGS', () => {
+    it('replaces every mapping - including manual exclusions and choices - with fresh matches, excluding non-matches', () => {
+      let state = appReducer(initialState, {
+        type: 'LOAD_SOURCE',
+        result: MOCK_PARSE_RESULT,
+        defaultBuilder: 'plainHtml',
+        confidence: 90,
+      });
+      state = appReducer(state, {
+        type: 'SET_TARGET_TABLES',
+        tables: [{ id: 'cats', label: 'Categories', terms: [{ id: 'c1', name: 'News' }] }],
+      });
+      state = appReducer(state, {
+        type: 'SET_OLD_TABLES',
+        tables: [
+          {
+            id: 'category',
+            label: 'Category',
+            terms: [
+              { id: 'news', name: 'News', slug: 'news' },
+              { id: 'unrelated', name: 'Completely Unrelated Topic', slug: 'unrelated' },
+            ],
+          },
+        ],
+      });
+      // A manual choice that AUTO_MATCH_MAPPINGS must discard.
+      state = appReducer(state, { type: 'SET_TERM_EXCLUDED', oldDomain: 'category', oldNicename: 'news', excluded: true });
+
+      const next = appReducer(state, { type: 'AUTO_MATCH_MAPPINGS' });
+
+      expect(next.mappings['category:news']).toMatchObject({
+        targetTableId: 'cats',
+        targetTermIds: ['c1'],
+        excluded: false,
+      });
+      expect(next.mappings['category:unrelated']).toMatchObject({
+        targetTableId: null,
+        targetTermIds: [],
+        excluded: true,
+      });
+    });
+
+    it('is a no-op producing an empty mapping set when there are no old-site tables', () => {
+      const next = appReducer(initialState, { type: 'AUTO_MATCH_MAPPINGS' });
+      expect(next.mappings).toEqual({});
+    });
+  });
 });

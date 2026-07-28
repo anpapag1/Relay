@@ -22,6 +22,7 @@ export type Action =
   | { type: 'SET_DESTINATION_PICKER'; termId: string | null }
   | { type: 'CLEAR_ALL_MAPPINGS' }
   | { type: 'RESET_MAPPINGS' }
+  | { type: 'AUTO_MATCH_MAPPINGS' }
   | { type: 'UPDATE_SETTINGS'; settings: Partial<ConversionSettings> }
   | { type: 'SET_ARTICLE_EXCLUDED'; articleId: number; excluded: boolean }
   | { type: 'SAVE_ARTICLE_EDIT'; articleId: number; editedHtml: string }
@@ -78,6 +79,7 @@ export const actions = {
   setDestinationPicker: (termId: string | null): Action => ({ type: 'SET_DESTINATION_PICKER', termId }),
   clearAllMappings: (): Action => ({ type: 'CLEAR_ALL_MAPPINGS' }),
   resetMappings: (): Action => ({ type: 'RESET_MAPPINGS' }),
+  autoMatchMappings: (): Action => ({ type: 'AUTO_MATCH_MAPPINGS' }),
   updateSettings: (settings: Partial<ConversionSettings>): Action => ({ type: 'UPDATE_SETTINGS', settings }),
   setArticleExcluded: (articleId: number, excluded: boolean): Action => ({ type: 'SET_ARTICLE_EXCLUDED', articleId, excluded }),
   saveArticleEdit: (articleId: number, editedHtml: string): Action => ({ type: 'SAVE_ARTICLE_EDIT', articleId, editedHtml }),
