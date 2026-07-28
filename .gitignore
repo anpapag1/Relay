@@ -8,3 +8,5 @@ dist/
 .TEMP
 docs/superpowers/
 graphify-out
+.superpowers
+.claude
