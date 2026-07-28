@@ -16,6 +16,16 @@ export const ImportTab: React.FC = () => {
   const [fileName, setFileName] = useState<string>('sample-export.xml');
   const [activeDataTab, setActiveDataTab] = useState<'old' | 'new'>('old');
   const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
+  const [expandedOldTables, setExpandedOldTables] = useState<Record<string, boolean>>({});
+  const [expandedNewTables, setExpandedNewTables] = useState<Record<string, boolean>>({});
+
+  const toggleOldTable = (tableId: string) => {
+    setExpandedOldTables((prev) => ({ ...prev, [tableId]: !(prev[tableId] ?? true) }));
+  };
+
+  const toggleNewTable = (tableId: string) => {
+    setExpandedNewTables((prev) => ({ ...prev, [tableId]: !(prev[tableId] ?? true) }));
+  };
 
   const handleFileContent = (content: string, name: string) => {
     setImporting(true);
@@ -581,9 +591,17 @@ export const ImportTab: React.FC = () => {
                 </div>
               )}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {Object.values(state.oldTables).map((tbl) => (
+                {Object.values(state.oldTables).map((tbl) => {
+                  const isOldExpanded = expandedOldTables[tbl.id] ?? true;
+                  return (
                   <div key={tbl.id} style={{ border: '1px solid oklch(93% 0.005 250)', borderRadius: '10px', padding: '14px', background: 'white' }}>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center' }}>
+                      <span
+                        onClick={() => toggleOldTable(tbl.id)}
+                        style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', cursor: 'pointer', padding: '0 4px', userSelect: 'none' }}
+                      >
+                        {isOldExpanded ? '▼' : '►'}
+                      </span>
                       <input
                         type="text"
                         value={tbl.label}
@@ -591,14 +609,9 @@ export const ImportTab: React.FC = () => {
                         placeholder="Table name"
                         style={{ flex: 1, padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '13px', fontWeight: 600 }}
                       />
-                      <button
-                        type="button"
-                        onClick={() => addTermToOldTable(tbl.id)}
-                        className="btn btn-secondary"
-                        style={{ padding: '8px 12px', fontSize: '12px' }}
-                      >
-                        + Add Term
-                      </button>
+                      <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', whiteSpace: 'nowrap' }}>
+                        {tbl.terms.length} term{tbl.terms.length === 1 ? '' : 's'}
+                      </div>
                       <button
                         type="button"
                         onClick={() => removeOldTable(tbl.id)}
@@ -608,35 +621,48 @@ export const ImportTab: React.FC = () => {
                         Remove Table
                       </button>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
-                      {tbl.terms.map((trm) => (
-                        <div key={trm.id} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <input
-                            type="text"
-                            value={trm.name}
-                            onChange={(e) => updateOldTermName(tbl.id, trm.id, e.target.value)}
-                            placeholder="Term name"
-                            style={{ flex: 1, padding: '7px 9px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px' }}
-                          />
-                          <input
-                            type="text"
-                            value={trm.slug || ''}
-                            onChange={(e) => updateOldTermSlug(tbl.id, trm.id, e.target.value)}
-                            placeholder="slug"
-                            style={{ width: '120px', padding: '7px 9px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace" }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeTermFromOldTable(tbl.id, trm.id)}
-                            style={{ width: '30px', height: '32px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: 'oklch(55% 0.01 250)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                          >
-                            ✕
-                          </button>
+                    {isOldExpanded && (
+                      <>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                          {tbl.terms.map((trm) => (
+                            <div key={trm.id} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                value={trm.name}
+                                onChange={(e) => updateOldTermName(tbl.id, trm.id, e.target.value)}
+                                placeholder="Term name"
+                                style={{ flex: 1, padding: '7px 9px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px' }}
+                              />
+                              <input
+                                type="text"
+                                value={trm.slug || ''}
+                                onChange={(e) => updateOldTermSlug(tbl.id, trm.id, e.target.value)}
+                                placeholder="slug"
+                                style={{ width: '120px', padding: '7px 9px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace" }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeTermFromOldTable(tbl.id, trm.id)}
+                                style={{ width: '30px', height: '32px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: 'oklch(55% 0.01 250)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() => addTermToOldTable(tbl.id)}
+                          className="btn btn-secondary"
+                          style={{ padding: '8px 12px', fontSize: '12px' }}
+                        >
+                          + Add Term
+                        </button>
+                      </>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
                 {Object.values(state.oldTables).length === 0 && (
                   <div style={{ textAlign: 'center', padding: '20px', color: 'oklch(55% 0.01 250)', fontSize: '13px' }}>
                     No tables defined yet. Click &quot;+ Add Table&quot; below to create one.
