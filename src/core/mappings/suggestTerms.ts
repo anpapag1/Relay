@@ -48,3 +48,36 @@ export function suggestTerms(oldTerms: TermRef[], newTables: TermTable[]): Recor
 
   return suggestions;
 }
+
+/** Same matching pass as suggestTerms, but total: every old term appears
+ * in the result. A term whose best match clears SUGGESTION_THRESHOLD is
+ * mapped exactly as suggestTerms would map it; anything that doesn't is
+ * explicitly excluded (excluded: true, no destination) instead of being
+ * left out of the result entirely - the caller (the Mappings tab's
+ * "Auto-match all" action) wants a decision for every term, not a
+ * mix of decided-and-silent. */
+export function matchAllTerms(oldTerms: TermRef[], newTables: TermTable[]): Record<string, TermMapping> {
+  const result: Record<string, TermMapping> = {};
+
+  for (const term of oldTerms) {
+    const best = findBestMatch(term.name, newTables);
+    const matched = best && best.score >= SUGGESTION_THRESHOLD;
+
+    const mapping: TermMapping = {
+      oldDomain: term.domain,
+      oldNicename: term.nicename,
+      targetTableId: matched ? best.tableId : null,
+      targetTermIds: matched ? [best.termId] : [],
+      excluded: !matched,
+      origin: 'suggested',
+    };
+
+    if (matched) {
+      mapping.score = best.score;
+    }
+
+    result[termMappingIdOf(term)] = mapping;
+  }
+
+  return result;
+}

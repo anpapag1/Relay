@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { suggestTerms } from './suggestTerms';
+import { suggestTerms, matchAllTerms } from './suggestTerms';
 import type { TermRef, TermTable } from '../../types/domain';
 
 const NEW_TABLES: TermTable[] = [
@@ -42,5 +42,50 @@ describe('suggestTerms', () => {
     const oldTerms: TermRef[] = [{ domain: 'category', nicename: 'news', name: 'News' }];
     const result = suggestTerms(oldTerms, [{ id: 'category', label: 'Categories', terms: [] }]);
     expect(result).toEqual({});
+  });
+});
+
+describe('matchAllTerms', () => {
+  it('maps a term above the threshold exactly like suggestTerms does', () => {
+    const oldTerms: TermRef[] = [{ domain: 'category', nicename: 'news', name: 'News' }];
+    const result = matchAllTerms(oldTerms, NEW_TABLES);
+    expect(result['category:news']).toMatchObject({
+      targetTableId: 'category',
+      targetTermIds: ['c1'],
+      excluded: false,
+      origin: 'suggested',
+    });
+  });
+
+  it('explicitly excludes a term with no match above the threshold, instead of omitting it', () => {
+    const oldTerms: TermRef[] = [{ domain: 'category', nicename: 'unrelated', name: 'Completely Unrelated Topic' }];
+    const result = matchAllTerms(oldTerms, NEW_TABLES);
+    expect(result['category:unrelated']).toEqual({
+      oldDomain: 'category',
+      oldNicename: 'unrelated',
+      targetTableId: null,
+      targetTermIds: [],
+      excluded: true,
+      origin: 'suggested',
+    });
+  });
+
+  it('is total: every input term appears in the output, matched or excluded', () => {
+    const oldTerms: TermRef[] = [
+      { domain: 'category', nicename: 'news', name: 'News' },
+      { domain: 'category', nicename: 'unrelated', name: 'Completely Unrelated Topic' },
+      { domain: 'post_tag', nicename: 'case-studies', name: 'Case Studies' },
+    ];
+    const result = matchAllTerms(oldTerms, NEW_TABLES);
+    expect(Object.keys(result)).toHaveLength(3);
+    expect(result['category:news'].excluded).toBe(false);
+    expect(result['category:unrelated'].excluded).toBe(true);
+    expect(result['post_tag:case-studies'].excluded).toBe(false);
+  });
+
+  it('excludes every term when newTables is empty, rather than throwing', () => {
+    const oldTerms: TermRef[] = [{ domain: 'category', nicename: 'news', name: 'News' }];
+    const result = matchAllTerms(oldTerms, []);
+    expect(result['category:news']).toMatchObject({ excluded: true, targetTableId: null, targetTermIds: [] });
   });
 });
