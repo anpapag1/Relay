@@ -73,6 +73,65 @@ describe('ArticleDrawer preview pane', () => {
   });
 });
 
+describe('ArticleDrawer before/after preview toggle', () => {
+  // A bare top-level <img> (no wrapping <p>) is a good differentiator: the
+  // "After" reader/writeBlocks pipeline promotes it into a real
+  // wp:image/figure block, while "Before" shows the original tag exactly
+  // as it appeared in the source, unpromoted.
+  const IMG_HTML = '<img src="https://old.example/photo.jpg" alt="A photo">';
+
+  it('shows the converted ("After") content by default', async () => {
+    const article = makeArticle({ contentHtml: IMG_HTML });
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false}>
+          <ArticleDrawer article={article} onClose={vi.fn()} onPrev={vi.fn()} onNext={vi.fn()} hasPrev={false} hasNext={false} />
+        </AppStateProvider>,
+      );
+    });
+    const preview = container.querySelector('.wp-preview');
+    expect(preview?.innerHTML).toContain('wp-block-image');
+  });
+
+  it('switches to the raw original HTML when "Before" is clicked, and back to converted on "After"', async () => {
+    const article = makeArticle({ contentHtml: IMG_HTML });
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false}>
+          <ArticleDrawer article={article} onClose={vi.fn()} onPrev={vi.fn()} onNext={vi.fn()} hasPrev={false} hasNext={false} />
+        </AppStateProvider>,
+      );
+    });
+
+    const beforeBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Before') as HTMLButtonElement;
+    await act(async () => { beforeBtn.click(); });
+
+    let preview = container.querySelector('.wp-preview');
+    expect(preview?.innerHTML).toContain(IMG_HTML);
+    expect(preview?.innerHTML).not.toContain('wp-block-image');
+
+    const afterBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'After') as HTMLButtonElement;
+    await act(async () => { afterBtn.click(); });
+
+    preview = container.querySelector('.wp-preview');
+    expect(preview?.innerHTML).toContain('wp-block-image');
+  });
+
+  it('shows the placeholder for "Before" when the original article has no content', async () => {
+    const article = makeArticle({ contentHtml: '' });
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false}>
+          <ArticleDrawer article={article} onClose={vi.fn()} onPrev={vi.fn()} onNext={vi.fn()} hasPrev={false} hasNext={false} />
+        </AppStateProvider>,
+      );
+    });
+    const beforeBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Before') as HTMLButtonElement;
+    await act(async () => { beforeBtn.click(); });
+    expect(container.textContent).toContain('Nothing to preview yet');
+  });
+});
+
 describe('ArticleDrawer navigation buttons', () => {
   it('calls onPrev/onNext when clicked and not dirty', async () => {
     const article = makeArticle();

@@ -125,6 +125,8 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
   };
 
   const isExcluded = article.status.startsWith('excluded');
+  const showBefore = state.ui.previewMode === 'before';
+  const previewHtml = showBefore ? article.contentHtml : draftHtml;
 
   return (
     <>
@@ -156,6 +158,45 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
             onClick={(e) => e.stopPropagation()}
             style={{ width: '900px', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}
           >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'white' }}>Content before / after</div>
+              <div style={{ display: 'flex', gap: '4px', background: 'oklch(30% 0.005 250 / 0.6)', borderRadius: '8px', padding: '3px' }}>
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: 'SET_PREVIEW_MODE', mode: 'before' })}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: showBefore ? 'white' : 'transparent',
+                    color: showBefore ? 'oklch(30% 0.02 250)' : 'white',
+                    boxShadow: showBefore ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
+                  }}
+                >
+                  Before
+                </button>
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: 'SET_PREVIEW_MODE', mode: 'after' })}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: !showBefore ? 'white' : 'transparent',
+                    color: !showBefore ? 'oklch(30% 0.02 250)' : 'white',
+                    boxShadow: !showBefore ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
+                  }}
+                >
+                  After
+                </button>
+              </div>
+            </div>
             <div
               className="wp-preview"
               style={{
@@ -168,8 +209,8 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
                 overflowY: 'auto',
               }}
             >
-              {draftHtml.trim() ? (
-                <div dangerouslySetInnerHTML={{ __html: draftHtml }} />
+              {previewHtml.trim() ? (
+                <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
               ) : (
                 <div className="wp-preview-empty">Nothing to preview yet</div>
               )}
