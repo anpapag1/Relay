@@ -2,13 +2,23 @@ import type { AppState, ArticleStatus, DerivedArticle } from './types';
 import type { ParsedArticle, TermRef } from '../types/domain';
 import { termMappingIdOf } from '../core/mappings/termId';
 import { getReader } from '../core/builders';
-import { collectMediaRefs } from '../core/build/collectMediaRefs';
+import { collectMediaRefs, rewriteMediaRefs } from '../core/build/collectMediaRefs';
 import { resolveArticleTerms } from '../core/build/resolveTerms';
 import { writeBlocks } from '../core/gutenberg/writeBlocks';
 
 export function getArticleId(article: ParsedArticle, index: number): number {
   return article.postId ?? -(index + 1);
 }
+
+/** An `attachment:<id>` ref (emitted by e.g. WPBakery's vc_single_image,
+ * which only carries an attachment ID, not a URL) can only ever resolve
+ * against this export's own <wp:attachment> items — resolveMedia's
+ * live-fetch stage has no filename to match it against and always skips
+ * it. So unlike a real URL ref (which may just be pending a build's live
+ * fetch), a still-missing resolution for one of these is not "not checked
+ * yet", it's "will never resolve": the WXR simply never included that
+ * media item. */
+const ATTACHMENT_REF_RE = /^attachment:(\d+)$/;
 
 export function getArticleStatus(
   article: ParsedArticle,
@@ -55,6 +65,8 @@ export function getArticleStatus(
       mediaWarnings.push(res.reason || `Unresolved media reference: ${ref}`);
     } else if (res?.outcome === 'unreachable') {
       mediaWarnings.push(res.reason || `Unreachable media reference: ${ref}`);
+    } else if (!res && ATTACHMENT_REF_RE.test(ref)) {
+      mediaWarnings.push(`Image not found in this export: ${ref} — the WXR file has no media item for this attachment ID.`);
     }
   }
 
@@ -92,19 +104,38 @@ export function getDerivedArticles(state: AppState): DerivedArticle[] {
 
 /** Converts one article's content through the exact same reader ->
  * writeBlocks pipeline runBuild uses, so the Articles preview shows the
- * real post-export markup rather than the untouched original HTML. Media
- * URLs are not rewritten here (that step is async, live-fetch-aware, and
- * only meaningful during a real build) — src attributes stay as the
- * old-site URLs from the WXR. An `editedHtml` override bypasses conversion
- * entirely, mirroring how runBuild treats a manual override. */
+ * real post-export markup rather than the untouched original HTML.
+ * `state.media.resolved` already carries the synchronous stage-1
+ * (`matched-export`) attachment-ID -> URL lookups computed at import time
+ * (see resolveStage1Media in reducer.ts), so rewriting refs here needs no
+ * live fetch — without it, WPBakery/Divi image shortcodes (which only
+ * carry an attachment ID, e.g. `attachment:42`) rendered that literal
+ * placeholder as a broken `<img src>` instead of the real old-site URL.
+ * The live-probing stage (matched-live/unreachable) only runs during a
+ * real build and isn't required for the preview to show a working image.
+ * An `editedHtml` override bypasses conversion entirely, mirroring how
+ * runBuild treats a manual override. */
 export function getArticlePreviewHtml(article: ParsedArticle, editedHtml: string | undefined, state: AppState): { html: string; warnings: string[] } {
   if (editedHtml != null) {
     return { html: editedHtml, warnings: [] };
   }
 
   const reader = getReader(state.builderId ?? 'plainHtml');
-  const { nodes, warnings } = reader.read({ contentHtml: article.contentHtml, postmeta: article.postmeta });
-  return { html: writeBlocks(nodes, state.settings), warnings };
+  const { nodes, warnings: readerWarnings } = reader.read({ contentHtml: article.contentHtml, postmeta: article.postmeta });
+  const { nodes: rewrittenNodes, warnings: mediaWarnings } = rewriteMediaRefs(nodes, state.media.resolved);
+
+  // An attachment-ID ref only ever resolves against this export's own
+  // <wp:attachment> items (resolveMedia's live-fetch stage can't help — it
+  // has no filename to match against a numeric ID) — if it's still the raw
+  // `attachment:<id>` placeholder here, the image is permanently missing
+  // because the WXR simply never included that media item, not because
+  // this preview skipped a step a real build would take.
+  const stillUnresolved = collectMediaRefs(rewrittenNodes).filter((ref) => ATTACHMENT_REF_RE.test(ref));
+  const attachmentWarnings = Array.from(new Set(stillUnresolved)).map(
+    (ref) => `Image not found in this export: ${ref} — the WXR file has no media item for this attachment ID.`,
+  );
+
+  return { html: writeBlocks(rewrittenNodes, state.settings), warnings: [...readerWarnings, ...mediaWarnings, ...attachmentWarnings] };
 }
 
 export function getStatusCounts(derivedArticles: DerivedArticle[]): Record<ArticleStatus | 'total', number> {

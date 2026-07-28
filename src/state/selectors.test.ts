@@ -154,6 +154,90 @@ describe('selectors', () => {
     expect(html).toContain('Standard content');
   });
 
+  it('rewrites an attachment-id image ref to its real WXR URL in the preview, not just a real build', () => {
+    // WPBakery's vc_single_image only carries an attachment ID (no URL), so
+    // the reader emits `src: "attachment:<id>"`. The stage-1 match against
+    // the export's own attachments (matchAttachment/resolveStage1Media) runs
+    // synchronously at import time, so the preview should already show the
+    // real image instead of the literal "attachment:55" placeholder.
+    const parseResult: ParseResult = {
+      ...MOCK_PARSE_RESULT,
+      articles: [
+        {
+          postId: 201,
+          postType: 'post',
+          status: 'publish',
+          title: 'Image Article',
+          link: 'https://old.example/image/',
+          postDate: '2026-01-05',
+          postName: 'image-article',
+          creator: 'alice',
+          contentHtml: '[vc_single_image image="55"]',
+          excerptHtml: '',
+          terms: [],
+          postmeta: {},
+        },
+      ],
+      attachments: [
+        { postId: 55, title: 'Photo', attachmentUrl: 'https://old.example/wp-content/uploads/photo.jpg', postParent: 201 },
+      ],
+    };
+    let s = appReducer(initialState, {
+      type: 'LOAD_SOURCE',
+      result: parseResult,
+      defaultBuilder: 'wpbakery',
+      confidence: 90,
+    });
+    s = appReducer(s, { type: 'SET_TARGET_TABLES', tables });
+
+    const article = s.source!.articles.find((a) => a.postId === 201)!;
+    const { html, warnings } = getArticlePreviewHtml(article, undefined, s);
+
+    expect(html).toContain('https://old.example/wp-content/uploads/photo.jpg');
+    expect(html).not.toContain('attachment:55');
+    expect(warnings).toHaveLength(0);
+  });
+
+  it('warns instead of silently rendering a broken image when the export has no matching attachment item', () => {
+    // Same shortcode as above, but the WXR export carries no <wp:attachment>
+    // for this ID at all — a real-world case where the source export simply
+    // never included its media library. matchLive (the live-fetch stage)
+    // can't help either, since attachment refs have no filename to match.
+    const parseResult: ParseResult = {
+      ...MOCK_PARSE_RESULT,
+      articles: [
+        {
+          postId: 202,
+          postType: 'post',
+          status: 'publish',
+          title: 'Missing Attachment Article',
+          link: 'https://old.example/missing-attachment/',
+          postDate: '2026-01-06',
+          postName: 'missing-attachment-article',
+          creator: 'alice',
+          contentHtml: '[vc_single_image image="999"]',
+          excerptHtml: '',
+          terms: [],
+          postmeta: {},
+        },
+      ],
+      attachments: [],
+    };
+    let s = appReducer(initialState, {
+      type: 'LOAD_SOURCE',
+      result: parseResult,
+      defaultBuilder: 'wpbakery',
+      confidence: 90,
+    });
+    s = appReducer(s, { type: 'SET_TARGET_TABLES', tables });
+
+    const article = s.source!.articles.find((a) => a.postId === 202)!;
+    const { html, warnings } = getArticlePreviewHtml(article, undefined, s);
+
+    expect(html).toContain('attachment:999');
+    expect(warnings.some((w) => w.includes('attachment:999'))).toBe(true);
+  });
+
   it('lets a saved editedHtml override bypass conversion entirely, like runBuild does', () => {
     const s = getTestState();
     const article = s.source!.articles.find((a) => a.postId === 101)!;
