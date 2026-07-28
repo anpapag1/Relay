@@ -102,8 +102,18 @@ export const ArticlesTab: React.FC = () => {
     });
   };
 
-  const selectedArticle: DerivedArticle | null =
-    selectedArticleId !== null ? derivedArticles.find((a) => a.id === selectedArticleId) || null : null;
+  const selectedIndex = selectedArticleId !== null
+    ? sorted.findIndex((a) => a.id === selectedArticleId)
+    : -1;
+  const selectedArticle: DerivedArticle | null = selectedIndex >= 0 ? sorted[selectedIndex] : null;
+  const hasPrev = selectedIndex > 0;
+  const hasNext = selectedIndex >= 0 && selectedIndex < sorted.length - 1;
+  const goPrev = () => {
+    if (hasPrev) setSelectedArticleId(sorted[selectedIndex - 1].id);
+  };
+  const goNext = () => {
+    if (hasNext) setSelectedArticleId(sorted[selectedIndex + 1].id);
+  };
 
   const allAreExcluded = derivedArticles.length > 0 && derivedArticles.every((a) => a.status.startsWith('excluded'));
 
@@ -258,7 +268,14 @@ export const ArticlesTab: React.FC = () => {
         </button>
       </div>
 
-      <ArticleDrawer article={selectedArticle} onClose={() => setSelectedArticleId(null)} />
+      <ArticleDrawer
+        article={selectedArticle}
+        onClose={() => setSelectedArticleId(null)}
+        onPrev={goPrev}
+        onNext={goNext}
+        hasPrev={hasPrev}
+        hasNext={hasNext}
+      />
     </div>
   );
 };
