@@ -28,6 +28,7 @@ export interface AppState {
     modals: {
       resetConfirm: boolean;
       sessionRestore: boolean;
+      autoMatchConfirm: boolean;
     };
     pickers: {
       destinationTermId: string | null;

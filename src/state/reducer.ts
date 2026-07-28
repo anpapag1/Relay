@@ -1,7 +1,7 @@
 import type { Action } from './actions';
 import type { AppState, ArticleOverride } from './types';
-import type { ConversionSettings, MediaResolution, ParsedArticle, ParsedAttachment } from '../types/domain';
-import { suggestTerms } from '../core/mappings/suggestTerms';
+import type { ConversionSettings, MediaResolution, ParsedArticle, ParsedAttachment, TermRef } from '../types/domain';
+import { suggestTerms, matchAllTerms } from '../core/mappings/suggestTerms';
 import { applyMappings } from '../core/mappings/applyMappings';
 import { termMappingId } from '../core/mappings/termId';
 import * as mappingTransitions from './mappingTransitions';
@@ -29,6 +29,7 @@ export const initialState: AppState = {
     modals: {
       resetConfirm: false,
       sessionRestore: false,
+      autoMatchConfirm: false,
     },
     pickers: {
       destinationTermId: null,
@@ -239,6 +240,13 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
     case 'RESET_MAPPINGS': {
       const reset = state.source ? suggestTerms(getAllTerms(state.source), Object.values(state.target.tables)) : {};
       return { ...state, mappings: reset };
+    }
+    case 'AUTO_MATCH_MAPPINGS': {
+      const oldTerms: TermRef[] = Object.values(state.oldTables).flatMap((table) =>
+        table.terms.map((term) => ({ domain: table.id, nicename: term.slug || term.id, name: term.name })),
+      );
+      const matched = matchAllTerms(oldTerms, Object.values(state.target.tables));
+      return { ...state, mappings: matched };
     }
     case 'UPDATE_SETTINGS':
       return { ...state, settings: { ...state.settings, ...action.settings } };
