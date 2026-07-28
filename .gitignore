@@ -5,3 +5,6 @@ dist/
 *.log
 .DS_Store
 *.tsbuildinfo
+.TEMP
+docs/superpowers/
+graphify-out
