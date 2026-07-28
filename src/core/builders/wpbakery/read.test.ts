@@ -63,14 +63,35 @@ describe('readWpbakery', () => {
   });
 
   it('decodes vc_raw_html\'s base64+urlencoded payload into real HTML instead of a literal placeholder', () => {
-    // Payload is base64("<div id=\"sidebar-at-visual\"></div>" urlencoded) — the exact
-    // encoding WPBakery itself produces for this shortcode's body.
+    // Payload is base64(encodeURIComponent('<div class="ad-banner">Sponsored content</div>'))
+    // — real content, distinct from the known-empty sidebar anchor tested below.
     const { nodes, warnings } = readWpbakery({
+      contentHtml: '[vc_raw_html]JTNDZGl2JTIwY2xhc3MlM0QlMjJhZC1iYW5uZXIlMjIlM0VTcG9uc29yZWQlMjBjb250ZW50JTNDJTJGZGl2JTNF[/vc_raw_html]',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([{ kind: 'raw', html: '<div class="ad-banner">Sponsored content</div>', note: 'vc_raw_html (decoded)' }]);
+    expect(warnings).toEqual(['vc_raw_html decoded and kept as raw HTML.']);
+  });
+
+  it('drops a decoded vc_raw_html payload that is the known-empty sidebar widget anchor, well-formed or not', () => {
+    // The well-formed version (closing </div> with its >).
+    const wellFormed = readWpbakery({
       contentHtml: '[vc_raw_html]JTNDZGl2JTIwaWQlM0QlMjJzaWRlYmFyLWF0LXZpc3VhbCUyMiUzRSUzQyUyRmRpdiUzRQ==[/vc_raw_html]',
       postmeta: {},
     });
-    expect(nodes).toEqual([{ kind: 'raw', html: '<div id="sidebar-at-visual"></div>', note: 'vc_raw_html (decoded)' }]);
-    expect(warnings).toEqual(['vc_raw_html decoded and kept as raw HTML.']);
+    expect(wellFormed.nodes).toEqual([]);
+    expect(wellFormed.warnings).toEqual([
+      'vc_raw_html was a known-empty sidebar widget anchor (depends on the old theme\'s JavaScript, which won\'t exist on the new site) — dropped rather than kept as dead markup.',
+    ]);
+
+    // The exact malformed encoding (missing the closing >) observed across
+    // 250/250 real vc_raw_html occurrences in production exports.
+    const malformed = readWpbakery({
+      contentHtml: '[vc_raw_html]JTNDZGl2JTIwaWQlM0QlMjJzaWRlYmFyLWF0LXZpc3VhbCUyMiUzRSUzQyUyRmRpdg==[/vc_raw_html]',
+      postmeta: {},
+    });
+    expect(malformed.nodes).toEqual([]);
+    expect(malformed.warnings.some((w) => w.includes('known-empty sidebar widget anchor'))).toBe(true);
   });
 
   it('drops an empty vc_raw_html and reports an undecodable payload rather than crashing', () => {

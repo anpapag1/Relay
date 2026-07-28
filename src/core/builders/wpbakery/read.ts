@@ -31,6 +31,17 @@ function videoProvider(src: string): 'youtube' | 'vimeo' | 'file' {
   return 'file';
 }
 
+/** A theme sidebar-widget anchor div, empty of any real content, that a
+ * theme's own JavaScript used to populate on the old site. That JS lives
+ * in the old theme and never ships with the migrated content either way,
+ * so the anchor is dead markup on the new site regardless of whether it's
+ * kept — and real-world exports have been observed to encode it slightly
+ * malformed (missing the closing `>`), which risks corrupting whatever
+ * markup follows it if emitted verbatim as raw HTML. Recognised narrowly
+ * (this exact widget id, no other content) rather than dropping empty
+ * divs in general. */
+const NOOP_SIDEBAR_ANCHOR_RE = /^<div id=["']sidebar-at-visual["']>\s*<\/div\s*>?$/i;
+
 function readColumn(el: ShortcodeElement, warnings: string[]): IRNode[] {
   return readChildren(el.children, warnings);
 }
@@ -141,6 +152,10 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
     }
     try {
       const decoded = decodeURIComponent(atob(encoded));
+      if (NOOP_SIDEBAR_ANCHOR_RE.test(decoded.trim())) {
+        warnings.push('vc_raw_html was a known-empty sidebar widget anchor (depends on the old theme\'s JavaScript, which won\'t exist on the new site) — dropped rather than kept as dead markup.');
+        return [];
+      }
       warnings.push('vc_raw_html decoded and kept as raw HTML.');
       return [{ kind: 'raw', html: decoded, note: 'vc_raw_html (decoded)' }];
     } catch {
