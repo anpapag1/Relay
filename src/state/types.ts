@@ -68,6 +68,10 @@ export interface DerivedArticle extends ParsedArticle {
   status: ArticleStatus;
   statusReason?: string;
   warnings: string[];
+  /** Count of media references (images, files, embeds) collected from the
+   * article's original content via the active builder's reader — shown in
+   * the Articles list's Media column. */
+  mediaCount: number;
   isEdited: boolean;
   isExcluded: boolean;
   editedHtml?: string;

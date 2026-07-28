@@ -132,6 +132,21 @@ describe('selectors', () => {
     expect(excluded?.isExcluded).toBe(true);
   });
 
+  it('computes mediaCount from the article\'s real media references, for every status including excluded/edited', () => {
+    const s = getTestState();
+    const derived = getDerivedArticles(s);
+
+    // 101: <p>Standard content</p> - no media refs at all.
+    expect(derived.find((a) => a.id === 101)?.mediaCount).toBe(0);
+    // 102: one <img> inside a <figure> - one media ref, regardless of the
+    // article also being in "review" status for an unrelated reason.
+    expect(derived.find((a) => a.id === 102)?.mediaCount).toBe(1);
+    // 104 is auto-excluded, but the count still reflects its real content
+    // rather than defaulting to a placeholder - excluded articles aren't
+    // a special case for this field.
+    expect(derived.find((a) => a.id === 104)?.mediaCount).toBe(0);
+  });
+
   it('resolves destinationTerms to the mapped new-site term, not the raw old-site term', () => {
     const s = getTestState();
     const derived = getDerivedArticles(s);

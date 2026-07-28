@@ -215,7 +215,7 @@ export const ArticlesTab: React.FC = () => {
               <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{art.postDate || '—'}</div>
               <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{art.destinationTerms.filter(t => t.domain === 'category').map(t => t.name).join(', ') || '—'}</div>
               <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                —
+                {art.mediaCount}
                 {art.warnings && art.warnings.length > 0 && (
                   <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'oklch(65% 0.15 60)', color: 'white', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     !

@@ -24,20 +24,33 @@ export function getArticleStatus(
   article: ParsedArticle,
   index: number,
   state: AppState,
-): { status: ArticleStatus; reason?: string; warnings: string[] } {
+): { status: ArticleStatus; reason?: string; warnings: string[]; mediaCount: number } {
   const id = getArticleId(article, index);
   const override = state.articles[id];
+
+  // Computed once, up front, regardless of status: the Articles list's
+  // Media column shows this count for every row (excluded/edited included),
+  // and reusing this one reader.read() pass avoids a second full parse of
+  // the article just to answer "how many media refs does it have".
+  const reader = getReader(state.builderId ?? 'plainHtml');
+  const { nodes, warnings: readerWarnings } = reader.read({
+    contentHtml: article.contentHtml,
+    postmeta: article.postmeta,
+  });
+  const refs = collectMediaRefs(nodes);
+  const mediaCount = refs.length;
 
   if (override?.excluded) {
     return {
       status: override.auto ? 'excluded_auto' : 'excluded_manual',
       reason: override.reason || 'Excluded by user',
       warnings: [],
+      mediaCount,
     };
   }
 
   if (override?.editedHtml != null && override.editedHtml.trim().length > 0) {
-    return { status: 'edited', warnings: [] };
+    return { status: 'edited', warnings: [], mediaCount };
   }
 
   const termWarnings: string[] = [];
@@ -51,14 +64,7 @@ export function getArticleStatus(
     }
   }
 
-  const reader = getReader(state.builderId ?? 'plainHtml');
-  const { nodes, warnings: readerWarnings } = reader.read({
-    contentHtml: article.contentHtml,
-    postmeta: article.postmeta,
-  });
-
   const mediaWarnings: string[] = [];
-  const refs = collectMediaRefs(nodes);
   for (const ref of refs) {
     const res = state.media.resolved[ref];
     if (res?.outcome === 'unresolved') {
@@ -72,10 +78,10 @@ export function getArticleStatus(
 
   const allWarnings = [...readerWarnings, ...termWarnings, ...mediaWarnings];
   if (allWarnings.length > 0) {
-    return { status: 'review', warnings: allWarnings };
+    return { status: 'review', warnings: allWarnings, mediaCount };
   }
 
-  return { status: 'ready', warnings: [] };
+  return { status: 'ready', warnings: [], mediaCount };
 }
 
 export function getDerivedArticles(state: AppState): DerivedArticle[] {
@@ -85,7 +91,7 @@ export function getDerivedArticles(state: AppState): DerivedArticle[] {
 
   return state.source.articles.map((art, index) => {
     const id = getArticleId(art, index);
-    const { status, reason, warnings } = getArticleStatus(art, index, state);
+    const { status, reason, warnings, mediaCount } = getArticleStatus(art, index, state);
     const override = state.articles[id];
 
     return {
@@ -94,6 +100,7 @@ export function getDerivedArticles(state: AppState): DerivedArticle[] {
       status,
       statusReason: reason,
       warnings,
+      mediaCount,
       isEdited: status === 'edited',
       isExcluded: status.startsWith('excluded'),
       editedHtml: override?.editedHtml,

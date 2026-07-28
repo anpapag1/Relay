@@ -22,6 +22,7 @@ function makeArticle(overrides: Partial<DerivedArticle> = {}): DerivedArticle {
     terms: [],
     postmeta: {},
     warnings: [],
+    mediaCount: 0,
     isEdited: false,
     isExcluded: false,
     destinationTerms: [],
