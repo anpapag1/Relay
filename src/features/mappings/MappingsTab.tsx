@@ -32,6 +32,9 @@ export const MappingsTab: React.FC = () => {
   const oldTableList = Object.values(oldTables);
   const targetTables = Object.values(target.tables);
   const openPickerTermId = state.ui.pickers.destinationTermId;
+  const targetTermsById = new Map(
+    targetTables.map((tbl) => [tbl.id, new Map(tbl.terms.map((t) => [t.id, t]))]),
+  );
 
   const toggleDomain = (domain: string) => {
     setExpandedDomains((prev) => ({ ...prev, [domain]: !prev[domain] }));
@@ -154,13 +157,17 @@ export const MappingsTab: React.FC = () => {
                   const targetTermIds = mapping?.targetTermIds ?? [];
                   const excluded = mapping?.excluded ?? false;
                   const selectedTable = targetTables.find((t) => t.id === targetTableId) ?? null;
-                  const chipTerms = selectedTable ? selectedTable.terms.filter((t) => targetTermIds.includes(t.id)) : [];
-                  const pickerOpen = openPickerTermId === key;
-                  const pickerOptions = selectedTable
-                    ? selectedTable.terms.filter(
-                        (t) => !targetTermIds.includes(t.id) && t.name.toLowerCase().includes(pickerSearch.toLowerCase()),
-                      )
+                  const selectedTableTermsById = targetTableId ? targetTermsById.get(targetTableId) : undefined;
+                  const chipTerms = selectedTableTermsById
+                    ? targetTermIds.map((id) => selectedTableTermsById.get(id)).filter((t): t is NonNullable<typeof t> => t != null)
                     : [];
+                  const pickerOpen = openPickerTermId === key;
+                  const pickerOptions =
+                    pickerOpen && selectedTable
+                      ? selectedTable.terms.filter(
+                          (t) => !targetTermIds.includes(t.id) && t.name.toLowerCase().includes(pickerSearch.toLowerCase()),
+                        )
+                      : [];
                   const siteMatch = siteTermsByNicename.get(nicename);
 
                   return (
