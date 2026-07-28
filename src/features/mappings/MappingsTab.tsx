@@ -519,6 +519,13 @@ export const MappingsTab: React.FC = () => {
           </button>
           <button
             type="button"
+            onClick={() => dispatch({ type: 'OPEN_MODAL', modal: 'autoMatchConfirm' })}
+            className="btn btn-secondary"
+          >
+            Auto-match all
+          </button>
+          <button
+            type="button"
             onClick={() => dispatch({ type: 'OPEN_MODAL', modal: 'resetConfirm' })}
             style={{ border: '1px solid oklch(85% 0.1 25)', background: 'white', color: 'oklch(50% 0.18 25)', fontSize: '13px', fontWeight: 600, padding: '9px 14px', borderRadius: '8px', cursor: 'pointer' }}
           >
@@ -596,6 +603,37 @@ export const MappingsTab: React.FC = () => {
                 style={{ padding: '9px 16px', background: 'oklch(50% 0.18 25)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
               >
                 Clear everything
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {state.ui.modals.autoMatchConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'oklch(20% 0 0 / 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
+          <div style={{ background: 'white', borderRadius: '14px', padding: '26px', width: '420px' }}>
+            <div style={{ fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>Auto-match all taxonomies?</div>
+            <div style={{ fontSize: '14px', color: 'oklch(45% 0.01 250)', lineHeight: 1.5, marginBottom: '20px' }}>
+              This replaces every current taxonomy mapping — including any exclusions or manual choices you've made — with fresh automatic matches. Anything without a good match gets excluded rather than left for review. This can't be undone — export a JSON backup first if you're not sure.
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => dispatch({ type: 'CLOSE_MODAL', modal: 'autoMatchConfirm' })}
+                style={{ padding: '9px 16px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  dispatch({ type: 'AUTO_MATCH_MAPPINGS' });
+                  setResetGeneration((g) => g + 1);
+                  dispatch({ type: 'CLOSE_MODAL', modal: 'autoMatchConfirm' });
+                }}
+                style={{ padding: '9px 16px', background: 'oklch(50% 0.16 265)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Auto-match all
               </button>
             </div>
           </div>
