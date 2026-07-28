@@ -4,6 +4,7 @@ import type { ConversionSettings, MediaResolution, ParsedArticle, ParsedAttachme
 import { suggestTerms } from '../core/mappings/suggestTerms';
 import { applyMappings } from '../core/mappings/applyMappings';
 import { termMappingId } from '../core/mappings/termId';
+import * as mappingTransitions from './mappingTransitions';
 import { buildAttachmentIndex, matchAttachment } from '../core/media/attachmentIndex';
 import { getReader } from '../core/builders';
 import { collectMediaRefs } from '../core/build/collectMediaRefs';
@@ -202,48 +203,23 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
         ...state,
         mappings: {
           ...state.mappings,
-          [key]: {
-            oldDomain: action.oldDomain,
-            oldNicename: action.oldNicename,
-            targetTableId: action.targetTableId,
-            targetTermIds: [],
-            excluded: existing?.excluded ?? false,
-            origin: 'user',
-          },
+          [key]: mappingTransitions.setTargetTable(existing, action.oldDomain, action.oldNicename, action.targetTableId),
         },
       };
     }
     case 'ADD_TERM_DESTINATION': {
       const key = termMappingId(action.oldDomain, action.oldNicename);
       const existing = state.mappings[key];
-      if (!existing || existing.targetTermIds.includes(action.targetTermId)) return state;
-      return {
-        ...state,
-        mappings: {
-          ...state.mappings,
-          [key]: {
-            ...existing,
-            targetTermIds: [...existing.targetTermIds, action.targetTermId],
-            origin: 'user',
-          },
-        },
-      };
+      const next = mappingTransitions.addDestination(existing, action.targetTermId);
+      if (!next || next === existing) return state;
+      return { ...state, mappings: { ...state.mappings, [key]: next } };
     }
     case 'REMOVE_TERM_DESTINATION': {
       const key = termMappingId(action.oldDomain, action.oldNicename);
       const existing = state.mappings[key];
-      if (!existing) return state;
-      return {
-        ...state,
-        mappings: {
-          ...state.mappings,
-          [key]: {
-            ...existing,
-            targetTermIds: existing.targetTermIds.filter((id) => id !== action.targetTermId),
-            origin: 'user',
-          },
-        },
-      };
+      const next = mappingTransitions.removeDestination(existing, action.targetTermId);
+      if (!next) return state;
+      return { ...state, mappings: { ...state.mappings, [key]: next } };
     }
     case 'SET_TERM_EXCLUDED': {
       const key = termMappingId(action.oldDomain, action.oldNicename);
@@ -252,14 +228,7 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
         ...state,
         mappings: {
           ...state.mappings,
-          [key]: {
-            oldDomain: action.oldDomain,
-            oldNicename: action.oldNicename,
-            targetTableId: existing?.targetTableId ?? null,
-            targetTermIds: existing?.targetTermIds ?? [],
-            excluded: action.excluded,
-            origin: 'user',
-          },
+          [key]: mappingTransitions.setExcluded(existing, action.oldDomain, action.oldNicename, action.excluded),
         },
       };
     }

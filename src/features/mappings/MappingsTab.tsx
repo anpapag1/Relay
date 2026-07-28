@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type { Action } from '../../state/actions';
 import { useAppState } from '../../state/AppStateContext';
 import { termMappingId } from '../../core/mappings/termId';
 import { createSessionBackup } from '../../state/session';
+import * as mappingTransitions from '../../state/mappingTransitions';
 import type { NewSiteTerm, TaxonomyTermSummary, TermMapping, TermTable } from '../../types/domain';
 
 const CORE_DOMAINS = new Set(['category', 'post_tag']);
@@ -13,7 +14,7 @@ interface TermRowProps {
   domainName: string;
   nicename: string;
   term: NewSiteTerm;
-  mapping: TermMapping | undefined;
+  initialMapping: TermMapping | undefined;
   targetTables: TermTable[];
   targetTermsById: Map<string, Map<string, NewSiteTerm>>;
   siteMatch: TaxonomyTermSummary | undefined;
@@ -25,15 +26,21 @@ interface TermRowProps {
   onPickerSearchChange: (value: string) => void;
 }
 
-/** Memoized so excluding, mapping, or searching one term only re-renders
- * that row instead of the whole taxonomy list — with large taxonomies
- * (thousands of terms) re-rendering every row on every click was the
- * actual freeze; the per-row work itself was already cheap. */
+/** Owns its own mapping locally (seeded once from `initialMapping`) instead
+ * of reading it back from global state on every render. Toggling exclude,
+ * changing the destination, or adding/removing a chip updates this row's
+ * own state immediately — via the same pure transition functions the
+ * reducer uses, so the two never drift — and separately dispatches to the
+ * global store to persist it and keep the Build/Articles tabs in sync.
+ * That decouples a row's paint entirely from every other row: excluding
+ * one term no longer causes the parent to recompute anything for the
+ * other thousands of terms in the list, which is what actually froze the
+ * tab on large taxonomies. */
 const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
   domainName,
   nicename,
   term,
-  mapping,
+  initialMapping,
   targetTables,
   targetTermsById,
   siteMatch,
@@ -45,6 +52,8 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
   onPickerSearchChange,
 }) {
   const key = termMappingId(domainName, nicename);
+  const [mapping, setMapping] = useState(initialMapping);
+
   const targetTableId = mapping?.targetTableId ?? null;
   const targetTermIds = mapping?.targetTermIds ?? [];
   const excluded = mapping?.excluded ?? false;
@@ -59,6 +68,29 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
           (t) => !targetTermIds.includes(t.id) && t.name.toLowerCase().includes(pickerSearch.toLowerCase()),
         )
       : [];
+
+  const handleSetAction = (targetTableIdValue: string | null) => {
+    setMapping(mappingTransitions.setTargetTable(mapping, domainName, nicename, targetTableIdValue));
+    dispatch({ type: 'SET_TERM_ACTION', oldDomain: domainName, oldNicename: nicename, targetTableId: targetTableIdValue });
+  };
+
+  const handleAddDestination = (targetTermId: string) => {
+    const next = mappingTransitions.addDestination(mapping, targetTermId);
+    if (next) setMapping(next);
+    dispatch({ type: 'ADD_TERM_DESTINATION', oldDomain: domainName, oldNicename: nicename, targetTermId });
+  };
+
+  const handleRemoveDestination = (targetTermId: string) => {
+    const next = mappingTransitions.removeDestination(mapping, targetTermId);
+    if (next) setMapping(next);
+    dispatch({ type: 'REMOVE_TERM_DESTINATION', oldDomain: domainName, oldNicename: nicename, targetTermId });
+  };
+
+  const handleToggleExcluded = () => {
+    const nextExcluded = !excluded;
+    setMapping(mappingTransitions.setExcluded(mapping, domainName, nicename, nextExcluded));
+    dispatch({ type: 'SET_TERM_EXCLUDED', oldDomain: domainName, oldNicename: nicename, excluded: nextExcluded });
+  };
 
   return (
     <div
@@ -96,10 +128,7 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
         <>
           <select
             value={targetTableId ?? ''}
-            onChange={(e) => {
-              const val = e.target.value || null;
-              dispatch({ type: 'SET_TERM_ACTION', oldDomain: domainName, oldNicename: nicename, targetTableId: val });
-            }}
+            onChange={(e) => handleSetAction(e.target.value || null)}
             style={{ padding: '7px 8px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '13px' }}
           >
             <option value="">-- Choose --</option>
@@ -120,9 +149,7 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
                   >
                     {chip.name}
                     <span
-                      onClick={() =>
-                        dispatch({ type: 'REMOVE_TERM_DESTINATION', oldDomain: domainName, oldNicename: nicename, targetTermId: chip.id })
-                      }
+                      onClick={() => handleRemoveDestination(chip.id)}
                       style={{ cursor: 'pointer', marginLeft: '5px', opacity: 0.7 }}
                     >
                       ✕
@@ -146,9 +173,7 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
                 {pickerOptions.map((opt) => (
                   <div
                     key={opt.id}
-                    onMouseDown={() =>
-                      dispatch({ type: 'ADD_TERM_DESTINATION', oldDomain: domainName, oldNicename: nicename, targetTermId: opt.id })
-                    }
+                    onMouseDown={() => handleAddDestination(opt.id)}
                     style={{ padding: '8px 10px', fontSize: '13px', cursor: 'pointer' }}
                   >
                     {opt.name}
@@ -165,9 +190,7 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
 
       <button
         type="button"
-        onClick={() =>
-          dispatch({ type: 'SET_TERM_EXCLUDED', oldDomain: domainName, oldNicename: nicename, excluded: !excluded })
-        }
+        onClick={handleToggleExcluded}
         style={
           excluded
             ? { padding: '6px 10px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: 'oklch(45% 0.01 250)' }
@@ -180,14 +203,139 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
   );
 });
 
+interface DomainSectionProps {
+  domainName: string;
+  table: TermTable;
+  isExpanded: boolean;
+  isCore: boolean;
+  targetTables: TermTable[];
+  targetTermsById: Map<string, Map<string, NewSiteTerm>>;
+  siteTermsByNicename: Map<string, TaxonomyTermSummary> | undefined;
+  mappingsRef: { current: Record<string, TermMapping> };
+  openNicenameInDomain: string | null;
+  pickerSearch: string;
+  resetGeneration: number;
+  dispatch: React.Dispatch<Action>;
+  onToggle: (domain: string) => void;
+  onOpenPicker: (key: string) => void;
+  onClosePicker: () => void;
+  onPickerSearchChange: (value: string) => void;
+}
+
+/** Memoized at the domain (taxonomy) level so that excluding/mapping a
+ * term in one domain, or opening the destination picker in one domain,
+ * never touches the row list of any other domain — and so the row list
+ * for THIS domain is only rebuilt on structural changes (import reload,
+ * expand/collapse, picker open/close here, or an explicit reset), never
+ * on every keystroke or click against the shared mappings object. */
+const DomainSection: React.FC<DomainSectionProps> = React.memo(function DomainSection({
+  domainName,
+  table,
+  isExpanded,
+  isCore,
+  targetTables,
+  targetTermsById,
+  siteTermsByNicename,
+  mappingsRef,
+  openNicenameInDomain,
+  pickerSearch,
+  resetGeneration,
+  dispatch,
+  onToggle,
+  onOpenPicker,
+  onClosePicker,
+  onPickerSearchChange,
+}) {
+  return (
+    <div
+      style={{
+        background: 'white',
+        border: '1px solid oklch(90% 0.005 250)',
+        borderRadius: '12px',
+        overflow: 'hidden',
+        boxShadow: '0 1px 3px oklch(0% 0 0 / 0.02)',
+      }}
+    >
+      <div
+        onClick={() => onToggle(domainName)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          cursor: 'pointer',
+          background: 'oklch(98% 0.003 250)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>{isExpanded ? '▼' : '►'}</span>
+          <div style={{ fontSize: '15px', fontWeight: 700, textTransform: 'capitalize' }}>{domainName === 'post_tag' ? 'Tags' : domainName}</div>
+          {isCore && (
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'oklch(50% 0.01 250)', background: 'oklch(95% 0.005 250)', padding: '2px 7px', borderRadius: '5px' }}>
+              built-in
+            </div>
+          )}
+        </div>
+        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{table.terms.length} terms</div>
+      </div>
+
+      {isExpanded && (
+        <div style={{ borderTop: '1px solid oklch(93% 0.005 250)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: ROW_GRID_COLUMNS, gap: '12px', padding: '10px 20px', fontSize: '11px', fontWeight: 600, color: 'oklch(55% 0.01 250)', textTransform: 'uppercase', letterSpacing: '0.03em', background: 'oklch(99% 0.002 250)' }}>
+            <div>Term</div>
+            <div>Count</div>
+            <div>Action</div>
+            <div>Destination</div>
+            <div></div>
+          </div>
+
+          {table.terms.map((term) => {
+            const nicename = term.slug || term.id;
+            const key = termMappingId(domainName, nicename);
+            const pickerOpen = openNicenameInDomain === nicename;
+
+            return (
+              <TermRow
+                key={`${term.id}:${resetGeneration}`}
+                domainName={domainName}
+                nicename={nicename}
+                term={term}
+                initialMapping={mappingsRef.current[key]}
+                targetTables={targetTables}
+                targetTermsById={targetTermsById}
+                siteMatch={siteTermsByNicename?.get(nicename)}
+                pickerOpen={pickerOpen}
+                pickerSearch={pickerOpen ? pickerSearch : ''}
+                dispatch={dispatch}
+                onOpenPicker={onOpenPicker}
+                onClosePicker={onClosePicker}
+                onPickerSearchChange={onPickerSearchChange}
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+});
+
 export const MappingsTab: React.FC = () => {
   const { state, dispatch } = useAppState();
   const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>({ category: true, post_tag: true });
   const [pickerSearch, setPickerSearch] = useState('');
+  const [resetGeneration, setResetGeneration] = useState(0);
 
   const { source, mappings, target, oldTables } = state;
   const openPickerTermId = state.ui.pickers.destinationTermId;
 
+  // Rows read mappings through this ref (only at the moment a domain
+  // section actually rebuilds) instead of as a normal prop, so a mapping
+  // change elsewhere never forces this component — or any domain section
+  // — to recompute anything just because `mappings` got a new reference.
+  const mappingsRef = useRef(mappings);
+  mappingsRef.current = mappings;
+
+  const oldTableList = useMemo(() => Object.values(oldTables), [oldTables]);
   const targetTables = useMemo(() => Object.values(target.tables), [target.tables]);
   const targetTermsById = useMemo(
     () => new Map(targetTables.map((tbl) => [tbl.id, new Map(tbl.terms.map((t) => [t.id, t]))])),
@@ -231,8 +379,6 @@ export const MappingsTab: React.FC = () => {
       </div>
     );
   }
-
-  const oldTableList = Object.values(oldTables);
 
   const exportFullBackup = () => {
     const backup = createSessionBackup(state);
@@ -291,78 +437,31 @@ export const MappingsTab: React.FC = () => {
         const isExpanded = expandedDomains[domainName] ?? true;
         const isCore = CORE_DOMAINS.has(domainName);
         const siteTermsByNicename = siteTermsByDomain.get(domainName);
+        const openNicenameInDomain =
+          openPickerTermId && openPickerTermId.startsWith(`${domainName}:`)
+            ? openPickerTermId.slice(domainName.length + 1)
+            : null;
 
         return (
-          <div
+          <DomainSection
             key={domainName}
-            style={{
-              background: 'white',
-              border: '1px solid oklch(90% 0.005 250)',
-              borderRadius: '12px',
-              overflow: 'hidden',
-              boxShadow: '0 1px 3px oklch(0% 0 0 / 0.02)',
-            }}
-          >
-            <div
-              onClick={() => toggleDomain(domainName)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px 20px',
-                cursor: 'pointer',
-                background: 'oklch(98% 0.003 250)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>{isExpanded ? '▼' : '►'}</span>
-                <div style={{ fontSize: '15px', fontWeight: 700, textTransform: 'capitalize' }}>{domainName === 'post_tag' ? 'Tags' : domainName}</div>
-                {isCore && (
-                  <div style={{ fontSize: '11px', fontWeight: 600, color: 'oklch(50% 0.01 250)', background: 'oklch(95% 0.005 250)', padding: '2px 7px', borderRadius: '5px' }}>
-                    built-in
-                  </div>
-                )}
-              </div>
-              <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{table.terms.length} terms</div>
-            </div>
-
-            {isExpanded && (
-              <div style={{ borderTop: '1px solid oklch(93% 0.005 250)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: ROW_GRID_COLUMNS, gap: '12px', padding: '10px 20px', fontSize: '11px', fontWeight: 600, color: 'oklch(55% 0.01 250)', textTransform: 'uppercase', letterSpacing: '0.03em', background: 'oklch(99% 0.002 250)' }}>
-                  <div>Term</div>
-                  <div>Count</div>
-                  <div>Action</div>
-                  <div>Destination</div>
-                  <div></div>
-                </div>
-
-                {table.terms.map((term) => {
-                  const nicename = term.slug || term.id;
-                  const key = termMappingId(domainName, nicename);
-                  const pickerOpen = openPickerTermId === key;
-
-                  return (
-                    <TermRow
-                      key={term.id}
-                      domainName={domainName}
-                      nicename={nicename}
-                      term={term}
-                      mapping={mappings[key]}
-                      targetTables={targetTables}
-                      targetTermsById={targetTermsById}
-                      siteMatch={siteTermsByNicename?.get(nicename)}
-                      pickerOpen={pickerOpen}
-                      pickerSearch={pickerOpen ? pickerSearch : ''}
-                      dispatch={dispatch}
-                      onOpenPicker={openPicker}
-                      onClosePicker={closePicker}
-                      onPickerSearchChange={setPickerSearch}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </div>
+            domainName={domainName}
+            table={table}
+            isExpanded={isExpanded}
+            isCore={isCore}
+            targetTables={targetTables}
+            targetTermsById={targetTermsById}
+            siteTermsByNicename={siteTermsByNicename}
+            mappingsRef={mappingsRef}
+            openNicenameInDomain={openNicenameInDomain}
+            pickerSearch={pickerSearch}
+            resetGeneration={resetGeneration}
+            dispatch={dispatch}
+            onToggle={toggleDomain}
+            onOpenPicker={openPicker}
+            onClosePicker={closePicker}
+            onPickerSearchChange={setPickerSearch}
+          />
         );
       })}
 
@@ -396,6 +495,7 @@ export const MappingsTab: React.FC = () => {
                 type="button"
                 onClick={() => {
                   dispatch({ type: 'CLEAR_ALL_MAPPINGS' });
+                  setResetGeneration((g) => g + 1);
                   dispatch({ type: 'CLOSE_MODAL', modal: 'resetConfirm' });
                 }}
                 style={{ padding: '9px 16px', background: 'oklch(50% 0.18 25)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
