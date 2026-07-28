@@ -10,6 +10,19 @@ const CORE_DOMAINS = new Set(['category', 'post_tag']);
 
 const ROW_GRID_COLUMNS = '2fr 0.6fr 0.9fr 1.8fr 0.8fr';
 
+// A real taxonomy on a long-lived site can carry thousands of terms (e.g. a
+// per-meeting category used for years). Rendering every row's full DOM
+// subtree (select + destination chips + input) at once produces a DOM tree
+// large enough (tens of thousands of nodes) to make the whole browser tab —
+// not just this component — freeze for seconds on any interaction. Above
+// VIRTUALIZE_THRESHOLD terms, only rows near the current scroll position are
+// mounted; below it, the list renders exactly as before (no scroll
+// container, no behavior change) since the DOM cost is negligible.
+const VIRTUALIZE_THRESHOLD = 150;
+const ROW_HEIGHT = 64;
+const OVERSCAN = 10;
+const VIRTUAL_LIST_HEIGHT = 600;
+
 interface TermRowProps {
   domainName: string;
   nicename: string;
@@ -203,6 +216,97 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
   );
 });
 
+interface TermRowListProps {
+  domainName: string;
+  terms: NewSiteTerm[];
+  targetTables: TermTable[];
+  targetTermsById: Map<string, Map<string, NewSiteTerm>>;
+  siteTermsByNicename: Map<string, TaxonomyTermSummary> | undefined;
+  mappingsRef: { current: Record<string, TermMapping> };
+  openNicenameInDomain: string | null;
+  pickerSearch: string;
+  resetGeneration: number;
+  dispatch: React.Dispatch<Action>;
+  onOpenPicker: (key: string) => void;
+  onClosePicker: () => void;
+  onPickerSearchChange: (value: string) => void;
+}
+
+function renderRow(
+  term: NewSiteTerm,
+  {
+    domainName,
+    targetTables,
+    targetTermsById,
+    siteTermsByNicename,
+    mappingsRef,
+    openNicenameInDomain,
+    pickerSearch,
+    resetGeneration,
+    dispatch,
+    onOpenPicker,
+    onClosePicker,
+    onPickerSearchChange,
+  }: Omit<TermRowListProps, 'terms'>,
+) {
+  const nicename = term.slug || term.id;
+  const key = termMappingId(domainName, nicename);
+  const pickerOpen = openNicenameInDomain === nicename;
+
+  return (
+    <TermRow
+      key={`${term.id}:${resetGeneration}`}
+      domainName={domainName}
+      nicename={nicename}
+      term={term}
+      initialMapping={mappingsRef.current[key]}
+      targetTables={targetTables}
+      targetTermsById={targetTermsById}
+      siteMatch={siteTermsByNicename?.get(nicename)}
+      pickerOpen={pickerOpen}
+      pickerSearch={pickerOpen ? pickerSearch : ''}
+      dispatch={dispatch}
+      onOpenPicker={onOpenPicker}
+      onClosePicker={onClosePicker}
+      onPickerSearchChange={onPickerSearchChange}
+    />
+  );
+}
+
+/** Below VIRTUALIZE_THRESHOLD, renders the plain list (unchanged behavior).
+ * Above it, only the rows within VIRTUAL_LIST_HEIGHT of the current scroll
+ * position (plus OVERSCAN rows of buffer) are mounted; a spacer div of the
+ * same total height keeps the scrollbar and scroll position accurate for
+ * the un-rendered rows above and below. Assumes a fixed ROW_HEIGHT per row
+ * — generous enough to fit the two-line "suggested: ..." case — so rows
+ * never need to be measured. */
+const TermRowList: React.FC<TermRowListProps> = (props) => {
+  const { terms } = props;
+  const [scrollTop, setScrollTop] = useState(0);
+
+  if (terms.length <= VIRTUALIZE_THRESHOLD) {
+    return <>{terms.map((term) => renderRow(term, props))}</>;
+  }
+
+  const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+  const visibleCount = Math.ceil(VIRTUAL_LIST_HEIGHT / ROW_HEIGHT) + OVERSCAN * 2;
+  const endIndex = Math.min(terms.length, startIndex + visibleCount);
+  const visibleTerms = terms.slice(startIndex, endIndex);
+
+  return (
+    <div
+      onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+      style={{ maxHeight: VIRTUAL_LIST_HEIGHT, overflowY: 'auto' }}
+    >
+      <div style={{ height: terms.length * ROW_HEIGHT, position: 'relative' }}>
+        <div style={{ position: 'absolute', top: startIndex * ROW_HEIGHT, left: 0, right: 0 }}>
+          {visibleTerms.map((term) => renderRow(term, props))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface DomainSectionProps {
   domainName: string;
   table: TermTable;
@@ -289,30 +393,21 @@ const DomainSection: React.FC<DomainSectionProps> = React.memo(function DomainSe
             <div></div>
           </div>
 
-          {table.terms.map((term) => {
-            const nicename = term.slug || term.id;
-            const key = termMappingId(domainName, nicename);
-            const pickerOpen = openNicenameInDomain === nicename;
-
-            return (
-              <TermRow
-                key={`${term.id}:${resetGeneration}`}
-                domainName={domainName}
-                nicename={nicename}
-                term={term}
-                initialMapping={mappingsRef.current[key]}
-                targetTables={targetTables}
-                targetTermsById={targetTermsById}
-                siteMatch={siteTermsByNicename?.get(nicename)}
-                pickerOpen={pickerOpen}
-                pickerSearch={pickerOpen ? pickerSearch : ''}
-                dispatch={dispatch}
-                onOpenPicker={onOpenPicker}
-                onClosePicker={onClosePicker}
-                onPickerSearchChange={onPickerSearchChange}
-              />
-            );
-          })}
+          <TermRowList
+            domainName={domainName}
+            terms={table.terms}
+            targetTables={targetTables}
+            targetTermsById={targetTermsById}
+            siteTermsByNicename={siteTermsByNicename}
+            mappingsRef={mappingsRef}
+            openNicenameInDomain={openNicenameInDomain}
+            pickerSearch={pickerSearch}
+            resetGeneration={resetGeneration}
+            dispatch={dispatch}
+            onOpenPicker={onOpenPicker}
+            onClosePicker={onClosePicker}
+            onPickerSearchChange={onPickerSearchChange}
+          />
         </div>
       )}
     </div>
