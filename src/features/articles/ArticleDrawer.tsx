@@ -143,6 +143,7 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             padding: '40px',
+            overflowY: 'auto',
           }}
         >
           <div
@@ -157,7 +158,7 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
                 boxShadow: '0 12px 40px oklch(0% 0 0 / 0.15)',
                 padding: '32px',
                 width: '100%',
-                height: '700px',
+                height: 'min(700px, calc(100vh - 220px))',
                 overflowY: 'auto',
               }}
             >
