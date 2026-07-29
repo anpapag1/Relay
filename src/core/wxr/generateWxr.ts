@@ -1,42 +1,9 @@
 import type { ExportArticle, GenerateWxrOptions } from '../../types/domain';
-import { filenameOf } from '../media/attachmentIndex';
+import { buildAttachmentRegistry, type AttachmentRegistry, type AttachmentRegistryEntry } from '../media/attachmentRegistry';
 import { cdata, cdataSafe, escapeXml, slugFromLink, slugify } from './xml';
 
-/** Synthetic attachment ids start well above any real wp:post_id a WXR
- * export would plausibly contain, so they can never collide with one. */
-const SYNTHETIC_ATTACHMENT_ID_BASE = 900_000_000;
-
-interface AttachmentRegistryEntry {
-  id: number;
-  filename: string;
-}
-
-/** Dedupes every media URL — featured images and inline content images/
- * galleries alike — by URL across the whole export: one synthetic
- * attachment per unique image, not one per article or per reference, so
- * sites where many posts share an image (a series, a default
- * social-share image, etc.) don't balloon the export with duplicates.
- * Inline media needs its own attachment item for the same reason a
- * featured image does — Relay never carries the source WXR's own
- * `<wp:attachment>` items over verbatim, so without one here an inline
- * image would just be a hotlink to the old site rather than a real
- * new-site media-library item. */
-function buildAttachmentRegistry(articles: ExportArticle[]): Map<string, AttachmentRegistryEntry> {
-  const registry = new Map<string, AttachmentRegistryEntry>();
-  let nextId = SYNTHETIC_ATTACHMENT_ID_BASE;
-
-  const register = (url: string | null | undefined) => {
-    if (!url || registry.has(url)) return;
-    registry.set(url, { id: nextId, filename: filenameOf(url) });
-    nextId += 1;
-  };
-
-  for (const article of articles) {
-    register(article.featuredAttachmentUrl);
-    for (const url of article.mediaAttachmentUrls ?? []) register(url);
-  }
-
-  return registry;
+function registryUrlsFor(articles: ExportArticle[]): Iterable<string | null | undefined> {
+  return articles.flatMap((article) => [article.featuredAttachmentUrl, ...(article.mediaAttachmentUrls ?? [])]);
 }
 
 function buildAttachmentItem(url: string, entry: AttachmentRegistryEntry, { authorLogin, postDate }: { authorLogin: string; postDate: string }): string {
@@ -99,7 +66,7 @@ function buildTermXml(article: ExportArticle): string {
     .join('');
 }
 
-function buildPostmetaXml(article: ExportArticle, registry: Map<string, AttachmentRegistryEntry>): string {
+function buildPostmetaXml(article: ExportArticle, registry: AttachmentRegistry): string {
   const entry = article.featuredAttachmentUrl ? registry.get(article.featuredAttachmentUrl) : undefined;
   if (!entry) return '';
 
@@ -110,7 +77,7 @@ function buildPostmetaXml(article: ExportArticle, registry: Map<string, Attachme
 		</wp:postmeta>`;
 }
 
-function buildArticleItem(article: ExportArticle, registry: Map<string, AttachmentRegistryEntry>): string {
+function buildArticleItem(article: ExportArticle, registry: AttachmentRegistry): string {
   const postName = article.postName || slugFromLink(article.link) || slugify(article.title);
   const pubDate = article.postDate ? new Date(article.postDate).toUTCString() : new Date().toUTCString();
 
@@ -150,10 +117,10 @@ function buildArticleItem(article: ExportArticle, registry: Map<string, Attachme
  * on import. String-templated rather than built with a generic XML
  * serializer so CDATA payloads containing arbitrary article text stay
  * under direct control (see cdataSafe). */
-export function generateWxr(articles: ExportArticle[], options: GenerateWxrOptions): string {
+export function generateWxr(articles: ExportArticle[], options: GenerateWxrOptions, precomputedRegistry?: AttachmentRegistry): string {
   const language = options.language ?? 'en-US';
   const authorItems = buildAuthorItems(articles);
-  const registry = buildAttachmentRegistry(articles);
+  const registry = precomputedRegistry ?? buildAttachmentRegistry(registryUrlsFor(articles));
   const articleItems = articles.map((article) => buildArticleItem(article, registry));
   const attachmentItems = Array.from(registry.entries()).map(([url, entry]) => {
     const owner = articles.find((a) => a.featuredAttachmentUrl === url || (a.mediaAttachmentUrls ?? []).includes(url));

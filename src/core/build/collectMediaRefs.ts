@@ -1,5 +1,6 @@
 import type { IRNode } from '../ir/nodes';
 import type { MediaResolution } from '../../types/domain';
+import type { AttachmentRegistry } from '../media/attachmentRegistry';
 
 /** Walks an IR tree (recursing into columns) and collects every media
  * reference a reader emitted: image src/href, gallery image src/href,
@@ -52,27 +53,43 @@ function resolveRef(ref: string, resolved: Record<string, MediaResolution>, warn
 /** Replaces every media reference in the tree with its resolved URL
  * (matched-export/matched-live); anything unresolved or unreachable is
  * left as the original reference (never fabricated) and reported as a
- * warning instead. */
-export function rewriteMediaRefs(nodes: IRNode[], resolved: Record<string, MediaResolution>): { nodes: IRNode[]; warnings: string[] } {
+ * warning instead. When an `attachmentRegistry` is given (built once, up
+ * front, across every article — see runBuild), a resolved image also
+ * gets its `attachmentId` stamped on, so writeImage/writeGallery can emit
+ * the `id`/`wp-image-<id>` a real WordPress-inserted image carries,
+ * instead of the image floating unattached in the new post. */
+export function rewriteMediaRefs(
+  nodes: IRNode[],
+  resolved: Record<string, MediaResolution>,
+  attachmentRegistry?: AttachmentRegistry,
+): { nodes: IRNode[]; warnings: string[] } {
   const warnings: string[] = [];
+  const attachmentIdFor = (url: string): number | undefined => attachmentRegistry?.get(url)?.id;
 
   const visit = (list: IRNode[]): IRNode[] =>
     list.map((node): IRNode => {
       switch (node.kind) {
-        case 'image':
+        case 'image': {
+          const src = resolveRef(node.src, resolved, warnings);
           return {
             ...node,
-            src: resolveRef(node.src, resolved, warnings),
+            src,
             href: node.href ? resolveRef(node.href, resolved, warnings) : node.href,
+            attachmentId: attachmentIdFor(src),
           };
+        }
         case 'gallery':
           return {
             ...node,
-            images: node.images.map((image) => ({
-              ...image,
-              src: resolveRef(image.src, resolved, warnings),
-              href: image.href ? resolveRef(image.href, resolved, warnings) : image.href,
-            })),
+            images: node.images.map((image) => {
+              const src = resolveRef(image.src, resolved, warnings);
+              return {
+                ...image,
+                src,
+                href: image.href ? resolveRef(image.href, resolved, warnings) : image.href,
+                attachmentId: attachmentIdFor(src),
+              };
+            }),
           };
         case 'file':
           return { ...node, href: resolveRef(node.href, resolved, warnings) };

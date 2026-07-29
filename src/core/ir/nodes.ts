@@ -5,6 +5,12 @@ export interface ImageRef {
   href?: string;
   width?: number;
   height?: number;
+  /** The resolved image's synthetic WXR attachment id, once known — set by
+   * rewriteMediaRefs from the same attachment registry generateWxr uses to
+   * emit the matching `<wp:attachment>` item, so a real WordPress-authored
+   * image's `id`/`wp-image-<id>` linkage is preserved rather than the
+   * image floating unattached in the new post. */
+  attachmentId?: number;
 }
 
 /** The contract every builder reader produces and the only thing

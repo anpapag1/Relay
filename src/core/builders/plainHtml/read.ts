@@ -1,4 +1,4 @@
-import type { IRNode } from '../../ir/nodes';
+import type { ImageRef, IRNode } from '../../ir/nodes';
 import type { ReadInput, ReadResult, ReaderWarning } from '../types';
 
 function warn(warnings: ReaderWarning[], message: string): void {
@@ -68,27 +68,48 @@ function attrNumber(el: Element, name: string): number | undefined {
   return Number.isFinite(num) ? num : undefined;
 }
 
-function readImageElement(img: Element, caption?: string): IRNode {
+function imageRefFrom(img: Element): ImageRef {
   const parentAnchor = img.parentElement?.tagName === 'A' ? img.parentElement : null;
   return {
-    kind: 'image',
     src: img.getAttribute('src') ?? '',
     alt: img.getAttribute('alt') ?? '',
-    caption,
     href: parentAnchor?.getAttribute('href') ?? undefined,
     width: attrNumber(img, 'width'),
     height: attrNumber(img, 'height'),
   };
 }
 
-function readFigure(el: Element, warnings: ReaderWarning[]): IRNode | null {
+function readImageElement(img: Element, caption?: string): IRNode {
+  return { kind: 'image', ...imageRefFrom(img), caption };
+}
+
+/** A real WordPress gallery block is a `<figure class="wp-block-gallery">`
+ * wrapping several nested `<figure class="wp-block-image"><img></figure>`
+ * items, one per photo — structurally just an outer figure containing
+ * more figures, which used to be indistinguishable from a single
+ * captioned image here: `el.querySelector('img')` only ever finds the
+ * *first* descendant image, silently dropping every other photo in the
+ * gallery. Treating 2+ nested image-figures as a `gallery` node (each
+ * paired with its own figcaption, if any) instead of a lone `image` node
+ * is what actually preserves them all. */
+function readFigure(el: Element, warnings: ReaderWarning[]): IRNode[] {
+  const innerImageFigures = Array.from(el.querySelectorAll('figure')).filter((fig) => fig.querySelector('img'));
+  if (innerImageFigures.length > 1) {
+    const images: ImageRef[] = innerImageFigures.map((fig) => {
+      const img = fig.querySelector('img') as Element;
+      const caption = fig.querySelector('figcaption')?.textContent?.trim();
+      return { ...imageRefFrom(img), caption: caption || undefined };
+    });
+    return [{ kind: 'gallery', images }];
+  }
+
   const img = el.querySelector('img');
   if (!img) {
     warn(warnings, 'Unrecognised <figure> with no <img> — kept as raw HTML.');
-    return { kind: 'raw', html: el.outerHTML, note: 'figure without an image' };
+    return [{ kind: 'raw', html: el.outerHTML, note: 'figure without an image' }];
   }
   const caption = el.getAttribute('data-rl-caption') ?? el.querySelector('figcaption')?.textContent?.trim() ?? undefined;
-  return readImageElement(img, caption || undefined);
+  return [readImageElement(img, caption || undefined)];
 }
 
 function readList(el: Element): IRNode {
@@ -147,10 +168,8 @@ function readElement(el: Element, warnings: ReaderWarning[]): IRNode[] {
       }
       return [{ kind: 'paragraph', html: el.innerHTML.trim() }];
     }
-    case 'FIGURE': {
-      const node = readFigure(el, warnings);
-      return node ? [node] : [];
-    }
+    case 'FIGURE':
+      return readFigure(el, warnings);
     case 'IMG':
       return [readImageElement(el)];
     case 'UL':
