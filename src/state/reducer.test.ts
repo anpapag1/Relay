@@ -93,6 +93,23 @@ describe('appReducer', () => {
     expect(next.articles[3]).toEqual({ excluded: true, reason: 'Empty content', auto: true });
   });
 
+  it('auto-excludes a source post whose original status was not "publish", reversibly and with a reason', () => {
+    const result: ParseResult = {
+      ...MOCK_PARSE_RESULT,
+      articles: [
+        { ...MOCK_PARSE_RESULT.articles[0], postId: 5, status: 'draft', postName: 'draft-post' },
+      ],
+    };
+    const next = appReducer(initialState, {
+      type: 'LOAD_SOURCE',
+      result,
+      defaultBuilder: 'plainHtml',
+      confidence: 95,
+    });
+
+    expect(next.articles[5]).toEqual({ excluded: true, reason: 'Original post status was "draft", not published', auto: true });
+  });
+
   it('preserves oldTables that already exist (e.g. from a JSON import) across LOAD_SOURCE', () => {
     const withOldTables = {
       ...initialState,

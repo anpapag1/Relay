@@ -133,7 +133,16 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
           art.contentHtml.includes('[et_pb_') ||
           Object.keys(art.postmeta).some((k) => k.includes('elementor'));
 
-        if (slug && seenSlugs.has(slug)) {
+        if (art.status !== 'publish') {
+          // Matches the reference tool: only posts that were actually
+          // published on the old site are candidates at all — a draft,
+          // pending, or private post there has no business going live on
+          // the new site just because it happened to be in the export.
+          // Auto-excluded (not silently dropped) so it's still visible and
+          // reversible in the Articles list, same as the other auto-exclude
+          // reasons below.
+          articlesOverrides[id] = { excluded: true, reason: `Original post status was "${art.status}", not published`, auto: true };
+        } else if (slug && seenSlugs.has(slug)) {
           articlesOverrides[id] = { excluded: true, reason: `Duplicate slug: "${slug}"`, auto: true };
         } else if (!stripped && !hasRichMedia) {
           articlesOverrides[id] = { excluded: true, reason: 'Empty content', auto: true };

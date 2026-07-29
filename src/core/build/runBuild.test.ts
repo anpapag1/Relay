@@ -311,6 +311,100 @@ describe('runBuild', () => {
     if (parsed.ok) expect(parsed.articles[0].status).toBe('pending');
   });
 
+  it('exports every article with the fixed "migration" author login, regardless of the original creator', async () => {
+    const articles: BuildArticleInput[] = [
+      { article: makeArticle({ postId: 1, creator: 'alice' }), excluded: false },
+      { article: makeArticle({ postId: 2, creator: 'bob' }), excluded: false },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.articles.every((a) => a.creator === 'migration')).toBe(true);
+    expect(parsed.authors).toEqual(['migration']);
+  });
+
+  it('registers a resolved inline image as a synthetic attachment item, not just a hotlink to the old site', async () => {
+    const articles: BuildArticleInput[] = [
+      {
+        article: makeArticle({ contentHtml: '<figure><img src="https://old.example/wp-content/uploads/photo.jpg"/></figure>' }),
+        excluded: false,
+      },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [
+        { postId: 10, title: 'Photo', attachmentUrl: 'https://old.example/wp-content/uploads/photo.jpg', postParent: 1 },
+      ],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.attachments).toHaveLength(1);
+    expect(parsed.attachments[0].attachmentUrl).toBe('https://old.example/wp-content/uploads/photo.jpg');
+  });
+
+  it('skips an article whose conversion produced no real content or media, and reports it as "skipped"', async () => {
+    const articles: BuildArticleInput[] = [
+      { article: makeArticle({ contentHtml: '' }), excluded: false },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+
+    expect(result.articles[0].status).toBe('skipped');
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.articles).toHaveLength(0);
+  });
+
+  it('does not skip an article whose only content is raw, unrecognised markup with no text or image', async () => {
+    const articles: BuildArticleInput[] = [
+      { article: makeArticle({ contentHtml: '<canvas width="10" height="10"></canvas>' }), excluded: false },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+
+    expect(result.articles[0].status).toBe('review');
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.articles).toHaveLength(1);
+  });
+
   it('leaves featuredAttachmentUrl unset (no postmeta, no attachment item) when the old post never had a _thumbnail_id', async () => {
     const articles: BuildArticleInput[] = [{ article: makeArticle(), excluded: false }];
     const result = await runBuild({
