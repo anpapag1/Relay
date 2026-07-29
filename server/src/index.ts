@@ -3,12 +3,6 @@ import { fetchPageMedia, type PageMediaResult } from './fetchPageMedia';
 import { getCached, setCached } from './cache';
 
 const PORT = Number(process.env.PORT ?? 8787);
-const ALLOWED_HOSTS = new Set(
-  (process.env.RELAY_ALLOWED_HOSTS ?? '')
-    .split(',')
-    .map((host) => host.trim())
-    .filter(Boolean),
-);
 
 function sendJson(res: http.ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'content-type': 'application/json' });
@@ -45,7 +39,7 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    const result = await fetchPageMedia(target, { allowedHosts: ALLOWED_HOSTS });
+    const result = await fetchPageMedia(target, {});
     if (result.status === 200) {
       setCached(target, result.body);
       sendJson(res, 200, result.body);
@@ -56,7 +50,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  const hostList = ALLOWED_HOSTS.size > 0 ? Array.from(ALLOWED_HOSTS).join(', ') : '(none — set RELAY_ALLOWED_HOSTS)';
   console.log(`Relay media proxy listening on http://localhost:${PORT}`);
-  console.log(`Allowed hosts: ${hostList}`);
 });

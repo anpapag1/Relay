@@ -10,7 +10,6 @@ vi.mock('./guard', () => ({
 describe('fetchPageMedia', () => {
   let server: http.Server;
   let baseUrl: string;
-  const allowedHosts = new Set(['127.0.0.1', 'example.com']);
   const activeTimers = new Set<NodeJS.Timeout>();
 
   beforeAll(async () => {
@@ -132,7 +131,7 @@ describe('fetchPageMedia', () => {
   });
 
   it('should successfully extract og:image, images, and files with deduplication and absolute resolution', async () => {
-    const res = await fetchPageMedia(`${baseUrl}/success`, { allowedHosts });
+    const res = await fetchPageMedia(`${baseUrl}/success`, {});
     expect(res.status).toBe(200);
     if (res.status === 200) {
       expect(res.body).toEqual({
@@ -144,7 +143,7 @@ describe('fetchPageMedia', () => {
   });
 
   it('should resolve relative src and href against a subfolder base URL', async () => {
-    const res = await fetchPageMedia(`${baseUrl}/subfolder/page.html`, { allowedHosts });
+    const res = await fetchPageMedia(`${baseUrl}/subfolder/page.html`, {});
     expect(res.status).toBe(200);
     if (res.status === 200) {
       expect(res.body.images).toEqual([`${baseUrl}/subfolder/relative-img.jpg`]);
@@ -153,48 +152,48 @@ describe('fetchPageMedia', () => {
   });
 
   it('should return 400 when guardUrl refuses the URL', async () => {
-    vi.mocked(guardUrl).mockResolvedValueOnce({ ok: false, reason: 'host not on the allowlist: evil.com' });
-    const res = await fetchPageMedia('http://evil.com/page', { allowedHosts });
-    expect(res).toEqual({ status: 400, reason: 'host not on the allowlist: evil.com' });
+    vi.mocked(guardUrl).mockResolvedValueOnce({ ok: false, reason: 'evil.com resolved to a private/loopback/link-local address' });
+    const res = await fetchPageMedia('http://evil.com/page', {});
+    expect(res).toEqual({ status: 400, reason: 'evil.com resolved to a private/loopback/link-local address' });
   });
 
   it('should return 502 for non-2xx upstream responses', async () => {
-    const res500 = await fetchPageMedia(`${baseUrl}/500`, { allowedHosts });
+    const res500 = await fetchPageMedia(`${baseUrl}/500`, {});
     expect(res500).toEqual({ status: 502, reason: 'the old site responded with status 500' });
 
-    const res404 = await fetchPageMedia(`${baseUrl}/404`, { allowedHosts });
+    const res404 = await fetchPageMedia(`${baseUrl}/404`, {});
     expect(res404).toEqual({ status: 502, reason: 'the old site responded with status 404' });
   });
 
   it('should return 502 when content-type is not text/html', async () => {
-    const res = await fetchPageMedia(`${baseUrl}/json`, { allowedHosts });
+    const res = await fetchPageMedia(`${baseUrl}/json`, {});
     expect(res).toEqual({ status: 502, reason: 'unexpected content-type: application/json' });
   });
 
   it('should follow redirects up to maxRedirects', async () => {
-    const res = await fetchPageMedia(`${baseUrl}/redirect-1`, { allowedHosts });
+    const res = await fetchPageMedia(`${baseUrl}/redirect-1`, {});
     expect(res.status).toBe(200);
     expect(guardUrl).toHaveBeenCalledTimes(2);
   });
 
   it('should return 502 when maxRedirects is exceeded', async () => {
-    const res = await fetchPageMedia(`${baseUrl}/redirect-loop`, { allowedHosts, maxRedirects: 2 });
+    const res = await fetchPageMedia(`${baseUrl}/redirect-loop`, { maxRedirects: 2 });
     expect(res).toEqual({ status: 502, reason: 'too many redirects' });
     expect(guardUrl).toHaveBeenCalledTimes(3); // initial + 2 hops
   });
 
   it('should return 502 when redirect is missing Location header', async () => {
-    const res = await fetchPageMedia(`${baseUrl}/redirect-no-location`, { allowedHosts });
+    const res = await fetchPageMedia(`${baseUrl}/redirect-no-location`, {});
     expect(res).toEqual({ status: 502, reason: 'redirect with no Location header (status 302)' });
   });
 
   it('should return 502 when response body exceeds maxBytes cap', async () => {
-    const res = await fetchPageMedia(`${baseUrl}/big`, { allowedHosts, maxBytes: 100 });
+    const res = await fetchPageMedia(`${baseUrl}/big`, { maxBytes: 100 });
     expect(res).toEqual({ status: 502, reason: 'response exceeded the size cap' });
   });
 
   it('should return 504 when request times out', async () => {
-    const res = await fetchPageMedia(`${baseUrl}/timeout`, { allowedHosts, timeoutMs: 50 });
+    const res = await fetchPageMedia(`${baseUrl}/timeout`, { timeoutMs: 50 });
     expect(res).toEqual({ status: 504, reason: 'the old site did not respond in time' });
   });
 });

@@ -17,7 +17,7 @@ const SETTINGS: ConversionSettings = {
 };
 
 const NEVER_FETCH: FetchLike = async () => {
-  throw new Error('should not be called when liveFetchEnabled is false');
+  throw new Error('should not be called: no media refs or featured image needed a live fetch');
 };
 
 function makeArticle(overrides: Partial<ParsedArticle> = {}): ParsedArticle {
@@ -50,7 +50,6 @@ describe('runBuild', () => {
       builderId: 'plainHtml',
       siteTitle: 'New Site',
       siteUrl: 'https://new-site.example',
-      liveFetchEnabled: false,
       fetchImpl: NEVER_FETCH,
     });
 
@@ -79,7 +78,6 @@ describe('runBuild', () => {
       builderId: 'plainHtml',
       siteTitle: 'New Site',
       siteUrl: 'https://new-site.example',
-      liveFetchEnabled: false,
       fetchImpl: NEVER_FETCH,
     });
 
@@ -102,7 +100,6 @@ describe('runBuild', () => {
       builderId: 'wpbakery',
       siteTitle: 'New Site',
       siteUrl: 'https://new-site.example',
-      liveFetchEnabled: false,
       fetchImpl: NEVER_FETCH,
     });
 
@@ -125,7 +122,6 @@ describe('runBuild', () => {
       builderId: 'plainHtml',
       siteTitle: 'New Site',
       siteUrl: 'https://new-site.example',
-      liveFetchEnabled: false,
       fetchImpl: NEVER_FETCH,
     });
 
@@ -149,7 +145,6 @@ describe('runBuild', () => {
       builderId: 'plainHtml',
       siteTitle: 'New Site',
       siteUrl: 'https://new-site.example',
-      liveFetchEnabled: false,
       fetchImpl: NEVER_FETCH,
       isCancelled: () => {
         calls += 1;
@@ -177,7 +172,6 @@ describe('runBuild', () => {
       builderId: 'plainHtml',
       siteTitle: 'New Site',
       siteUrl: 'https://new-site.example',
-      liveFetchEnabled: false,
       fetchImpl: NEVER_FETCH,
       onProgress: (p) => progress.push(p),
     });
@@ -202,7 +196,6 @@ describe('runBuild', () => {
       builderId: 'plainHtml',
       siteTitle: 'New Site',
       siteUrl: 'https://new-site.example',
-      liveFetchEnabled: false,
       fetchImpl: NEVER_FETCH,
     });
 
@@ -210,5 +203,50 @@ describe('runBuild', () => {
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
     expect(parsed.articles[0].terms).toEqual([{ domain: 'category', nicename: 'news', name: 'News' }]);
+  });
+
+  it('resolves a featured image already in the export attachments and emits it as _thumbnail_id in the WXR', async () => {
+    const articles: BuildArticleInput[] = [
+      { article: makeArticle({ postmeta: { _thumbnail_id: '42' } }), excluded: false },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [{ postId: 42, title: 'Featured', attachmentUrl: 'https://old.example/wp-content/uploads/featured.jpg', postParent: 1 }],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.attachments).toHaveLength(1);
+    expect(parsed.attachments[0].attachmentUrl).toBe('https://old.example/wp-content/uploads/featured.jpg');
+    expect(parsed.articles[0].postmeta._thumbnail_id).toBe(String(parsed.attachments[0].postId));
+  });
+
+  it('leaves featuredAttachmentUrl unset (no postmeta, no attachment item) when the old post never had a _thumbnail_id', async () => {
+    const articles: BuildArticleInput[] = [{ article: makeArticle(), excluded: false }];
+    const result = await runBuild({
+      articles,
+      attachments: [],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.attachments).toHaveLength(0);
+    expect(parsed.articles[0].postmeta._thumbnail_id).toBeUndefined();
   });
 });

@@ -84,7 +84,6 @@ describe('session backup', () => {
       settings: s.settings,
       articles: { 1: { editedHtml: '<p>Restored edit</p>' } },
       mediaResolved: {},
-      liveFetchEnabled: false,
     });
 
     const res = restoreSessionBackup(backupJson, s);
@@ -92,7 +91,6 @@ describe('session backup', () => {
     if (!res.ok) return;
 
     const restoredState = appReducer(s, { type: 'RESTORE_SESSION', state: res.state });
-    expect(restoredState.liveFetchEnabled).toBe(false);
     expect(restoredState.target.tables.cats).toBeDefined();
 
     // Legacy backups used a singular `targetTermId` — restore normalizes it into the array shape.
@@ -145,12 +143,12 @@ describe('session backup', () => {
     (globalThis as any).window = mockWin;
 
     try {
-      let s = appReducer(initialState, { type: 'SET_LIVE_FETCH_ENABLED', enabled: false });
+      const s = appReducer(initialState, { type: 'SET_ARTICLE_EXCLUDED', articleId: 1, excluded: true });
       saveToLocalStorage(s, 0); // synchronous for testing
 
       // Advance timer if any
       const loaded = loadFromLocalStorage(initialState);
-      expect(loaded?.liveFetchEnabled).toBe(false);
+      expect(loaded?.articles?.[1]).toEqual({ excluded: true, reason: 'Excluded by user', auto: false });
     } finally {
       (globalThis as any).window = origWin;
     }

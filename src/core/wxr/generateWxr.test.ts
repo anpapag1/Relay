@@ -60,4 +60,44 @@ describe('generateWxr', () => {
     expect(result.authors.sort()).toEqual(['admin', 'editor']);
     expect(result.statusCounts.publish).toBe(2);
   });
+
+  describe('featured images', () => {
+    const SHARED_IMAGE = 'https://old-site.example/wp-content/uploads/shared.jpg';
+
+    it('emits exactly one attachment item for a featured image shared by two articles, and matching _thumbnail_id postmeta on both', () => {
+      const articles: ExportArticle[] = [
+        { ...ARTICLES[0], featuredAttachmentUrl: SHARED_IMAGE },
+        { ...ARTICLES[1], featuredAttachmentUrl: SHARED_IMAGE },
+      ];
+      const xml = generateWxr(articles, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+
+      const attachmentCount = (xml.match(/<wp:post_type><!\[CDATA\[attachment\]\]><\/wp:post_type>/g) ?? []).length;
+      expect(attachmentCount).toBe(1);
+
+      const thumbnailIds = Array.from(xml.matchAll(/<wp:meta_key><!\[CDATA\[_thumbnail_id\]\]><\/wp:meta_key>\s*<wp:meta_value><!\[CDATA\[(\d+)\]\]><\/wp:meta_value>/g)).map(
+        (m) => m[1],
+      );
+      expect(thumbnailIds).toHaveLength(2);
+      expect(thumbnailIds[0]).toBe(thumbnailIds[1]);
+      expect(xml).toContain(`<wp:attachment_url><![CDATA[${SHARED_IMAGE}]]></wp:attachment_url>`);
+    });
+
+    it('emits no attachment item and no postmeta when no article has a featuredAttachmentUrl', () => {
+      const xml = generateWxr(ARTICLES, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+      expect(xml).not.toContain('_thumbnail_id');
+      expect(xml).not.toContain('<![CDATA[attachment]]>');
+    });
+
+    it('parses the synthetic attachment item back out as a ParsedAttachment', () => {
+      const articles: ExportArticle[] = [{ ...ARTICLES[0], featuredAttachmentUrl: SHARED_IMAGE }];
+      const xml = generateWxr(articles, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+      const result = parseWxr(xml);
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.attachments).toHaveLength(1);
+      expect(result.attachments[0].attachmentUrl).toBe(SHARED_IMAGE);
+      expect(result.articles[0].postmeta._thumbnail_id).toBe(String(result.attachments[0].postId));
+    });
+  });
 });
