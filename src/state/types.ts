@@ -52,6 +52,9 @@ export interface AppState {
     log: string[];
     cancelled: boolean;
     done: boolean;
+    /** Set when the build itself threw (distinct from `cancelled`/`done`)
+     * — surfaced by the UI instead of a silently-stuck spinner. */
+    error: string | null;
     report: {
       wxr: string;
       articles: BuildArticleResult[];

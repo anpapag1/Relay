@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act } from 'react';
+import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { AppStateProvider } from '../../state/AppStateContext';
 import { BuildTab } from './BuildTab';
@@ -106,5 +106,63 @@ describe('BuildTab check-for-problems copy button', () => {
     await act(async () => { copyBtn?.click(); });
 
     expect(writeText).toHaveBeenCalledWith('No problems found — ready to build.');
+  });
+});
+
+describe('BuildTab build survives navigating away mid-build', () => {
+  // Mirrors App.tsx: `{activeTab === 'build' && <BuildTab />}` — BuildTab is
+  // only mounted while its tab is active, so switching tabs unmounts it
+  // entirely. Build progress/completion must live in global state (driven
+  // by AppStateProvider's startBuild, which never unmounts) rather than
+  // BuildTab's own local state, or a build in flight silently vanishes the
+  // instant you look away from the tab.
+  function Harness() {
+    const [show, setShow] = useState(true);
+    return (
+      <>
+        <button type="button" data-testid="toggle-tab" onClick={() => setShow((s) => !s)}>
+          toggle
+        </button>
+        {show && <BuildTab />}
+      </>
+    );
+  }
+
+  it('keeps a build running and eventually shows its result after unmounting and remounting BuildTab', async () => {
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false} initialStateOverride={stateWithImport()}>
+          <Harness />
+        </AppStateProvider>,
+      );
+    });
+
+    const buildBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Build now');
+    expect(buildBtn).toBeDefined();
+    await act(async () => {
+      buildBtn?.click();
+    });
+
+    // Simulate switching away from the Build tab while the build is still
+    // running: unmount BuildTab (the toggle button itself lives outside it,
+    // in the always-mounted Harness, standing in for App.tsx's tab bar).
+    const toggleBtn = container.querySelector('[data-testid="toggle-tab"]') as HTMLButtonElement;
+    await act(async () => {
+      toggleBtn.click();
+    });
+    expect(container.textContent).not.toContain('Build migration file');
+
+    // Let the build actually finish while BuildTab is unmounted.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+
+    // Switch back — same pattern as returning to the Build tab.
+    await act(async () => {
+      toggleBtn.click();
+    });
+
+    expect(container.textContent).toContain('↓ Download WXR file');
+    expect(container.textContent).not.toContain('Build cancelled');
   });
 });

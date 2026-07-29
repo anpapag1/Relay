@@ -31,6 +31,7 @@ export type Action =
   | { type: 'BUILD_PROGRESS'; completed: number; total: number; logLine?: string }
   | { type: 'BUILD_COMPLETE'; report: { wxr: string; articles: BuildArticleResult[] }; historyEntry: BuildHistoryEntry }
   | { type: 'CANCEL_BUILD' }
+  | { type: 'BUILD_FAILED'; message: string }
   | { type: 'RESTORE_SESSION'; state: Partial<AppState> }
   | { type: 'RESET_ALL' };
 
@@ -91,6 +92,7 @@ export const actions = {
     historyEntry,
   }),
   cancelBuild: (): Action => ({ type: 'CANCEL_BUILD' }),
+  buildFailed: (message: string): Action => ({ type: 'BUILD_FAILED', message }),
   restoreSession: (state: Partial<AppState>): Action => ({ type: 'RESTORE_SESSION', state }),
   resetAll: (): Action => ({ type: 'RESET_ALL' }),
 };
