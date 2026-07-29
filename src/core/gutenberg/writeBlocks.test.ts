@@ -96,12 +96,13 @@ describe('writeBlocks', () => {
     expect(out).toContain('height="200"');
   });
 
-  it('wraps a linked image in an <a>', () => {
+  it('never links an image to its full-size original, even when the source had one, matching a real WordPress-inserted image\'s default (linkDestination: none)', () => {
     const out = writeBlocks(
       [{ kind: 'image', src: 'https://x/a.jpg', alt: '', href: 'https://x/full.jpg' }],
       DEFAULT_SETTINGS,
     );
-    expect(out).toContain('<a href="https://x/full.jpg"><img');
+    expect(out).not.toContain('<a href');
+    expect(out).toContain('"linkDestination":"none"');
   });
 
   it('writes a gallery with WordPress-default columns and per-image sizeSlug', () => {

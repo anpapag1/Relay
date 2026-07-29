@@ -78,10 +78,37 @@ function combineConsecutiveImages(nodes: IRNode[]): IRNode[] {
   return out;
 }
 
+/** Inserts a real `wp:spacer` block (using `spacerSize`) immediately
+ * before and/or after a run of one or more image/gallery blocks, but only
+ * on whichever side has other content next to it — an image opening or
+ * closing the sequence gets no spacer on that side, since there's nothing
+ * there to create visual crowding against. A run of consecutive media
+ * blocks (e.g. images `combineConsecutiveImages` didn't merge into one
+ * gallery) gets exactly one spacer at each of its outer boundaries, not
+ * one between every pair. Applies recursively per column, since this
+ * runs inside `writeBlocks` itself and each column's own node list goes
+ * through it again. */
+function withImageSpacers(nodes: IRNode[], settings: ConversionSettings): IRNode[] {
+  if (!settings.autoSpacing) return nodes;
+  const isMedia = (node: IRNode) => node.kind === 'image' || node.kind === 'gallery';
+  const spacer = (): IRNode => ({ kind: 'spacer', height: settings.spacerSize });
+
+  const out: IRNode[] = [];
+  nodes.forEach((node, i) => {
+    const prev = nodes[i - 1];
+    const next = nodes[i + 1];
+    if (isMedia(node) && prev && !isMedia(prev)) out.push(spacer());
+    out.push(node);
+    if (isMedia(node) && next && !isMedia(next)) out.push(spacer());
+  });
+  return out;
+}
+
 /** The only place Settings are read (per the design spec §5.5) — every
  * builder reader is settings-agnostic, and the preview calls this same
  * function on a fixture tree so it can never disagree with a real build. */
 export function writeBlocks(nodes: IRNode[], settings: ConversionSettings): string {
-  const effectiveNodes = settings.combineConsecutiveImages ? combineConsecutiveImages(nodes) : nodes;
+  const combined = settings.combineConsecutiveImages ? combineConsecutiveImages(nodes) : nodes;
+  const effectiveNodes = withImageSpacers(combined, settings);
   return effectiveNodes.map((node) => writeOne(node, settings)).join('\n\n');
 }

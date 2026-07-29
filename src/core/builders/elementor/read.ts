@@ -108,7 +108,15 @@ function readNode(node: ElementorNode, warnings: ReaderWarning[]): IRNode[] {
   if (node.elType === 'section') {
     const columns = (node.elements ?? []).filter((child) => child.elType === 'column');
     if (columns.length === 0) return readChildren(node.elements ?? [], warnings);
-    return [{ kind: 'columns', columns: columns.map((col) => readChildren(col.elements ?? [], warnings)) }];
+
+    // See wpbakery/read.ts's identical handling: a genuinely empty column
+    // carries no meaning of its own, and a section left with only one
+    // populated column after dropping empty ones isn't a real
+    // multi-column layout — flatten it to that column's content directly.
+    const nonEmptyColumns = columns.map((col) => readChildren(col.elements ?? [], warnings)).filter((column) => column.length > 0);
+    if (nonEmptyColumns.length === 0) return [];
+    if (nonEmptyColumns.length === 1) return nonEmptyColumns[0];
+    return [{ kind: 'columns', columns: nonEmptyColumns }];
   }
   if (node.elType === 'column') {
     return readChildren(node.elements ?? [], warnings);

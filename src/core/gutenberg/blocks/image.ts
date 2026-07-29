@@ -62,11 +62,13 @@ export function writeImage(
     attrs.sizeSlug = settings.imageSize;
   }
 
+  // Never links to the full-size original — matches how a real
+  // WordPress-inserted image behaves by default (linkDestination: none).
+  attrs.linkDestination = 'none';
   if (settings.imageAlign !== 'none') attrs.align = settings.imageAlign;
 
   const imgClass = node.attachmentId ? ` class="wp-image-${node.attachmentId}"` : '';
   const img = `<img src="${escapeAttr(node.src)}" alt="${escapeAttr(node.alt)}"${imgClass}${dimAttrs}${imgStyle}/>`;
-  const linked = node.href ? `<a href="${escapeAttr(node.href)}">${img}</a>` : img;
   const figcaption = node.caption
     ? `<figcaption class="wp-element-caption">${node.caption}</figcaption>`
     : '';
@@ -83,5 +85,5 @@ export function writeImage(
   if (settings.autoSpacing && settings.imageAlign === 'left') figureStyle = ` style="margin-right:${settings.spacerSize}px"`;
   else if (settings.autoSpacing && settings.imageAlign === 'right') figureStyle = ` style="margin-left:${settings.spacerSize}px"`;
 
-  return `<!-- wp:image ${JSON.stringify(attrs)} -->\n<figure class="${classes.join(' ')}"${figureStyle}>${linked}${figcaption}</figure>\n<!-- /wp:image -->`;
+  return `<!-- wp:image ${JSON.stringify(attrs)} -->\n<figure class="${classes.join(' ')}"${figureStyle}>${img}${figcaption}</figure>\n<!-- /wp:image -->`;
 }

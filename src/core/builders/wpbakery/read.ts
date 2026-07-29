@@ -64,7 +64,19 @@ function readElement(el: ShortcodeElement, warnings: ReaderWarning[]): IRNode[] 
       // children as one implicit column rather than losing the content.
       return readChildren(el.children, warnings);
     }
-    return [{ kind: 'columns', columns: columnElements.map((col) => readColumn(col, warnings)) }];
+
+    // A genuinely empty column (a real WPBakery layout pattern — e.g. a
+    // theme's sidebar-spacing column with nothing in it) carries no
+    // Gutenberg-relevant meaning of its own; keeping it produces a real
+    // empty `wp:column` in the new site's editor. Once those are dropped,
+    // a row that's left with only one populated column is not a
+    // multi-column layout at all — it's flattened to that column's
+    // content directly, with no `wp:columns` wrapper, rather than
+    // preserving a pointless single-column layout block.
+    const nonEmptyColumns = columnElements.map((col) => readColumn(col, warnings)).filter((column) => column.length > 0);
+    if (nonEmptyColumns.length === 0) return [];
+    if (nonEmptyColumns.length === 1) return nonEmptyColumns[0];
+    return [{ kind: 'columns', columns: nonEmptyColumns }];
   }
 
   if (COLUMN_TAGS.has(el.tag)) {
