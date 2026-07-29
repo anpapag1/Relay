@@ -60,21 +60,4 @@ describe('generateWxr', () => {
     expect(result.authors.sort()).toEqual(['admin', 'editor']);
     expect(result.statusCounts.publish).toBe(2);
   });
-
-  it('writes a synthetic attachment item and _thumbnail_id postmeta for a resolved featured image', () => {
-    const withFeatured: ExportArticle[] = [
-      { ...ARTICLES[0], featuredAttachmentUrl: 'https://old-site.example/wp-content/uploads/hero.jpg' },
-      ARTICLES[1],
-    ];
-    const xml = generateWxr(withFeatured, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
-
-    expect(xml).toContain('<wp:attachment_url><![CDATA[https://old-site.example/wp-content/uploads/hero.jpg]]></wp:attachment_url>');
-    expect(xml).toContain('<wp:meta_key><![CDATA[_thumbnail_id]]></wp:meta_key>');
-    expect((xml.match(/<wp:post_type><!\[CDATA\[attachment\]\]><\/wp:post_type>/g) ?? []).length).toBe(1);
-
-    // No attachment item/postmeta at all when nothing resolved a featured image.
-    const xmlNoFeatured = generateWxr(ARTICLES, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
-    expect(xmlNoFeatured).not.toContain('wp:attachment_url');
-    expect(xmlNoFeatured).not.toContain('_thumbnail_id');
-  });
 });

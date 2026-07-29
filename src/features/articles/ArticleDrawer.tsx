@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import type { DerivedArticle } from '../../state/types';
 import { getArticlePreviewHtml } from '../../state/selectors';
-import { resolveFeaturedImage } from '../../core/media/resolveFeaturedImage';
 import { Badge } from '../../ui/Badge';
 
 export interface ArticleDrawerProps {
@@ -33,23 +32,6 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
     if (!article) return { html: '', warnings: [] as string[] };
     return getArticlePreviewHtml(article, article.editedHtml, state);
   }, [article, state.settings, state.builderId]);
-
-  const [featuredImageUrl, setFeaturedImageUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setFeaturedImageUrl(null);
-    if (!article) return;
-    resolveFeaturedImage(article, state.source?.attachments ?? [], {
-      liveFetchEnabled: state.liveFetchEnabled,
-      fetchImpl: window.fetch ? window.fetch.bind(window) : (async () => new Response()) as any,
-    }).then((url) => {
-      if (!cancelled) setFeaturedImageUrl(url);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [article, state.source, state.liveFetchEnabled]);
 
   useEffect(() => {
     if (article) {
@@ -289,30 +271,22 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '14px', marginBottom: '18px', background: 'oklch(98% 0.003 250)', padding: '14px', borderRadius: '10px', border: '1px solid oklch(92% 0.005 250)' }}>
-            {featuredImageUrl ? (
-              <img
-                src={featuredImageUrl}
-                alt=""
-                style={{ width: '100px', height: '70px', borderRadius: '8px', objectFit: 'cover' }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: '100px',
-                  height: '70px',
-                  borderRadius: '8px',
-                  background: 'repeating-linear-gradient(45deg, oklch(93% 0.005 250), oklch(93% 0.005 250) 6px, oklch(96% 0.003 250) 6px, oklch(96% 0.003 250) 12px)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '10px',
-                  color: 'oklch(55% 0.01 250)',
-                  textAlign: 'center',
-                }}
-              >
-                No Featured Image
-              </div>
-            )}
+            <div
+              style={{
+                width: '100px',
+                height: '70px',
+                borderRadius: '8px',
+                background: 'repeating-linear-gradient(45deg, oklch(93% 0.005 250), oklch(93% 0.005 250) 6px, oklch(96% 0.003 250) 6px, oklch(96% 0.003 250) 12px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '10px',
+                color: 'oklch(55% 0.01 250)',
+                textAlign: 'center',
+              }}
+            >
+              Featured Image
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
               <div>
                 <span style={{ color: 'oklch(55% 0.01 250)' }}>Published</span>
