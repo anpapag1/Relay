@@ -53,6 +53,7 @@ export const initialState: AppState = {
     log: [],
     cancelled: false,
     done: false,
+    error: null,
     report: null,
     history: [],
   },
@@ -314,6 +315,7 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
           log: ['Build started...'],
           cancelled: false,
           done: false,
+          error: null,
           report: null,
         },
       };
@@ -345,6 +347,16 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
           running: false,
           cancelled: true,
           log: [...state.build.log, 'Build cancelled by user.'],
+        },
+      };
+    case 'BUILD_FAILED':
+      return {
+        ...state,
+        build: {
+          ...state.build,
+          running: false,
+          error: action.message,
+          log: [...state.build.log, `Build failed with error: ${action.message}`],
         },
       };
     case 'RESTORE_SESSION':

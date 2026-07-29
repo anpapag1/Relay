@@ -1,12 +1,24 @@
-import React, { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useReducer, useRef, type ReactNode } from 'react';
 import type { Action } from './actions';
 import { appReducer, initialState } from './reducer';
-import type { AppState } from './types';
+import type { AppState, BuildHistoryEntry } from './types';
 import { loadFromLocalStorage, saveToLocalStorage } from './session';
+import { runBuild, type BuildArticleInput } from '../core/build/runBuild';
 
 interface AppStateContextValue {
   state: AppState;
   dispatch: React.Dispatch<Action>;
+  /** Starts a build, or does nothing if one is already running. Lives
+   * here — on the provider, which stays mounted for the whole session —
+   * rather than in BuildTab, whose own component state (and any promise
+   * closures tied to it) would be discarded the instant the user
+   * navigates to a different tab, since BuildTab unmounts entirely when
+   * it isn't the active one (see App.tsx). Progress/completion are
+   * dispatched into global `state.build`, so the build keeps running (and
+   * keeps updating visible state once you return to the tab) regardless
+   * of what's mounted while it's in flight. */
+  startBuild: (exportPendingForReview: boolean) => Promise<void>;
+  cancelBuild: () => void;
 }
 
 const AppStateContext = createContext<AppStateContextValue | null>(null);
@@ -26,6 +38,7 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({
     ...initialState,
     ...initialStateOverride,
   });
+  const cancelRef = useRef(false);
 
   useEffect(() => {
     if (!enableAutosave) return;
@@ -41,7 +54,70 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({
     }
   }, [state, enableAutosave]);
 
-  return <AppStateContext.Provider value={{ state, dispatch }}>{children}</AppStateContext.Provider>;
+  const startBuild = useCallback(
+    async (exportPendingForReview: boolean) => {
+      if (!state.source || state.build.running) return;
+      cancelRef.current = false;
+      dispatch({ type: 'START_BUILD' });
+
+      const source = state.source;
+      const buildInputs: BuildArticleInput[] = source.articles.map((art, idx) => {
+        const override = state.articles[art.postId ?? idx];
+        return {
+          article: art,
+          excluded: override?.excluded ?? false,
+          editedHtml: override?.editedHtml,
+        };
+      });
+      const builderId = state.builderId || 'plainHtml';
+
+      try {
+        const res = await runBuild({
+          articles: buildInputs,
+          attachments: source.attachments ?? [],
+          mappings: state.mappings,
+          newTables: Object.values(state.target.tables),
+          settings: state.settings,
+          builderId,
+          siteTitle: 'Relay Migration Site',
+          siteUrl: source.siteUrl || 'https://example.com',
+          exportPendingForReview,
+          fetchImpl: window.fetch ? window.fetch.bind(window) : ((async () => new Response()) as any),
+          onProgress: ({ completed, total }) => {
+            const pct = Math.round((completed / Math.max(total, 1)) * 100);
+            dispatch({ type: 'BUILD_PROGRESS', completed, total, logLine: `Converted post ${completed}/${total} (${pct}%)` });
+          },
+          isCancelled: () => cancelRef.current,
+        });
+
+        if (res.cancelled) {
+          dispatch({ type: 'CANCEL_BUILD' });
+          return;
+        }
+
+        const historyEntry: BuildHistoryEntry = {
+          id: `build-${Date.now()}`,
+          date: new Date().toISOString(),
+          articleCount: res.articles.length,
+          sizeBytes: res.wxr.length,
+          builderId,
+        };
+        dispatch({ type: 'BUILD_COMPLETE', report: { wxr: res.wxr, articles: res.articles }, historyEntry });
+      } catch (err) {
+        dispatch({ type: 'BUILD_FAILED', message: err instanceof Error ? err.message : String(err) });
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state],
+  );
+
+  const cancelBuild = useCallback(() => {
+    cancelRef.current = true;
+  }, []);
+
+  return (
+    <AppStateContext.Provider value={{ state, dispatch, startBuild, cancelBuild }}>{children}</AppStateContext.Provider>
+  );
 };
 
 export function useAppState(): AppStateContextValue {

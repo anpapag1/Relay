@@ -1,21 +1,23 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import { getDerivedArticles } from '../../state/selectors';
-import { runBuild, type BuildArticleInput } from '../../core/build/runBuild';
 
 export const BuildTab: React.FC = () => {
-  const { state, dispatch } = useAppState();
+  const { state, dispatch, startBuild, cancelBuild } = useAppState();
   const [hasCheckResults, setHasCheckResults] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
-  const [isBuilding, setIsBuilding] = useState<boolean>(false);
-  const [buildPercent, setBuildPercent] = useState<number>(0);
-  const [buildLog, setBuildLog] = useState<string[]>([]);
-  const [buildDone, setBuildDone] = useState<boolean>(false);
-  const [buildCancelled, setBuildCancelled] = useState<boolean>(false);
-  const [wxrResult, setWxrResult] = useState<string>('');
   const [includeFilter, setIncludeFilter] = useState<'all' | 'ready' | 'review' | 'edited'>('all');
   const [exportPendingForReview, setExportPendingForReview] = useState<boolean>(true);
-  const cancelRef = useRef<boolean>(false);
+
+  const isBuilding = state.build.running;
+  const buildPercent = Math.round(
+    (state.build.progress.completed / Math.max(state.build.progress.total, 1)) * 100,
+  );
+  const buildLog = state.build.log;
+  const buildDone = state.build.done;
+  const buildCancelled = state.build.cancelled;
+  const buildError = state.build.error;
+  const wxrResult = state.build.report?.wxr ?? '';
 
   if (!state.source) {
     return (
@@ -68,68 +70,8 @@ export const BuildTab: React.FC = () => {
     }
   };
 
-  const cancelBuild = () => {
-    cancelRef.current = true;
-  };
-
-  const startBuild = async () => {
-    if (!state.source) return;
-    setIsBuilding(true);
-    setBuildDone(false);
-    setBuildCancelled(false);
-    setBuildPercent(0);
-    setBuildLog(['Starting conversion build…', `Targeting page builder: ${state.builderId || 'plainHtml'}`]);
-    cancelRef.current = false;
-
-    const buildInputs: BuildArticleInput[] = state.source.articles.map((art, idx) => {
-      const override = state.articles[art.postId ?? idx];
-      const isExc = override?.excluded ?? false;
-      return {
-        article: art,
-        excluded: isExc,
-        editedHtml: override?.editedHtml,
-      };
-    });
-
-    try {
-      const res = await runBuild({
-        articles: buildInputs,
-        attachments: state.source.attachments ?? [],
-        mappings: state.mappings,
-        newTables: Object.values(state.target.tables),
-        settings: state.settings,
-        builderId: state.builderId || 'plainHtml',
-        siteTitle: 'Relay Migration Site',
-        siteUrl: state.source.siteUrl || 'https://example.com',
-        exportPendingForReview,
-        fetchImpl: window.fetch ? window.fetch.bind(window) : (async () => new Response()) as any,
-        onProgress: ({ completed, total }) => {
-          const pct = Math.round((completed / Math.max(total, 1)) * 100);
-          setBuildPercent(pct);
-          setBuildLog((prev) => [...prev, `Converted post ${completed}/${total} (${pct}%)`]);
-        },
-        isCancelled: () => cancelRef.current,
-      });
-
-      if (res.cancelled) {
-        setBuildCancelled(true);
-        setIsBuilding(false);
-        setBuildLog((prev) => [...prev, 'Build cancelled by user.']);
-      } else {
-        setWxrResult(res.wxr);
-        setBuildDone(true);
-        setIsBuilding(false);
-        setBuildPercent(100);
-        setBuildLog((prev) => [
-          ...prev,
-          `Build finished! Produced WXR XML package (${Math.round(res.wxr.length / 1024)} KB).`,
-        ]);
-      }
-    } catch (err: any) {
-      setIsBuilding(false);
-      setBuildLog((prev) => [...prev, `Build failed with error: ${err.message || String(err)}`]);
-      console.error(err);
-    }
+  const handleStartBuild = () => {
+    void startBuild(exportPendingForReview);
   };
 
   const downloadWxr = () => {
@@ -249,7 +191,7 @@ export const BuildTab: React.FC = () => {
           {!isBuilding && (
             <button
               type="button"
-              onClick={startBuild}
+              onClick={handleStartBuild}
               className="btn btn-primary"
               style={{ padding: '10px 20px', fontSize: '14px' }}
             >
@@ -349,6 +291,12 @@ export const BuildTab: React.FC = () => {
         {buildCancelled && (
           <div style={{ fontSize: '13px', color: 'oklch(50% 0.01 250)', padding: '12px', background: 'oklch(96% 0.005 250)', borderRadius: '8px' }}>
             Build cancelled. No file was produced.
+          </div>
+        )}
+
+        {buildError && (
+          <div style={{ fontSize: '13px', color: 'oklch(45% 0.16 25)', padding: '12px', background: 'oklch(97% 0.04 25)', border: '1px solid oklch(88% 0.1 25)', borderRadius: '8px' }}>
+            Build failed: {buildError}
           </div>
         )}
 
