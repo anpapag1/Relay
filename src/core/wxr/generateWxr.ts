@@ -11,19 +11,29 @@ interface AttachmentRegistryEntry {
   filename: string;
 }
 
-/** Dedupes featured images by URL across the whole export — one synthetic
- * attachment per unique image, not one per article — so sites where many
- * posts share a featured image (a series, a default social-share image,
- * etc.) don't balloon the export with duplicate attachment items. */
+/** Dedupes every media URL — featured images and inline content images/
+ * galleries alike — by URL across the whole export: one synthetic
+ * attachment per unique image, not one per article or per reference, so
+ * sites where many posts share an image (a series, a default
+ * social-share image, etc.) don't balloon the export with duplicates.
+ * Inline media needs its own attachment item for the same reason a
+ * featured image does — Relay never carries the source WXR's own
+ * `<wp:attachment>` items over verbatim, so without one here an inline
+ * image would just be a hotlink to the old site rather than a real
+ * new-site media-library item. */
 function buildAttachmentRegistry(articles: ExportArticle[]): Map<string, AttachmentRegistryEntry> {
   const registry = new Map<string, AttachmentRegistryEntry>();
   let nextId = SYNTHETIC_ATTACHMENT_ID_BASE;
 
-  for (const article of articles) {
-    const url = article.featuredAttachmentUrl;
-    if (!url || registry.has(url)) continue;
+  const register = (url: string | null | undefined) => {
+    if (!url || registry.has(url)) return;
     registry.set(url, { id: nextId, filename: filenameOf(url) });
     nextId += 1;
+  };
+
+  for (const article of articles) {
+    register(article.featuredAttachmentUrl);
+    for (const url of article.mediaAttachmentUrls ?? []) register(url);
   }
 
   return registry;
@@ -117,7 +127,7 @@ function buildArticleItem(article: ExportArticle, registry: Map<string, Attachme
 		<wp:post_id>${article.postId}</wp:post_id>
 		${cdata('wp:post_date', article.postDate)}
 		${cdata('wp:post_date_gmt', article.postDate)}
-		${cdata('wp:comment_status', 'closed')}
+		${cdata('wp:comment_status', 'open')}
 		${cdata('wp:ping_status', 'closed')}
 		${cdata('wp:post_name', postName)}
 		${cdata('wp:status', article.postStatus)}
@@ -132,19 +142,21 @@ function buildArticleItem(article: ExportArticle, registry: Map<string, Attachme
 /** Emits a WXR (WordPress eXtended RSS) export: channel header, taxonomy
  * terms as per-item <category domain> elements, one <item> per article
  * with CDATA-wrapped content, and one synthetic attachment <item> per
- * unique featured-image URL (deduped across the whole export, not one
- * per article) so the WordPress importer downloads it and each owning
- * article's `_thumbnail_id` postmeta resolves to a real post on import.
- * String-templated rather than built with a generic XML serializer so
- * CDATA payloads containing arbitrary article text stay under direct
- * control (see cdataSafe). */
+ * unique media URL — featured image or inline content image/gallery
+ * item alike (deduped across the whole export, not one per article) —
+ * so the WordPress importer actually downloads each one into the new
+ * site's media library instead of leaving a hotlink to the old site, and
+ * each owning article's `_thumbnail_id` postmeta resolves to a real post
+ * on import. String-templated rather than built with a generic XML
+ * serializer so CDATA payloads containing arbitrary article text stay
+ * under direct control (see cdataSafe). */
 export function generateWxr(articles: ExportArticle[], options: GenerateWxrOptions): string {
   const language = options.language ?? 'en-US';
   const authorItems = buildAuthorItems(articles);
   const registry = buildAttachmentRegistry(articles);
   const articleItems = articles.map((article) => buildArticleItem(article, registry));
   const attachmentItems = Array.from(registry.entries()).map(([url, entry]) => {
-    const owner = articles.find((a) => a.featuredAttachmentUrl === url);
+    const owner = articles.find((a) => a.featuredAttachmentUrl === url || (a.mediaAttachmentUrls ?? []).includes(url));
     return buildAttachmentItem(url, entry, { authorLogin: owner?.authorLogin ?? 'admin', postDate: owner?.postDate ?? '' });
   });
 

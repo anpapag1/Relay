@@ -60,6 +60,13 @@ describe('generateWxr', () => {
     expect(result.articles.find((a) => a.postId === 2)?.status).toBe('publish');
   });
 
+  it('emits wp:comment_status=open for every post, so old-site comments can still be enabled on the new site', () => {
+    const xml = generateWxr(ARTICLES, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+    const postCommentStatuses = Array.from(xml.matchAll(/<wp:post_type><!\[CDATA\[post\]\]><\/wp:post_type>/g)).length;
+    expect(postCommentStatuses).toBe(2);
+    expect(xml.match(/<wp:comment_status><!\[CDATA\[open\]\]><\/wp:comment_status>/g)?.length).toBe(2);
+  });
+
   it('round-trips through parseWxr with matching counts and content', () => {
     const xml = generateWxr(ARTICLES, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
     const result = parseWxr(xml);
@@ -113,6 +120,44 @@ describe('generateWxr', () => {
       expect(result.attachments).toHaveLength(1);
       expect(result.attachments[0].attachmentUrl).toBe(SHARED_IMAGE);
       expect(result.articles[0].postmeta._thumbnail_id).toBe(String(result.attachments[0].postId));
+    });
+  });
+
+  describe('inline media attachment items', () => {
+    const SHARED_IMAGE = 'https://old-site.example/wp-content/uploads/shared.jpg';
+    const INLINE_A = 'https://old-site.example/wp-content/uploads/inline-a.jpg';
+    const INLINE_B = 'https://old-site.example/wp-content/uploads/inline-b.jpg';
+
+    it('registers every inline media URL as its own synthetic attachment item, deduped by URL across articles', () => {
+      const articles: ExportArticle[] = [
+        { ...ARTICLES[0], mediaAttachmentUrls: [INLINE_A, INLINE_B] },
+        { ...ARTICLES[1], mediaAttachmentUrls: [INLINE_A] },
+      ];
+      const xml = generateWxr(articles, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+      const result = parseWxr(xml);
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.attachments).toHaveLength(2);
+      expect(result.attachments.map((a) => a.attachmentUrl).sort()).toEqual([INLINE_A, INLINE_B]);
+    });
+
+    it('dedupes a URL that is both the featured image and an inline reference into one attachment item', () => {
+      const articles: ExportArticle[] = [{ ...ARTICLES[0], featuredAttachmentUrl: SHARED_IMAGE, mediaAttachmentUrls: [SHARED_IMAGE] }];
+      const xml = generateWxr(articles, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+      const result = parseWxr(xml);
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.attachments).toHaveLength(1);
+    });
+
+    it('emits no attachment items when mediaAttachmentUrls is absent or empty', () => {
+      const xml = generateWxr(ARTICLES, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+      const result = parseWxr(xml);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.attachments).toHaveLength(0);
     });
   });
 });

@@ -72,6 +72,14 @@ export interface ExportArticle {
   contentHtml: string;
   terms: ExportTermRef[];
   featuredAttachmentUrl?: string | null;
+  /** Every resolved inline media URL used in this article's content
+   * (images, gallery items), regardless of whether it was matched against
+   * the export's own attachments or a live scrape — Relay never carries
+   * the source WXR's own `<wp:attachment>` items over verbatim, so
+   * without a synthetic attachment item of its own here, an inline image
+   * would import as a bare hotlink to the old (soon-to-be-decommissioned)
+   * site instead of a real new-site media-library item. */
+  mediaAttachmentUrls?: string[];
   postStatus: ExportPostStatus;
 }
 
