@@ -21,6 +21,22 @@ describe('readWpbakery', () => {
     ]);
   });
 
+  it('flattens a row with one populated column and one genuinely empty column, dropping the wp:columns wrapper entirely', () => {
+    const { nodes } = readWpbakery({
+      contentHtml: '[vc_row][vc_column][vc_column_text]<p>Only content</p>[/vc_column_text][/vc_column][vc_column][/vc_column][/vc_row]',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([{ kind: 'paragraph', html: 'Only content' }]);
+  });
+
+  it('drops a row whose columns are all genuinely empty entirely, no pointless empty wp:columns block', () => {
+    const { nodes } = readWpbakery({
+      contentHtml: '[vc_row][vc_column][/vc_column][/vc_row]',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([]);
+  });
+
   it('reads vc_single_image as an attachment-id-referencing image', () => {
     const { nodes } = readWpbakery({ contentHtml: '[vc_single_image image="42" alt="A photo"]', postmeta: {} });
     expect(nodes).toEqual([{ kind: 'image', src: 'attachment:42', alt: 'A photo' }]);
@@ -113,7 +129,10 @@ describe('readWpbakery', () => {
 
   it('drops a bare vc_icon with a warning, and converts a linked one to a button', () => {
     const bare = readWpbakery({ contentHtml: '[vc_row][vc_column][vc_icon][/vc_column][/vc_row]', postmeta: {} });
-    expect(bare.nodes).toEqual([{ kind: 'columns', columns: [[]] }]);
+    // The single column ends up with no real content (the dropped icon
+    // leaves it empty) — a row left with no populated columns is dropped
+    // entirely rather than emitting a pointless empty wp:columns block.
+    expect(bare.nodes).toEqual([]);
     expect(msgs(bare.warnings).some((m) => m.includes('vc_icon dropped'))).toBe(true);
 
     const linked = readWpbakery({

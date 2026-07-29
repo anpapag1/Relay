@@ -8,7 +8,11 @@ exports[`golden fixtures > converts the divi fixture to the expected Gutenberg m
 <p>Intro paragraph before the layout.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none","align":"center"} -->
 <figure class="wp-block-image aligncenter size-large"><img src="https://old-divi.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:column -->
@@ -16,6 +20,10 @@ exports[`golden fixtures > converts the divi fixture to the expected Gutenberg m
 <div class="wp-block-column"><!-- wp:paragraph -->
 <p>Second column text.</p>
 <!-- /wp:paragraph -->
+
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
 
 <!-- wp:gallery {"linkTo":"none"} -->
 <figure class="wp-block-gallery has-nested-images columns-default is-cropped">
@@ -33,13 +41,21 @@ exports[`golden fixtures > converts the divi fixture to the expected Gutenberg m
 </figure>
 <!-- /wp:gallery -->
 
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
+
 <!-- wp:buttons -->
 <div class="wp-block-buttons"><!-- wp:button -->
 <div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://old-divi.example/learn-more" target="_blank" rel="noreferrer noopener">Learn more</a></div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons -->
 
-<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none","align":"center"} -->
 <figure class="wp-block-image aligncenter size-large"><img src="https://old-divi.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:column -->
@@ -65,7 +81,11 @@ exports[`golden fixtures > converts the elementor fixture to the expected Gutenb
 <p>Intro paragraph before the layout.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none","align":"center"} -->
 <figure class="wp-block-image aligncenter size-large"><img src="https://old-elementor.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:column -->
@@ -73,6 +93,10 @@ exports[`golden fixtures > converts the elementor fixture to the expected Gutenb
 <div class="wp-block-column"><!-- wp:paragraph -->
 <p>Second column text.</p>
 <!-- /wp:paragraph -->
+
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
 
 <!-- wp:gallery {"linkTo":"none"} -->
 <figure class="wp-block-gallery has-nested-images columns-default is-cropped">
@@ -86,13 +110,21 @@ exports[`golden fixtures > converts the elementor fixture to the expected Gutenb
 </figure>
 <!-- /wp:gallery -->
 
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
+
 <!-- wp:buttons -->
 <div class="wp-block-buttons"><!-- wp:button -->
 <div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://old-elementor.example/learn-more" target="_blank" rel="noreferrer noopener">Learn more</a></div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons -->
 
-<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none","align":"center"} -->
 <figure class="wp-block-image aligncenter size-large"><img src="https://old-elementor.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:column -->
@@ -115,9 +147,17 @@ exports[`golden fixtures > converts the plainHtml fixture to the expected Gutenb
 <p>Some intro text with an <em>inline</em> image below.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none","align":"center"} -->
 <figure class="wp-block-image aligncenter size-large"><img src="https://old-plainhtml.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero" width="800" height="400"/></figure>
 <!-- /wp:image -->
+
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
 
 <!-- wp:list -->
 <ul class="wp-block-list"><li>First point</li><li>Second point</li></ul>
@@ -126,6 +166,10 @@ exports[`golden fixtures > converts the plainHtml fixture to the expected Gutenb
 <!-- wp:quote -->
 <blockquote class="wp-block-quote"><p>A wise quote.</p><cite>Someone Notable</cite></blockquote>
 <!-- /wp:quote -->
+
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
 
 <!-- wp:gallery {"linkTo":"none"} -->
 <figure class="wp-block-gallery has-nested-images columns-default is-cropped">
@@ -143,9 +187,13 @@ exports[`golden fixtures > converts the plainHtml fixture to the expected Gutenb
 </figure>
 <!-- /wp:gallery -->
 
-<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none","align":"center"} -->
 <figure class="wp-block-image aligncenter size-large"><img src="https://old-plainhtml.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></figure>
 <!-- /wp:image -->
+
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
 
 <!-- wp:separator -->
 <hr class="wp-block-separator has-alpha-channel-opacity"/>
@@ -162,7 +210,11 @@ exports[`golden fixtures > converts the wpbakery fixture to the expected Gutenbe
 <p>Intro paragraph before the layout.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none","align":"center"} -->
 <figure class="wp-block-image aligncenter size-large"><img src="attachment:100" alt="Hero"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:column -->
@@ -170,6 +222,10 @@ exports[`golden fixtures > converts the wpbakery fixture to the expected Gutenbe
 <div class="wp-block-column"><!-- wp:paragraph -->
 <p>Second column text.</p>
 <!-- /wp:paragraph -->
+
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
 
 <!-- wp:gallery {"linkTo":"none"} -->
 <figure class="wp-block-gallery has-nested-images columns-default is-cropped">
@@ -187,13 +243,21 @@ exports[`golden fixtures > converts the wpbakery fixture to the expected Gutenbe
 </figure>
 <!-- /wp:gallery -->
 
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
+
 <!-- wp:buttons -->
 <div class="wp-block-buttons"><!-- wp:button -->
 <div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://old-wpbakery.example/learn-more" target="_blank" rel="noreferrer noopener">Learn more</a></div>
 <!-- /wp:button --></div>
 <!-- /wp:buttons -->
 
-<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<!-- wp:spacer {"height":"30px"} -->
+<div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->
+
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none","align":"center"} -->
 <figure class="wp-block-image aligncenter size-large"><img src="attachment:999" alt="No matching attachment"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:column -->

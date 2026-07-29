@@ -38,7 +38,15 @@ function readElement(el: ShortcodeElement, warnings: ReaderWarning[]): IRNode[] 
       (child): child is ShortcodeElement => child.type === 'element' && child.tag === 'et_pb_column',
     );
     if (columnElements.length === 0) return readChildren(el.children, warnings);
-    return [{ kind: 'columns', columns: columnElements.map((col) => readColumn(col, warnings)) }];
+
+    // See wpbakery/read.ts's identical handling: a genuinely empty column
+    // carries no meaning of its own, and a row left with only one
+    // populated column after dropping empty ones isn't a real
+    // multi-column layout — flatten it to that column's content directly.
+    const nonEmptyColumns = columnElements.map((col) => readColumn(col, warnings)).filter((column) => column.length > 0);
+    if (nonEmptyColumns.length === 0) return [];
+    if (nonEmptyColumns.length === 1) return nonEmptyColumns[0];
+    return [{ kind: 'columns', columns: nonEmptyColumns }];
   }
 
   if (el.tag === 'et_pb_column') {
