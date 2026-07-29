@@ -61,19 +61,19 @@ describe('readElementor', () => {
   it('falls back to plainHtml when _elementor_data is missing', () => {
     const { nodes, warnings } = readElementor({ contentHtml: '<p>Plain content</p>', postmeta: {} });
     expect(nodes).toEqual([{ kind: 'paragraph', html: 'Plain content' }]);
-    expect(warnings.some((w) => w.includes('_elementor_data'))).toBe(true);
+    expect(warnings.map((w) => w.message).some((m) => m.includes('_elementor_data'))).toBe(true);
   });
 
   it('falls back to plainHtml when _elementor_data is invalid JSON', () => {
     const { nodes, warnings } = readElementor({ contentHtml: '<p>Plain content</p>', postmeta: { _elementor_data: '{not json' } });
     expect(nodes).toEqual([{ kind: 'paragraph', html: 'Plain content' }]);
-    expect(warnings.some((w) => w.includes('not valid JSON'))).toBe(true);
+    expect(warnings.map((w) => w.message).some((m) => m.includes('not valid JSON'))).toBe(true);
   });
 
   it('keeps an unrecognised widget type as raw with a warning', () => {
     const tree = [{ elType: 'widget', widgetType: 'testimonial-carousel', settings: {} }];
     const { nodes, warnings } = readElementor({ contentHtml: '', postmeta: elementorData(tree) });
     expect(nodes[0].kind).toBe('raw');
-    expect(warnings.some((w) => w.includes('testimonial-carousel'))).toBe(true);
+    expect(warnings.map((w) => w.message).some((m) => m.includes('testimonial-carousel'))).toBe(true);
   });
 });

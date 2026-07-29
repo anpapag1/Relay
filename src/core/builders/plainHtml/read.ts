@@ -1,5 +1,9 @@
 import type { IRNode } from '../../ir/nodes';
-import type { ReadInput, ReadResult } from '../types';
+import type { ReadInput, ReadResult, ReaderWarning } from '../types';
+
+function warn(warnings: ReaderWarning[], message: string): void {
+  warnings.push({ message, severity: 'review' });
+}
 
 const HEADING_RE = /^H([1-6])$/;
 const CAPTION_SHORTCODE_RE = /\[caption[^\]]*\]([\s\S]*?)\[\/caption\]/g;
@@ -77,10 +81,10 @@ function readImageElement(img: Element, caption?: string): IRNode {
   };
 }
 
-function readFigure(el: Element, warnings: string[]): IRNode | null {
+function readFigure(el: Element, warnings: ReaderWarning[]): IRNode | null {
   const img = el.querySelector('img');
   if (!img) {
-    warnings.push('Unrecognised <figure> with no <img> — kept as raw HTML.');
+    warn(warnings, 'Unrecognised <figure> with no <img> — kept as raw HTML.');
     return { kind: 'raw', html: el.outerHTML, note: 'figure without an image' };
   }
   const caption = el.getAttribute('data-rl-caption') ?? el.querySelector('figcaption')?.textContent?.trim() ?? undefined;
@@ -102,26 +106,26 @@ function readBlockquote(el: Element): IRNode {
   return { kind: 'quote', html: clone.innerHTML.trim(), cite: cite || undefined };
 }
 
-function readGalleryMarker(el: Element, warnings: string[]): IRNode {
+function readGalleryMarker(el: Element, warnings: ReaderWarning[]): IRNode {
   const idsAttr = el.getAttribute('data-rl-gallery-ids') ?? '';
   const ids = idsAttr.split(',').map((id) => id.trim()).filter(Boolean);
   if (ids.length === 0) {
-    warnings.push('Classic [gallery] shortcode with no ids attribute — kept as raw, never fabricating a URL.');
+    warn(warnings, 'Classic [gallery] shortcode with no ids attribute — kept as raw, never fabricating a URL.');
     return { kind: 'raw', html: '[gallery]', note: 'classic [gallery] shortcode with no ids attribute' };
   }
   return { kind: 'gallery', images: ids.map((id) => ({ src: `attachment:${id}`, alt: '' })) };
 }
 
-function readVideoMarker(el: Element, warnings: string[]): IRNode {
+function readVideoMarker(el: Element, warnings: ReaderWarning[]): IRNode {
   const src = el.getAttribute('data-rl-video-src') ?? '';
   if (!src) {
-    warnings.push('Classic [video] shortcode with no resolvable source — kept as raw.');
+    warn(warnings, 'Classic [video] shortcode with no resolvable source — kept as raw.');
     return { kind: 'raw', html: '[video]', note: 'classic [video] shortcode with no src/mp4/etc. attribute' };
   }
   return { kind: 'video', src, provider: videoProvider(src) };
 }
 
-function readElement(el: Element, warnings: string[]): IRNode[] {
+function readElement(el: Element, warnings: ReaderWarning[]): IRNode[] {
   if (el.hasAttribute('data-rl-gallery-ids')) return [readGalleryMarker(el, warnings)];
   if (el.hasAttribute('data-rl-video-src')) return [readVideoMarker(el, warnings)];
 
@@ -183,7 +187,7 @@ function readElement(el: Element, warnings: string[]): IRNode[] {
     default: {
       const html = el.outerHTML.trim();
       if (!html) return [];
-      warnings.push(`Unrecognised element <${tag.toLowerCase()}> — kept as raw HTML.`);
+      warn(warnings, `Unrecognised element <${tag.toLowerCase()}> — kept as raw HTML.`);
       return [{ kind: 'raw', html, note: `unknown element: ${tag.toLowerCase()}` }];
     }
   }
@@ -226,7 +230,7 @@ function flushInlineChunks(html: string, nodes: IRNode[]): void {
  * blank lines, images promoted — see flushInlineChunks), and everything
  * else goes through readElement. Shared by the top-level document walk and
  * by container-unwrapping so nesting (a <div> inside a <div>) just recurses. */
-function readChildNodes(childNodes: ArrayLike<ChildNode>, warnings: string[]): IRNode[] {
+function readChildNodes(childNodes: ArrayLike<ChildNode>, warnings: ReaderWarning[]): IRNode[] {
   const nodes: IRNode[] = [];
 
   let inlineBuffer = '';
@@ -260,7 +264,7 @@ function readChildNodes(childNodes: ArrayLike<ChildNode>, warnings: string[]): I
  * / `et_pb_text` / rich-text widget delegates its inner HTML here. */
 export function readPlainHtml(input: ReadInput): ReadResult {
   const doc = new DOMParser().parseFromString(`<body>${preprocessShortcodes(input.contentHtml)}</body>`, 'text/html');
-  const warnings: string[] = [];
+  const warnings: ReaderWarning[] = [];
   const nodes = readChildNodes(doc.body.childNodes, warnings);
   return { nodes, warnings };
 }

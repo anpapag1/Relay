@@ -61,7 +61,7 @@ describe('readPlainHtml', () => {
   it('keeps a classic [gallery] shortcode with no ids as raw with a warning, never fabricating a URL', () => {
     const { nodes, warnings } = readPlainHtml({ contentHtml: '[gallery]', postmeta: {} });
     expect(nodes[0].kind).toBe('raw');
-    expect(warnings.some((w) => w.includes('gallery'))).toBe(true);
+    expect(warnings.map((w) => w.message).some((m) => m.includes('gallery'))).toBe(true);
   });
 
   it('reads a <table> as a wp:table block instead of raw HTML', () => {
@@ -85,7 +85,7 @@ describe('readPlainHtml', () => {
   it('keeps a classic [video] shortcode with no resolvable source as raw with a warning', () => {
     const { nodes, warnings } = readPlainHtml({ contentHtml: '[video]', postmeta: {} });
     expect(nodes[0].kind).toBe('raw');
-    expect(warnings.some((w) => w.includes('video'))).toBe(true);
+    expect(warnings.map((w) => w.message).some((m) => m.includes('video'))).toBe(true);
   });
 
   it('keeps a genuinely unrecognised element as raw with a warning instead of dropping it', () => {

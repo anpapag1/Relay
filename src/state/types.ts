@@ -67,6 +67,10 @@ export interface DerivedArticle extends ParsedArticle {
   status: ArticleStatus;
   statusReason?: string;
   warnings: string[];
+  /** Reader notes confirmed to need no human attention (e.g. a known-empty
+   * pattern that was automatically and correctly dropped) — shown
+   * separately from `warnings` and never affects `status`. */
+  infoWarnings: string[];
   /** Count of media references (images, files, embeds) collected from the
    * article's original content via the active builder's reader — shown in
    * the Articles list's Media column. */

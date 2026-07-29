@@ -52,6 +52,6 @@ describe('readDivi', () => {
   it('keeps an unrecognised widget as raw with a warning', () => {
     const { nodes, warnings } = readDivi({ contentHtml: '[et_pb_testimonial name="X"]', postmeta: {} });
     expect(nodes[0].kind).toBe('raw');
-    expect(warnings.some((w) => w.includes('et_pb_testimonial'))).toBe(true);
+    expect(warnings.map((w) => w.message).some((m) => m.includes('et_pb_testimonial'))).toBe(true);
   });
 });
