@@ -60,7 +60,6 @@ export interface AppState {
   };
   builderId: BuilderId | null;
   builderConfidence: number;
-  liveFetchEnabled: boolean;
 }
 
 export interface DerivedArticle extends ParsedArticle {

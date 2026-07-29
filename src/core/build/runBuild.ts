@@ -3,7 +3,9 @@ import type { BuilderId } from '../builders/types';
 import { getReader } from '../builders';
 import { writeBlocks } from '../gutenberg/writeBlocks';
 import { generateWxr } from '../wxr/generateWxr';
+import { buildAttachmentIndex, type AttachmentIndex } from '../media/attachmentIndex';
 import { resolveMediaRefs } from '../media/resolveMedia';
+import { resolveFeaturedImage } from '../media/resolveFeaturedImage';
 import type { FetchLike } from '../media/mediaClient';
 import { collectMediaRefs, rewriteMediaRefs } from './collectMediaRefs';
 import { resolveArticleTerms } from './resolveTerms';
@@ -35,7 +37,6 @@ export interface RunBuildOptions {
   builderId: BuilderId;
   siteTitle: string;
   siteUrl: string;
-  liveFetchEnabled: boolean;
   fetchImpl: FetchLike;
   onProgress?: (progress: { completed: number; total: number }) => void;
   isCancelled?: () => boolean;
@@ -51,7 +52,12 @@ function yieldToEventLoop(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-function toExportArticle(article: ParsedArticle, contentHtml: string, terms: ExportArticle['terms']): ExportArticle {
+function toExportArticle(
+  article: ParsedArticle,
+  contentHtml: string,
+  terms: ExportArticle['terms'],
+  featuredAttachmentUrl: string | null,
+): ExportArticle {
   return {
     postId: article.postId ?? 0,
     title: article.title,
@@ -61,19 +67,23 @@ function toExportArticle(article: ParsedArticle, contentHtml: string, terms: Exp
     authorLogin: article.creator || 'admin',
     contentHtml,
     terms,
+    featuredAttachmentUrl,
   };
 }
 
 async function buildOneArticle(
   input: BuildArticleInput,
   options: RunBuildOptions,
+  attachmentIndex: AttachmentIndex,
 ): Promise<{ exportArticle: ExportArticle; result: BuildArticleResult }> {
   const { article } = input;
   const terms = resolveArticleTerms(article.terms, options.mappings, options.newTables);
+  const featuredImage = await resolveFeaturedImage(article.postmeta, attachmentIndex, article.link || null, options.fetchImpl);
+  const featuredAttachmentUrl = featuredImage?.url ?? null;
 
   if (input.editedHtml != null) {
     return {
-      exportArticle: toExportArticle(article, input.editedHtml, terms),
+      exportArticle: toExportArticle(article, input.editedHtml, terms, featuredAttachmentUrl),
       result: { postId: article.postId, title: article.title, status: 'ready', warnings: [] },
     };
   }
@@ -88,7 +98,6 @@ async function buildOneArticle(
   const resolved = await resolveMediaRefs(refs, {
     attachments: options.attachments,
     articleUrl: article.link || null,
-    liveFetchEnabled: options.liveFetchEnabled,
     fetchImpl: options.fetchImpl,
   });
   const { nodes: rewrittenNodes, warnings: mediaWarnings } = rewriteMediaRefs(nodes, resolved);
@@ -97,7 +106,7 @@ async function buildOneArticle(
   const warnings = [...readerWarnings, ...mediaWarnings];
 
   return {
-    exportArticle: toExportArticle(article, contentHtml, terms),
+    exportArticle: toExportArticle(article, contentHtml, terms, featuredAttachmentUrl),
     result: {
       postId: article.postId,
       title: article.title,
@@ -120,6 +129,7 @@ export async function runBuild(options: RunBuildOptions): Promise<RunBuildResult
   const included = options.articles.filter((input) => !input.excluded);
   const exportArticles: ExportArticle[] = [];
   const results: BuildArticleResult[] = [];
+  const attachmentIndex = buildAttachmentIndex(options.attachments);
 
   for (let i = 0; i < included.length; i += 1) {
     if (options.isCancelled?.()) {
@@ -128,7 +138,7 @@ export async function runBuild(options: RunBuildOptions): Promise<RunBuildResult
 
     const input = included[i];
     try {
-      const { exportArticle, result } = await buildOneArticle(input, options);
+      const { exportArticle, result } = await buildOneArticle(input, options, attachmentIndex);
       exportArticles.push(exportArticle);
       results.push(result);
     } catch (err) {

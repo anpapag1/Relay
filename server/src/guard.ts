@@ -1,10 +1,6 @@
 import { lookup } from 'node:dns/promises';
 import net from 'node:net';
 
-export interface GuardOptions {
-  allowedHosts: ReadonlySet<string>;
-}
-
 export type GuardResult = { ok: true; ip: string } | { ok: false; reason: string };
 
 function isPrivateIPv4(ip: string): boolean {
@@ -36,12 +32,16 @@ function isPrivateOrLocalIp(ip: string): boolean {
 }
 
 /** The SSRF mitigation for the media proxy (design spec §5.7 / §8): the
- * URL's host must be on the caller-supplied allowlist, AND the address it
- * actually resolves to must not be private/loopback/link-local. Checking
- * the *resolved* address rather than pattern-matching the hostname is
- * what stops `localhost.evil.com`-style names and DNS rebinding — a
- * hostname can be allowlisted and still resolve somewhere it shouldn't. */
-export async function guardUrl(rawUrl: string, options: GuardOptions): Promise<GuardResult> {
+ * address a URL's host actually resolves to must not be
+ * private/loopback/link-local. Checking the *resolved* address rather
+ * than pattern-matching the hostname is what stops `localhost.evil.com`-
+ * style names and DNS rebinding — a hostname can look public and still
+ * resolve somewhere it shouldn't. There is deliberately no host
+ * allowlist: the URLs this proxy fetches always come from the WXR file
+ * the user themselves loaded (an article's own permalink), never
+ * arbitrary/attacker-supplied input, so the private-IP check is the one
+ * invariant that actually matters here. */
+export async function guardUrl(rawUrl: string): Promise<GuardResult> {
   let parsed: URL;
   try {
     parsed = new URL(rawUrl);
@@ -51,10 +51,6 @@ export async function guardUrl(rawUrl: string, options: GuardOptions): Promise<G
 
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
     return { ok: false, reason: `unsupported protocol: ${parsed.protocol}` };
-  }
-
-  if (!options.allowedHosts.has(parsed.hostname)) {
-    return { ok: false, reason: `host not on the allowlist: ${parsed.hostname}` };
   }
 
   let address: string;

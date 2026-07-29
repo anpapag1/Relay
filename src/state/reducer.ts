@@ -58,7 +58,6 @@ export const initialState: AppState = {
   },
   builderId: null,
   builderConfidence: 0,
-  liveFetchEnabled: true,
 };
 
 function resolveStage1Media(
@@ -175,8 +174,6 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
         media: { ...state.media, resolved: resolvedMedia },
       };
     }
-    case 'SET_LIVE_FETCH_ENABLED':
-      return { ...state, liveFetchEnabled: action.enabled };
     case 'SET_TARGET_TABLES': {
       const newTablesMap = Object.fromEntries(action.tables.map((t) => [t.id, t]));
       const updatedMappings = state.source ? applyMappings(getAllTerms(state.source), action.tables, state.mappings) : state.mappings;

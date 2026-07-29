@@ -15,7 +15,6 @@ export type FetchPageMediaResult =
   | { status: 504; reason: string };
 
 export interface FetchPageMediaOptions {
-  allowedHosts: ReadonlySet<string>;
   timeoutMs?: number;
   maxBytes?: number;
   maxRedirects?: number;
@@ -107,8 +106,8 @@ function extractPageMedia(html: string, pageUrl: string): PageMediaResult {
  * generated WXR references original URLs, and the WordPress importer is
  * what downloads them. Every hop (the initial URL and each redirect
  * target) is re-checked by guardUrl before connecting, so a redirect
- * can't be used to reach a host or address the allowlist would have
- * refused directly. */
+ * can't be used to reach a private/loopback/link-local address the
+ * initial URL would have been refused for directly. */
 export async function fetchPageMedia(targetUrl: string, options: FetchPageMediaOptions): Promise<FetchPageMediaResult> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
@@ -117,7 +116,7 @@ export async function fetchPageMedia(targetUrl: string, options: FetchPageMediaO
   let currentUrl = targetUrl;
 
   for (let hop = 0; hop <= maxRedirects; hop += 1) {
-    const guard = await guardUrl(currentUrl, { allowedHosts: options.allowedHosts });
+    const guard = await guardUrl(currentUrl);
     if (!guard.ok) return { status: 400, reason: guard.reason };
 
     let response: RawResponse;

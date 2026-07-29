@@ -1,5 +1,62 @@
 import type { ExportArticle, GenerateWxrOptions } from '../../types/domain';
+import { filenameOf } from '../media/attachmentIndex';
 import { cdata, cdataSafe, escapeXml, slugFromLink, slugify } from './xml';
+
+/** Synthetic attachment ids start well above any real wp:post_id a WXR
+ * export would plausibly contain, so they can never collide with one. */
+const SYNTHETIC_ATTACHMENT_ID_BASE = 900_000_000;
+
+interface AttachmentRegistryEntry {
+  id: number;
+  filename: string;
+}
+
+/** Dedupes featured images by URL across the whole export — one synthetic
+ * attachment per unique image, not one per article — so sites where many
+ * posts share a featured image (a series, a default social-share image,
+ * etc.) don't balloon the export with duplicate attachment items. */
+function buildAttachmentRegistry(articles: ExportArticle[]): Map<string, AttachmentRegistryEntry> {
+  const registry = new Map<string, AttachmentRegistryEntry>();
+  let nextId = SYNTHETIC_ATTACHMENT_ID_BASE;
+
+  for (const article of articles) {
+    const url = article.featuredAttachmentUrl;
+    if (!url || registry.has(url)) continue;
+    registry.set(url, { id: nextId, filename: filenameOf(url) });
+    nextId += 1;
+  }
+
+  return registry;
+}
+
+function buildAttachmentItem(url: string, entry: AttachmentRegistryEntry, { authorLogin, postDate }: { authorLogin: string; postDate: string }): string {
+  const pubDate = postDate ? new Date(postDate).toUTCString() : new Date().toUTCString();
+
+  return `
+	<item>
+		${cdata('title', entry.filename)}
+		<link>${escapeXml(url)}</link>
+		<pubDate>${pubDate}</pubDate>
+		${cdata('dc:creator', authorLogin)}
+		<guid isPermaLink="false">${escapeXml(url)}</guid>
+		<description></description>
+		<content:encoded><![CDATA[]]></content:encoded>
+		<excerpt:encoded><![CDATA[]]></excerpt:encoded>
+		<wp:post_id>${entry.id}</wp:post_id>
+		${cdata('wp:post_date', postDate)}
+		${cdata('wp:post_date_gmt', postDate)}
+		${cdata('wp:comment_status', 'closed')}
+		${cdata('wp:ping_status', 'closed')}
+		${cdata('wp:post_name', slugify(entry.filename))}
+		${cdata('wp:status', 'inherit')}
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>0</wp:menu_order>
+		${cdata('wp:post_type', 'attachment')}
+		${cdata('wp:post_password', '')}
+		<wp:is_sticky>0</wp:is_sticky>
+		${cdata('wp:attachment_url', url)}
+	</item>`;
+}
 
 function buildAuthorItems(articles: ExportArticle[]): string {
   const logins = new Map<string, number>();
@@ -32,7 +89,18 @@ function buildTermXml(article: ExportArticle): string {
     .join('');
 }
 
-function buildArticleItem(article: ExportArticle): string {
+function buildPostmetaXml(article: ExportArticle, registry: Map<string, AttachmentRegistryEntry>): string {
+  const entry = article.featuredAttachmentUrl ? registry.get(article.featuredAttachmentUrl) : undefined;
+  if (!entry) return '';
+
+  return `
+		<wp:postmeta>
+			${cdata('wp:meta_key', '_thumbnail_id')}
+			${cdata('wp:meta_value', String(entry.id))}
+		</wp:postmeta>`;
+}
+
+function buildArticleItem(article: ExportArticle, registry: Map<string, AttachmentRegistryEntry>): string {
   const postName = article.postName || slugFromLink(article.link) || slugify(article.title);
   const pubDate = article.postDate ? new Date(article.postDate).toUTCString() : new Date().toUTCString();
 
@@ -57,19 +125,28 @@ function buildArticleItem(article: ExportArticle): string {
 		<wp:menu_order>0</wp:menu_order>
 		${cdata('wp:post_type', 'post')}
 		${cdata('wp:post_password', '')}
-		<wp:is_sticky>0</wp:is_sticky>${buildTermXml(article)}
+		<wp:is_sticky>0</wp:is_sticky>${buildTermXml(article)}${buildPostmetaXml(article, registry)}
 	</item>`;
 }
 
 /** Emits a WXR (WordPress eXtended RSS) export: channel header, taxonomy
- * terms as per-item <category domain> elements, and one <item> per
- * article with CDATA-wrapped content. String-templated rather than built
- * with a generic XML serializer so CDATA payloads containing arbitrary
- * article text stay under direct control (see cdataSafe). */
+ * terms as per-item <category domain> elements, one <item> per article
+ * with CDATA-wrapped content, and one synthetic attachment <item> per
+ * unique featured-image URL (deduped across the whole export, not one
+ * per article) so the WordPress importer downloads it and each owning
+ * article's `_thumbnail_id` postmeta resolves to a real post on import.
+ * String-templated rather than built with a generic XML serializer so
+ * CDATA payloads containing arbitrary article text stay under direct
+ * control (see cdataSafe). */
 export function generateWxr(articles: ExportArticle[], options: GenerateWxrOptions): string {
   const language = options.language ?? 'en-US';
   const authorItems = buildAuthorItems(articles);
-  const articleItems = articles.map(buildArticleItem);
+  const registry = buildAttachmentRegistry(articles);
+  const articleItems = articles.map((article) => buildArticleItem(article, registry));
+  const attachmentItems = Array.from(registry.entries()).map(([url, entry]) => {
+    const owner = articles.find((a) => a.featuredAttachmentUrl === url);
+    return buildAttachmentItem(url, entry, { authorLogin: owner?.authorLogin ?? 'admin', postDate: owner?.postDate ?? '' });
+  });
 
   return `<?xml version="1.0" encoding="UTF-8" ?>
 <!-- Generated by Relay -->
@@ -91,6 +168,7 @@ export function generateWxr(articles: ExportArticle[], options: GenerateWxrOptio
 	<wp:base_blog_url>${escapeXml(options.siteUrl)}</wp:base_blog_url>
 ${authorItems}
 ${articleItems.join('\n')}
+${attachmentItems.join('\n')}
 </channel>
 </rss>
 `;

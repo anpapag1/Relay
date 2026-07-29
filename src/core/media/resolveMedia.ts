@@ -6,7 +6,6 @@ import type { ParsedAttachment } from '../../types/domain';
 export interface ResolveMediaOptions {
   attachments: ParsedAttachment[];
   articleUrl: string | null;
-  liveFetchEnabled: boolean;
   fetchImpl: FetchLike;
 }
 
@@ -41,8 +40,8 @@ function resolveStage1(index: AttachmentIndex, refs: string[]): Map<string, Medi
  * `attachment:<id>` placeholder a reader emitted) for one article. Stage 1
  * matches against the WXR's own attachment index; anything left over
  * falls through to a single live fetch of the article's old-site page
- * (stage 2), opted into per session via `liveFetchEnabled`. See design
- * spec §5.6 for the four possible outcomes. */
+ * (stage 2), whenever the article has a known URL. See design spec §5.6
+ * for the four possible outcomes. */
 export async function resolveMediaRefs(refs: string[], options: ResolveMediaOptions): Promise<Record<string, MediaResolution>> {
   const uniqueRefs = Array.from(new Set(refs));
   const index = buildAttachmentIndex(options.attachments);
@@ -53,9 +52,9 @@ export async function resolveMediaRefs(refs: string[], options: ResolveMediaOpti
     return Object.fromEntries(resolved);
   }
 
-  if (!options.liveFetchEnabled || !options.articleUrl) {
+  if (!options.articleUrl) {
     for (const ref of remaining) {
-      resolved.set(ref, { outcome: 'unresolved', reason: 'Not in the export; live media lookup is disabled or the article has no known URL.' });
+      resolved.set(ref, { outcome: 'unresolved', reason: 'Not in the export, and the article has no known URL to scrape.' });
     }
     return Object.fromEntries(resolved);
   }

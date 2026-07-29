@@ -13,7 +13,6 @@ export interface SessionBackup {
   settings: ConversionSettings;
   articles: Record<number, ArticleOverride>;
   mediaResolved: Record<string, MediaResolution>;
-  liveFetchEnabled: boolean;
 }
 
 const LOCAL_STORAGE_KEY = 'relay_session_backup_v1';
@@ -56,7 +55,6 @@ export function createSessionBackup(state: AppState): SessionBackup {
     settings: state.settings,
     articles: state.articles,
     mediaResolved: state.media.resolved,
-    liveFetchEnabled: state.liveFetchEnabled,
   };
 }
 
@@ -82,7 +80,6 @@ export function restoreSessionBackup(
     if (data.mediaResolved) {
       restoredState.media = { ...currentState.media, resolved: data.mediaResolved };
     }
-    if (data.liveFetchEnabled !== undefined) restoredState.liveFetchEnabled = data.liveFetchEnabled;
 
     return { ok: true, state: restoredState };
   } catch {

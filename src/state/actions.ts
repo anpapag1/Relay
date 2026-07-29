@@ -12,7 +12,6 @@ export type Action =
   | { type: 'LOAD_SOURCE'; result: ParseResult; defaultBuilder: BuilderId; confidence: number }
   | { type: 'CLEAR_SOURCE' }
   | { type: 'SET_BUILDER'; builderId: BuilderId }
-  | { type: 'SET_LIVE_FETCH_ENABLED'; enabled: boolean }
   | { type: 'SET_TARGET_TABLES'; tables: TermTable[] }
   | { type: 'SET_OLD_TABLES'; tables: TermTable[] }
   | { type: 'SET_TERM_ACTION'; oldDomain: string; oldNicename: string; targetTableId: string | null }
@@ -49,7 +48,6 @@ export const actions = {
   }),
   clearSource: (): Action => ({ type: 'CLEAR_SOURCE' }),
   setBuilder: (builderId: BuilderId): Action => ({ type: 'SET_BUILDER', builderId }),
-  setLiveFetchEnabled: (enabled: boolean): Action => ({ type: 'SET_LIVE_FETCH_ENABLED', enabled }),
   setTargetTables: (tables: TermTable[]): Action => ({ type: 'SET_TARGET_TABLES', tables }),
   setOldTables: (tables: TermTable[]): Action => ({ type: 'SET_OLD_TABLES', tables }),
   setTermAction: (oldDomain: string, oldNicename: string, targetTableId: string | null): Action => ({
