@@ -361,6 +361,36 @@ describe('runBuild', () => {
     expect(parsed.attachments[0].attachmentUrl).toBe('https://old.example/wp-content/uploads/photo.jpg');
   });
 
+  it('embeds the synthetic attachment id in the image block itself, matching the attachment item\'s own id', async () => {
+    const articles: BuildArticleInput[] = [
+      {
+        article: makeArticle({ contentHtml: '<figure><img src="https://old.example/wp-content/uploads/photo.jpg"/></figure>' }),
+        excluded: false,
+      },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [
+        { postId: 10, title: 'Photo', attachmentUrl: 'https://old.example/wp-content/uploads/photo.jpg', postParent: 1 },
+      ],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    const attachmentId = parsed.attachments[0].postId;
+    expect(attachmentId).not.toBeNull();
+    expect(parsed.articles[0].contentHtml).toContain(`"id":${attachmentId}`);
+    expect(parsed.articles[0].contentHtml).toContain(`class="wp-image-${attachmentId}"`);
+  });
+
   it('skips an article whose conversion produced no real content or media, and reports it as "skipped"', async () => {
     const articles: BuildArticleInput[] = [
       { article: makeArticle({ contentHtml: '' }), excluded: false },

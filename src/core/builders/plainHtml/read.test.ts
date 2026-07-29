@@ -32,6 +32,26 @@ describe('readPlainHtml', () => {
     expect(nodes[0]).toMatchObject({ kind: 'image', src: 'https://x/a.jpg', caption: 'Caption text' });
   });
 
+  it('reads a native WordPress gallery block (wp-block-gallery figure wrapping several wp-block-image figures) as a gallery with every image, not just the first', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml:
+        '<figure class="wp-block-gallery has-nested-images columns-default is-cropped">' +
+        '<figure class="wp-block-image"><img src="https://x/a.jpg" alt=""/></figure>' +
+        '<figure class="wp-block-image"><img src="https://x/b.jpg" alt=""/><figcaption>Second photo</figcaption></figure>' +
+        '</figure>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      {
+        kind: 'gallery',
+        images: [
+          { src: 'https://x/a.jpg', alt: '', href: undefined, width: undefined, height: undefined },
+          { src: 'https://x/b.jpg', alt: '', href: undefined, width: undefined, height: undefined, caption: 'Second photo' },
+        ],
+      },
+    ]);
+  });
+
   it('resolves the [caption] classic shortcode to an image with a caption', () => {
     const { nodes } = readPlainHtml({
       contentHtml: '[caption id="attachment_1"]<img src="https://x/a.jpg" alt="A"/> My caption[/caption]',

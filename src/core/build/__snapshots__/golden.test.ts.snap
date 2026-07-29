@@ -8,8 +8,8 @@ exports[`golden fixtures > converts the divi fixture to the expected Gutenberg m
 <p>Intro paragraph before the layout.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:image {"align":"center","sizeSlug":"large"} -->
-<figure class="wp-block-image alignCenter size-large"><img src="https://old-divi.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero"/></figure>
+<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<figure class="wp-block-image aligncenter size-large"><img src="https://old-divi.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:column -->
 <!-- wp:column -->
@@ -19,15 +19,15 @@ exports[`golden fixtures > converts the divi fixture to the expected Gutenberg m
 
 <!-- wp:gallery {"linkTo":"none"} -->
 <figure class="wp-block-gallery has-nested-images columns-default is-cropped">
-<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
 <figure class="wp-block-image size-large"><img src="attachment:10" alt=""/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
 <figure class="wp-block-image size-large"><img src="attachment:11" alt=""/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
 <figure class="wp-block-image size-large"><img src="attachment:12" alt=""/></figure>
 <!-- /wp:image -->
 </figure>
@@ -39,8 +39,8 @@ exports[`golden fixtures > converts the divi fixture to the expected Gutenberg m
 <!-- /wp:button --></div>
 <!-- /wp:buttons -->
 
-<!-- wp:image {"align":"center","sizeSlug":"large"} -->
-<figure class="wp-block-image alignCenter size-large"><img src="https://old-divi.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></figure>
+<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<figure class="wp-block-image aligncenter size-large"><img src="https://old-divi.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:column -->
 </div>
@@ -65,8 +65,8 @@ exports[`golden fixtures > converts the elementor fixture to the expected Gutenb
 <p>Intro paragraph before the layout.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:image {"align":"center","sizeSlug":"large"} -->
-<figure class="wp-block-image alignCenter size-large"><img src="https://old-elementor.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero"/></figure>
+<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<figure class="wp-block-image aligncenter size-large"><img src="https://old-elementor.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:column -->
 <!-- wp:column -->
@@ -76,11 +76,11 @@ exports[`golden fixtures > converts the elementor fixture to the expected Gutenb
 
 <!-- wp:gallery {"linkTo":"none"} -->
 <figure class="wp-block-gallery has-nested-images columns-default is-cropped">
-<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
 <figure class="wp-block-image size-large"><img src="https://old-elementor.example/wp-content/uploads/2020/01/g1.jpg" alt="G1"/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
 <figure class="wp-block-image size-large"><img src="https://old-elementor.example/wp-content/uploads/2020/01/g2.jpg" alt="G2"/></figure>
 <!-- /wp:image -->
 </figure>
@@ -92,8 +92,8 @@ exports[`golden fixtures > converts the elementor fixture to the expected Gutenb
 <!-- /wp:button --></div>
 <!-- /wp:buttons -->
 
-<!-- wp:image {"align":"center","sizeSlug":"large"} -->
-<figure class="wp-block-image alignCenter size-large"><img src="https://old-elementor.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></figure>
+<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<figure class="wp-block-image aligncenter size-large"><img src="https://old-elementor.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:column -->
 </div>
@@ -115,8 +115,8 @@ exports[`golden fixtures > converts the plainHtml fixture to the expected Gutenb
 <p>Some intro text with an <em>inline</em> image below.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:image {"align":"center","sizeSlug":"large"} -->
-<figure class="wp-block-image alignCenter size-large"><img src="https://old-plainhtml.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero" width="800" height="400"/></figure>
+<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<figure class="wp-block-image aligncenter size-large"><img src="https://old-plainhtml.example/wp-content/uploads/2020/01/hero.jpg" alt="Hero" width="800" height="400"/></figure>
 <!-- /wp:image -->
 
 <!-- wp:list -->
@@ -129,22 +129,22 @@ exports[`golden fixtures > converts the plainHtml fixture to the expected Gutenb
 
 <!-- wp:gallery {"linkTo":"none"} -->
 <figure class="wp-block-gallery has-nested-images columns-default is-cropped">
-<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
 <figure class="wp-block-image size-large"><img src="attachment:10" alt=""/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
 <figure class="wp-block-image size-large"><img src="attachment:11" alt=""/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
 <figure class="wp-block-image size-large"><img src="attachment:12" alt=""/></figure>
 <!-- /wp:image -->
 </figure>
 <!-- /wp:gallery -->
 
-<!-- wp:image {"align":"center","sizeSlug":"large"} -->
-<figure class="wp-block-image alignCenter size-large"><img src="https://old-plainhtml.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></figure>
+<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<figure class="wp-block-image aligncenter size-large"><img src="https://old-plainhtml.example/wp-content/uploads/2020/01/missing.jpg" alt="No matching attachment"/></figure>
 <!-- /wp:image -->
 
 <!-- wp:separator -->
@@ -162,8 +162,8 @@ exports[`golden fixtures > converts the wpbakery fixture to the expected Gutenbe
 <p>Intro paragraph before the layout.</p>
 <!-- /wp:paragraph -->
 
-<!-- wp:image {"align":"center","sizeSlug":"large"} -->
-<figure class="wp-block-image alignCenter size-large"><img src="attachment:100" alt="Hero"/></figure>
+<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<figure class="wp-block-image aligncenter size-large"><img src="attachment:100" alt="Hero"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:column -->
 <!-- wp:column -->
@@ -173,15 +173,15 @@ exports[`golden fixtures > converts the wpbakery fixture to the expected Gutenbe
 
 <!-- wp:gallery {"linkTo":"none"} -->
 <figure class="wp-block-gallery has-nested-images columns-default is-cropped">
-<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
 <figure class="wp-block-image size-large"><img src="attachment:10" alt=""/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
 <figure class="wp-block-image size-large"><img src="attachment:11" alt=""/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"linkDestination":"none","sizeSlug":"large"} -->
+<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
 <figure class="wp-block-image size-large"><img src="attachment:12" alt=""/></figure>
 <!-- /wp:image -->
 </figure>
@@ -193,8 +193,8 @@ exports[`golden fixtures > converts the wpbakery fixture to the expected Gutenbe
 <!-- /wp:button --></div>
 <!-- /wp:buttons -->
 
-<!-- wp:image {"align":"center","sizeSlug":"large"} -->
-<figure class="wp-block-image alignCenter size-large"><img src="attachment:999" alt="No matching attachment"/></figure>
+<!-- wp:image {"sizeSlug":"large","align":"center"} -->
+<figure class="wp-block-image aligncenter size-large"><img src="attachment:999" alt="No matching attachment"/></figure>
 <!-- /wp:image --></div>
 <!-- /wp:column -->
 </div>

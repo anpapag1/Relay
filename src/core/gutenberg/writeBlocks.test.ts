@@ -53,7 +53,10 @@ describe('writeBlocks', () => {
     );
     expect(out).toContain('"align":"center"');
     expect(out).toContain('"sizeSlug":"large"');
-    expect(out).toContain('alignCenter');
+    // WordPress's own alignment classes are always lowercase (aligncenter,
+    // alignleft, ...) — capitalizing broke real-editor round-tripping.
+    expect(out).toContain('aligncenter');
+    expect(out).not.toContain('alignCenter');
     expect(out).toContain('size-large');
   });
 
@@ -72,9 +75,21 @@ describe('writeBlocks', () => {
     expect(off).not.toContain('style=');
   });
 
-  it('scales the missing custom dimension proportionally', () => {
+  it('renders a custom-sized single image WordPress\'s own way: auto + inline style + is-resized, not a computed pixel value', () => {
     const out = writeBlocks(
       [{ kind: 'image', src: 'https://x/a.jpg', alt: '', width: 200, height: 100 }],
+      { ...DEFAULT_SETTINGS, imageSize: 'custom', customWidth: 400 },
+    );
+    expect(out).toContain('"width":"400px"');
+    expect(out).toContain('"height":"auto"');
+    expect(out).toContain('style="width:400px;height:auto"');
+    expect(out).toContain('is-resized');
+    expect(out).not.toContain('width="400"');
+  });
+
+  it('scales a gallery image\'s missing custom dimension proportionally from its own intrinsic size', () => {
+    const out = writeBlocks(
+      [{ kind: 'gallery', images: [{ src: 'https://x/a.jpg', alt: '', width: 200, height: 100 }] }],
       { ...DEFAULT_SETTINGS, imageSize: 'custom', customWidth: 400 },
     );
     expect(out).toContain('width="400"');
@@ -97,7 +112,7 @@ describe('writeBlocks', () => {
     expect(out).toContain('columns-default');
     expect(out).toContain('is-cropped');
     expect(out).toContain('"linkTo":"none"');
-    expect(out.match(/<!-- wp:image \{"linkDestination":"none","sizeSlug":"large"\} -->/g)).toHaveLength(2);
+    expect(out.match(/<!-- wp:image \{"sizeSlug":"large","linkDestination":"none"\} -->/g)).toHaveLength(2);
   });
 
   it('combines consecutive standalone images into a gallery when combineConsecutiveImages is on', () => {

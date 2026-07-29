@@ -16,9 +16,12 @@ export function writeGallery(
     .map((image) => {
       const { width, height } = resolveImageDimensions(image, settings);
       const dimAttrs = `${width ? ` width="${width}"` : ''}${height ? ` height="${height}"` : ''}`;
-      const img = `<img src="${escapeAttr(image.src)}" alt="${escapeAttr(image.alt)}"${dimAttrs}/>`;
-      const attrs: Record<string, unknown> = { linkDestination: 'none' };
+      const imgClass = image.attachmentId ? ` class="wp-image-${image.attachmentId}"` : '';
+      const img = `<img src="${escapeAttr(image.src)}" alt="${escapeAttr(image.alt)}"${imgClass}${dimAttrs}/>`;
+      const attrs: Record<string, unknown> = {};
+      if (image.attachmentId) attrs.id = image.attachmentId;
       if (sizeSlug) attrs.sizeSlug = sizeSlug;
+      attrs.linkDestination = 'none';
       const classes = ['wp-block-image', ...(sizeSlug ? [`size-${sizeSlug}`] : [])];
       return `<!-- wp:image ${JSON.stringify(attrs)} -->\n<figure class="${classes.join(' ')}">${img}</figure>\n<!-- /wp:image -->`;
     })

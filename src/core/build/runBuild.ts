@@ -1,10 +1,12 @@
-import type { ConversionSettings, ExportArticle, ParsedArticle, ParsedAttachment, TermMapping, TermTable } from '../../types/domain';
+import type { ConversionSettings, ExportArticle, ExportTermRef, MediaResolution, ParsedArticle, ParsedAttachment, TermMapping, TermTable } from '../../types/domain';
 import type { BuilderId } from '../builders/types';
+import type { IRNode } from '../ir/nodes';
 import { getReader } from '../builders';
 import { writeBlocks } from '../gutenberg/writeBlocks';
 import { generateWxr } from '../wxr/generateWxr';
 import { buildAttachmentIndex, type AttachmentIndex } from '../media/attachmentIndex';
-import { reviewMessages } from '../builders/types';
+import { buildAttachmentRegistry, type AttachmentRegistry } from '../media/attachmentRegistry';
+import { reviewMessages, type ReaderWarning } from '../builders/types';
 import { resolveMediaRefs } from '../media/resolveMedia';
 import { resolveFeaturedImage } from '../media/resolveFeaturedImage';
 import type { FetchLike } from '../media/mediaClient';
@@ -130,17 +132,60 @@ function toExportArticle(
   };
 }
 
-async function buildOneArticle(
+/** Everything about one article that can be figured out without knowing
+ * the shared attachment registry — which can't exist until every
+ * article's media has been resolved (see `runBuild`). An edited article
+ * has no `nodes`/`resolved`/`readerWarnings` at all: the reader/writer
+ * pass is bypassed entirely for it. */
+interface ResolvedArticle {
+  input: BuildArticleInput;
+  terms: ExportTermRef[];
+  featuredAttachmentUrl: string | null;
+  termWarnings: string[];
+  nodes?: IRNode[];
+  resolved?: Record<string, MediaResolution>;
+  readerWarnings?: ReaderWarning[];
+}
+
+async function resolveOneArticle(
   input: BuildArticleInput,
   options: RunBuildOptions,
   attachmentIndex: AttachmentIndex,
-): Promise<{ exportArticle: ExportArticle | null; result: BuildArticleResult }> {
+): Promise<ResolvedArticle> {
   const { article } = input;
   const terms = resolveArticleTerms(article.terms, options.mappings, options.newTables);
   const featuredImage = await resolveFeaturedImage(article.postmeta, attachmentIndex, article.link || null, options.fetchImpl);
   const featuredAttachmentUrl = featuredImage?.url ?? null;
-  const exportPendingForReview = options.exportPendingForReview ?? true;
   const termWarnings = unmappedTermWarnings(article.terms, options.mappings, options.newTables);
+
+  if (input.editedHtml != null) {
+    return { input, terms, featuredAttachmentUrl, termWarnings };
+  }
+
+  const reader = getReader(options.builderId);
+  const { nodes, warnings: readerWarnings } = reader.read({
+    contentHtml: article.contentHtml,
+    postmeta: article.postmeta,
+  });
+
+  const refs = collectMediaRefs(nodes);
+  const resolved = await resolveMediaRefs(refs, {
+    attachments: options.attachments,
+    articleUrl: article.link || null,
+    fetchImpl: options.fetchImpl,
+  });
+
+  return { input, terms, featuredAttachmentUrl, termWarnings, nodes, resolved, readerWarnings };
+}
+
+function buildOneArticle(
+  resolvedArticle: ResolvedArticle,
+  options: RunBuildOptions,
+  attachmentRegistry: AttachmentRegistry,
+): { exportArticle: ExportArticle | null; result: BuildArticleResult } {
+  const { input, terms, featuredAttachmentUrl, termWarnings } = resolvedArticle;
+  const { article } = input;
+  const exportPendingForReview = options.exportPendingForReview ?? true;
 
   const postStatusFor = (warnings: string[]): ExportArticle['postStatus'] =>
     exportPendingForReview && warnings.length > 0 ? 'pending' : 'publish';
@@ -158,19 +203,9 @@ async function buildOneArticle(
     };
   }
 
-  const reader = getReader(options.builderId);
-  const { nodes, warnings: readerWarnings } = reader.read({
-    contentHtml: article.contentHtml,
-    postmeta: article.postmeta,
-  });
-
-  const refs = collectMediaRefs(nodes);
-  const resolved = await resolveMediaRefs(refs, {
-    attachments: options.attachments,
-    articleUrl: article.link || null,
-    fetchImpl: options.fetchImpl,
-  });
-  const { nodes: rewrittenNodes, warnings: mediaWarnings } = rewriteMediaRefs(nodes, resolved);
+  const { nodes, resolved, readerWarnings } = resolvedArticle as Required<Pick<ResolvedArticle, 'nodes' | 'resolved' | 'readerWarnings'>> &
+    ResolvedArticle;
+  const { nodes: rewrittenNodes, warnings: mediaWarnings } = rewriteMediaRefs(nodes, resolved, attachmentRegistry);
 
   const contentHtml = writeBlocks(rewrittenNodes, options.settings);
   const mediaAttachmentUrls = Array.from(
@@ -201,44 +236,69 @@ async function buildOneArticle(
   };
 }
 
-/** Chunks through included articles one at a time, yielding to the event
- * loop between each so a progress bar and Cancel stay responsive (design
- * spec §5.9). `builderId` is fixed for the whole migration (set on the
- * Import tab, defaulting to detectBuilder's winner) — every article runs
- * read -> resolve media -> writeBlocks through the same reader, using the
- * exact writeBlocks function the settings preview calls, so preview and
- * build output can never disagree. A throw while converting one article
- * is caught and reported as that article failing to build, marked
- * 'review', rather than failing the whole build (design spec §6). */
+/** Two passes across the included articles, not one, because a real
+ * WordPress-authored image carries its media-library attachment id
+ * (`id` in the block's own JSON attrs, `wp-image-<id>` on the `<img>`)
+ * and Relay's synthetic ids are deduped by URL *across the whole
+ * export* (see attachmentRegistry.ts) — so no single article's id is
+ * knowable until every article's media has been resolved. Pass 1
+ * resolves media for every article (silent — no progress ticks; it's
+ * the network-bound phase but doesn't produce output yet) and builds
+ * the shared registry from all of it; pass 2 (the one progress/Cancel/
+ * per-article-try-catch apply to, exactly as before) writes the actual
+ * blocks now that every image's id is known, using the exact same
+ * writeBlocks function the settings preview calls so preview and build
+ * output can never disagree. A throw while converting one article in
+ * pass 2 is caught and reported as that article failing to build,
+ * marked 'review', rather than failing the whole build (design spec
+ * §6). */
 export async function runBuild(options: RunBuildOptions): Promise<RunBuildResult> {
   const included = options.articles.filter((input) => !input.excluded);
-  const exportArticles: ExportArticle[] = [];
-  const results: BuildArticleResult[] = [];
   const attachmentIndex = buildAttachmentIndex(options.attachments);
 
-  for (let i = 0; i < included.length; i += 1) {
+  const resolvedArticles: ResolvedArticle[] = [];
+  for (const input of included) {
+    if (options.isCancelled?.()) {
+      return { wxr: '', articles: [], cancelled: true };
+    }
+    resolvedArticles.push(await resolveOneArticle(input, options, attachmentIndex));
+  }
+
+  const registryUrls: Array<string | null | undefined> = [];
+  for (const resolvedArticle of resolvedArticles) {
+    registryUrls.push(resolvedArticle.featuredAttachmentUrl);
+    if (resolvedArticle.resolved) {
+      for (const resolution of Object.values(resolvedArticle.resolved)) registryUrls.push(resolution.url);
+    }
+  }
+  const attachmentRegistry = buildAttachmentRegistry(registryUrls);
+
+  const exportArticles: ExportArticle[] = [];
+  const results: BuildArticleResult[] = [];
+
+  for (let i = 0; i < resolvedArticles.length; i += 1) {
     if (options.isCancelled?.()) {
       return { wxr: '', articles: results, cancelled: true };
     }
 
-    const input = included[i];
+    const resolvedArticle = resolvedArticles[i];
     try {
-      const { exportArticle, result } = await buildOneArticle(input, options, attachmentIndex);
+      const { exportArticle, result } = buildOneArticle(resolvedArticle, options, attachmentRegistry);
       if (exportArticle) exportArticles.push(exportArticle);
       results.push(result);
     } catch (err) {
       results.push({
-        postId: input.article.postId,
-        title: input.article.title,
+        postId: resolvedArticle.input.article.postId,
+        title: resolvedArticle.input.article.title,
         status: 'review',
         warnings: [`Failed to convert this article: ${err instanceof Error ? err.message : String(err)}`],
       });
     }
 
-    options.onProgress?.({ completed: i + 1, total: included.length });
+    options.onProgress?.({ completed: i + 1, total: resolvedArticles.length });
     await yieldToEventLoop();
   }
 
-  const wxr = generateWxr(exportArticles, { siteTitle: options.siteTitle, siteUrl: options.siteUrl });
+  const wxr = generateWxr(exportArticles, { siteTitle: options.siteTitle, siteUrl: options.siteUrl }, attachmentRegistry);
   return { wxr, articles: results, cancelled: false };
 }
