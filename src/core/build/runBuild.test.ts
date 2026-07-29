@@ -229,6 +229,88 @@ describe('runBuild', () => {
     expect(parsed.articles[0].postmeta._thumbnail_id).toBe(String(parsed.attachments[0].postId));
   });
 
+  it('exports a review-flagged article as pending by default, and as publish when exportPendingForReview is false', async () => {
+    const articles: BuildArticleInput[] = [
+      { article: makeArticle({ contentHtml: '<canvas width="10" height="10"></canvas>' }), excluded: false },
+    ];
+
+    const pendingResult = await runBuild({
+      articles,
+      attachments: [],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+    const pendingParsed = parseWxr(pendingResult.wxr);
+    expect(pendingParsed.ok).toBe(true);
+    if (pendingParsed.ok) expect(pendingParsed.articles[0].status).toBe('pending');
+
+    const publishResult = await runBuild({
+      articles,
+      attachments: [],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+      exportPendingForReview: false,
+    });
+    const publishParsed = parseWxr(publishResult.wxr);
+    expect(publishParsed.ok).toBe(true);
+    if (publishParsed.ok) expect(publishParsed.articles[0].status).toBe('publish');
+  });
+
+  it('exports a ready article as publish', async () => {
+    const articles: BuildArticleInput[] = [{ article: makeArticle(), excluded: false }];
+    const result = await runBuild({
+      articles,
+      attachments: [],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.articles[0].status).toBe('publish');
+  });
+
+  it('re-checks an edited article for an unmapped taxonomy term and still exports it as pending', async () => {
+    const articles: BuildArticleInput[] = [
+      {
+        article: makeArticle({ terms: [{ domain: 'category', nicename: 'orphan', name: 'Orphan Category' }] }),
+        excluded: false,
+        editedHtml: '<!-- wp:paragraph --><p>Hand-edited</p><!-- /wp:paragraph -->',
+      },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+
+    expect(result.articles[0].status).toBe('review');
+    expect(result.articles[0].warnings).toEqual(['Unmapped taxonomy term: "Orphan Category"']);
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) expect(parsed.articles[0].status).toBe('pending');
+  });
+
   it('leaves featuredAttachmentUrl unset (no postmeta, no attachment item) when the old post never had a _thumbnail_id', async () => {
     const articles: BuildArticleInput[] = [{ article: makeArticle(), excluded: false }];
     const result = await runBuild({

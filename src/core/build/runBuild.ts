@@ -8,8 +8,33 @@ import { reviewMessages } from '../builders/types';
 import { resolveMediaRefs } from '../media/resolveMedia';
 import { resolveFeaturedImage } from '../media/resolveFeaturedImage';
 import type { FetchLike } from '../media/mediaClient';
+import { termMappingIdOf } from '../mappings/termId';
 import { collectMediaRefs, rewriteMediaRefs } from './collectMediaRefs';
 import { resolveArticleTerms } from './resolveTerms';
+
+/** Unmapped taxonomy terms are checked here too (not just in the UI's
+ * derived article status) so that "review" — and thus the exported post
+ * status when `exportPendingForReview` is on — reflects the same
+ * definition everywhere, including for an article whose HTML was
+ * manually edited (which has no reader pass to warn about, but can still
+ * have an unmapped term). */
+function unmappedTermWarnings(
+  terms: ParsedArticle['terms'],
+  mappings: Record<string, TermMapping>,
+  newTables: TermTable[],
+): string[] {
+  const allTargetTerms = newTables.flatMap((t) => t.terms);
+  const warnings: string[] = [];
+  for (const term of terms) {
+    const mapping = mappings[termMappingIdOf(term)];
+    if (mapping?.excluded) continue;
+    const hasValidTarget = mapping?.targetTermIds.some((id) => allTargetTerms.some((t) => t.id === id)) ?? false;
+    if (!mapping || mapping.targetTermIds.length === 0 || !hasValidTarget) {
+      warnings.push(`Unmapped taxonomy term: "${term.name}"`);
+    }
+  }
+  return warnings;
+}
 
 export interface BuildArticleInput {
   article: ParsedArticle;
@@ -39,6 +64,10 @@ export interface RunBuildOptions {
   siteTitle: string;
   siteUrl: string;
   fetchImpl: FetchLike;
+  /** When true (the default), an article marked "review" exports with
+   * wp:status=pending ("Pending Review" in wp-admin) instead of publish,
+   * so it can't accidentally go live unreviewed. */
+  exportPendingForReview?: boolean;
   onProgress?: (progress: { completed: number; total: number }) => void;
   isCancelled?: () => boolean;
 }
@@ -58,6 +87,7 @@ function toExportArticle(
   contentHtml: string,
   terms: ExportArticle['terms'],
   featuredAttachmentUrl: string | null,
+  postStatus: ExportArticle['postStatus'],
 ): ExportArticle {
   return {
     postId: article.postId ?? 0,
@@ -69,6 +99,7 @@ function toExportArticle(
     contentHtml,
     terms,
     featuredAttachmentUrl,
+    postStatus,
   };
 }
 
@@ -81,11 +112,22 @@ async function buildOneArticle(
   const terms = resolveArticleTerms(article.terms, options.mappings, options.newTables);
   const featuredImage = await resolveFeaturedImage(article.postmeta, attachmentIndex, article.link || null, options.fetchImpl);
   const featuredAttachmentUrl = featuredImage?.url ?? null;
+  const exportPendingForReview = options.exportPendingForReview ?? true;
+  const termWarnings = unmappedTermWarnings(article.terms, options.mappings, options.newTables);
+
+  const postStatusFor = (warnings: string[]): ExportArticle['postStatus'] =>
+    exportPendingForReview && warnings.length > 0 ? 'pending' : 'publish';
 
   if (input.editedHtml != null) {
+    const warnings = termWarnings;
     return {
-      exportArticle: toExportArticle(article, input.editedHtml, terms, featuredAttachmentUrl),
-      result: { postId: article.postId, title: article.title, status: 'ready', warnings: [] },
+      exportArticle: toExportArticle(article, input.editedHtml, terms, featuredAttachmentUrl, postStatusFor(warnings)),
+      result: {
+        postId: article.postId,
+        title: article.title,
+        status: warnings.length > 0 ? 'review' : 'ready',
+        warnings,
+      },
     };
   }
 
@@ -104,10 +146,10 @@ async function buildOneArticle(
   const { nodes: rewrittenNodes, warnings: mediaWarnings } = rewriteMediaRefs(nodes, resolved);
 
   const contentHtml = writeBlocks(rewrittenNodes, options.settings);
-  const warnings = [...reviewMessages(readerWarnings), ...mediaWarnings];
+  const warnings = [...termWarnings, ...reviewMessages(readerWarnings), ...mediaWarnings];
 
   return {
-    exportArticle: toExportArticle(article, contentHtml, terms, featuredAttachmentUrl),
+    exportArticle: toExportArticle(article, contentHtml, terms, featuredAttachmentUrl, postStatusFor(warnings)),
     result: {
       postId: article.postId,
       title: article.title,

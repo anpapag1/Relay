@@ -120,7 +120,7 @@ function buildArticleItem(article: ExportArticle, registry: Map<string, Attachme
 		${cdata('wp:comment_status', 'closed')}
 		${cdata('wp:ping_status', 'closed')}
 		${cdata('wp:post_name', postName)}
-		${cdata('wp:status', 'publish')}
+		${cdata('wp:status', article.postStatus)}
 		<wp:post_parent>0</wp:post_parent>
 		<wp:menu_order>0</wp:menu_order>
 		${cdata('wp:post_type', 'post')}
