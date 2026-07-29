@@ -15,6 +15,7 @@ const ARTICLES: ExportArticle[] = [
       { domain: 'category', nicename: 'news', name: 'News' },
       { domain: 'post_tag', nicename: 'greeting', name: 'Greeting & Salutations' },
     ],
+    postStatus: 'publish',
   },
   {
     postId: 2,
@@ -24,6 +25,7 @@ const ARTICLES: ExportArticle[] = [
     authorLogin: 'editor',
     contentHtml: '<p>Another body</p>',
     terms: [],
+    postStatus: 'publish',
   },
 ];
 
@@ -43,6 +45,19 @@ describe('generateWxr', () => {
     const xml = generateWxr(ARTICLES, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
     const authorCount = xml.match(/<wp:author>/g)?.length ?? 0;
     expect(authorCount).toBe(2);
+  });
+
+  it('emits each article\'s own wp:status rather than hardcoding publish', () => {
+    const articles: ExportArticle[] = [
+      { ...ARTICLES[0], postStatus: 'pending' },
+      { ...ARTICLES[1], postStatus: 'publish' },
+    ];
+    const xml = generateWxr(articles, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+    const result = parseWxr(xml);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.articles.find((a) => a.postId === 1)?.status).toBe('pending');
+    expect(result.articles.find((a) => a.postId === 2)?.status).toBe('publish');
   });
 
   it('round-trips through parseWxr with matching counts and content', () => {

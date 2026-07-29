@@ -60,6 +60,8 @@ export interface ExportTermRef {
   name: string;
 }
 
+export type ExportPostStatus = 'publish' | 'pending';
+
 export interface ExportArticle {
   postId: number;
   title: string;
@@ -70,6 +72,7 @@ export interface ExportArticle {
   contentHtml: string;
   terms: ExportTermRef[];
   featuredAttachmentUrl?: string | null;
+  postStatus: ExportPostStatus;
 }
 
 export interface GenerateWxrOptions {

@@ -14,6 +14,7 @@ export const BuildTab: React.FC = () => {
   const [buildCancelled, setBuildCancelled] = useState<boolean>(false);
   const [wxrResult, setWxrResult] = useState<string>('');
   const [includeFilter, setIncludeFilter] = useState<'all' | 'ready' | 'review' | 'edited'>('all');
+  const [exportPendingForReview, setExportPendingForReview] = useState<boolean>(true);
   const cancelRef = useRef<boolean>(false);
 
   if (!state.source) {
@@ -100,6 +101,7 @@ export const BuildTab: React.FC = () => {
         builderId: state.builderId || 'plainHtml',
         siteTitle: 'Relay Migration Site',
         siteUrl: state.source.siteUrl || 'https://example.com',
+        exportPendingForReview,
         fetchImpl: window.fetch ? window.fetch.bind(window) : (async () => new Response()) as any,
         onProgress: ({ completed, total }) => {
           const pct = Math.round((completed / Math.max(total, 1)) * 100);
@@ -299,6 +301,15 @@ export const BuildTab: React.FC = () => {
             </button>
           ))}
         </div>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontSize: '13px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={exportPendingForReview}
+            onChange={(e) => setExportPendingForReview(e.target.checked)}
+          />
+          <span>Export review-flagged articles as <b>Pending Review</b> instead of Published</span>
+        </label>
 
         {isBuilding && (
           <div style={{ marginBottom: '16px' }}>
