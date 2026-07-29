@@ -391,6 +391,17 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
             </div>
           )}
 
+          {article.infoWarnings && article.infoWarnings.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', background: 'oklch(98% 0.003 250)', border: '1px solid oklch(92% 0.005 250)', borderRadius: '8px', marginBottom: '16px' }}>
+              <div style={{ color: 'oklch(55% 0.01 250)', fontWeight: 700, fontSize: '13px' }}>ℹ Automatically handled:</div>
+              {article.infoWarnings.map((w, idx) => (
+                <div key={idx} style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>
+                  • {w}
+                </div>
+              ))}
+            </div>
+          )}
+
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', padding: '12px 14px', background: 'oklch(98% 0.003 250)', borderRadius: '8px', border: '1px solid oklch(92% 0.005 250)' }}>
             <div>
               <div style={{ fontSize: '13px', fontWeight: 600 }}>Include in migration</div>

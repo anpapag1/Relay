@@ -132,6 +132,44 @@ describe('selectors', () => {
     expect(excluded?.isExcluded).toBe(true);
   });
 
+  it('does not flip status to "review" for a reader note that is purely informational (e.g. the known-empty wpbakery sidebar-anchor)', () => {
+    const result: ParseResult = {
+      ok: true,
+      siteUrl: 'https://old.example',
+      totalItems: 1,
+      articles: [
+        {
+          postId: 201,
+          postType: 'post',
+          status: 'publish',
+          title: 'Sidebar Anchor Article',
+          link: 'https://old.example/sidebar/',
+          postDate: '2026-01-05',
+          postName: 'sidebar-anchor-article',
+          creator: 'alice',
+          // base64(encodeURIComponent('<div id="sidebar-at-visual"></div>'))
+          contentHtml: '[vc_raw_html]JTNDZGl2JTIwaWQlM0QlMjJzaWRlYmFyLWF0LXZpc3VhbCUyMiUzRSUzQyUyRmRpdiUzRQ==[/vc_raw_html]',
+          excerptHtml: '',
+          terms: [],
+          postmeta: {},
+        },
+      ],
+      attachments: [],
+      taxonomies: {},
+      authors: ['alice'],
+      statusCounts: { publish: 1 },
+    };
+
+    let s = appReducer(initialState, { type: 'LOAD_SOURCE', result, defaultBuilder: 'wpbakery', confidence: 90 });
+    s = appReducer(s, { type: 'SET_BUILDER', builderId: 'wpbakery' });
+    const derived = getDerivedArticles(s);
+
+    expect(derived).toHaveLength(1);
+    expect(derived[0].status).toBe('ready');
+    expect(derived[0].warnings).toHaveLength(0);
+    expect(derived[0].infoWarnings.some((w) => w.includes('known-empty sidebar widget anchor'))).toBe(true);
+  });
+
   it('computes mediaCount from the article\'s real media references, for every status including excluded/edited', () => {
     const s = getTestState();
     const derived = getDerivedArticles(s);

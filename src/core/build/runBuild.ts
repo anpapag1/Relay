@@ -4,6 +4,7 @@ import { getReader } from '../builders';
 import { writeBlocks } from '../gutenberg/writeBlocks';
 import { generateWxr } from '../wxr/generateWxr';
 import { buildAttachmentIndex, type AttachmentIndex } from '../media/attachmentIndex';
+import { reviewMessages } from '../builders/types';
 import { resolveMediaRefs } from '../media/resolveMedia';
 import { resolveFeaturedImage } from '../media/resolveFeaturedImage';
 import type { FetchLike } from '../media/mediaClient';
@@ -103,7 +104,7 @@ async function buildOneArticle(
   const { nodes: rewrittenNodes, warnings: mediaWarnings } = rewriteMediaRefs(nodes, resolved);
 
   const contentHtml = writeBlocks(rewrittenNodes, options.settings);
-  const warnings = [...readerWarnings, ...mediaWarnings];
+  const warnings = [...reviewMessages(readerWarnings), ...mediaWarnings];
 
   return {
     exportArticle: toExportArticle(article, contentHtml, terms, featuredAttachmentUrl),

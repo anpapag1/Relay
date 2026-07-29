@@ -1,7 +1,11 @@
 import type { IRNode } from '../../ir/nodes';
-import type { ReadInput, ReadResult } from '../types';
+import type { ReadInput, ReadResult, ReaderWarning } from '../types';
 import { tokenizeShortcodes, type ShortcodeElement, type ShortcodeNode } from '../shortcode/tokenize';
 import { readPlainHtml } from '../plainHtml/read';
+
+function warn(warnings: ReaderWarning[], message: string): void {
+  warnings.push({ message, severity: 'review' });
+}
 
 const VOID_TAGS = new Set(['et_pb_image', 'et_pb_gallery', 'et_pb_button', 'et_pb_video', 'et_pb_divider']);
 
@@ -20,11 +24,11 @@ function videoProvider(src: string): 'youtube' | 'vimeo' | 'file' {
   return 'file';
 }
 
-function readColumn(el: ShortcodeElement, warnings: string[]): IRNode[] {
+function readColumn(el: ShortcodeElement, warnings: ReaderWarning[]): IRNode[] {
   return readChildren(el.children, warnings);
 }
 
-function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
+function readElement(el: ShortcodeElement, warnings: ReaderWarning[]): IRNode[] {
   if (el.tag === 'et_pb_section') {
     return readChildren(el.children, warnings);
   }
@@ -48,7 +52,7 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
   if (el.tag === 'et_pb_image') {
     const src = decodeDiviAttr(el.attrs.src);
     if (!src) {
-      warnings.push('et_pb_image with no src — dropped.');
+      warn(warnings, 'et_pb_image with no src — dropped.');
       return [];
     }
     return [
@@ -67,7 +71,7 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
       .map((id) => id.trim())
       .filter(Boolean);
     if (ids.length === 0) {
-      warnings.push('et_pb_gallery with no gallery_ids — kept as raw.');
+      warn(warnings, 'et_pb_gallery with no gallery_ids — kept as raw.');
       return [{ kind: 'raw', html: '[et_pb_gallery]', note: 'et_pb_gallery with no gallery_ids attribute' }];
     }
     return [{ kind: 'gallery', images: ids.map((id) => ({ src: `attachment:${id}`, alt: '' })) }];
@@ -77,7 +81,7 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
     const href = decodeDiviAttr(el.attrs.button_url);
     const text = decodeDiviAttr(el.attrs.button_text) || 'Learn more';
     if (!href) {
-      warnings.push('et_pb_button with no button_url — rendered as plain text.');
+      warn(warnings, 'et_pb_button with no button_url — rendered as plain text.');
       return [{ kind: 'paragraph', html: text }];
     }
     return [{ kind: 'button', text, href }];
@@ -86,7 +90,7 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
   if (el.tag === 'et_pb_video') {
     const src = decodeDiviAttr(el.attrs.src);
     if (!src) {
-      warnings.push('et_pb_video with no src — dropped.');
+      warn(warnings, 'et_pb_video with no src — dropped.');
       return [];
     }
     return [{ kind: 'video', src, provider: videoProvider(src) }];
@@ -96,11 +100,11 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
     return [{ kind: 'separator' }];
   }
 
-  warnings.push(`Unrecognised Divi shortcode [${el.tag}] — kept as raw.`);
+  warn(warnings, `Unrecognised Divi shortcode [${el.tag}] — kept as raw.`);
   return [{ kind: 'raw', html: `[${el.tag}]`, note: `unknown shortcode: ${el.tag}` }];
 }
 
-function readChildren(nodes: ShortcodeNode[], warnings: string[]): IRNode[] {
+function readChildren(nodes: ShortcodeNode[], warnings: ReaderWarning[]): IRNode[] {
   const out: IRNode[] = [];
   for (const node of nodes) {
     if (node.type === 'text') {
@@ -122,7 +126,7 @@ function readChildren(nodes: ShortcodeNode[], warnings: string[]): IRNode[] {
  * percent-decoded since Divi commonly encodes them. */
 export function readDivi(input: ReadInput): ReadResult {
   const tree = tokenizeShortcodes(input.contentHtml, VOID_TAGS);
-  const warnings: string[] = [];
+  const warnings: ReaderWarning[] = [];
   const nodes = readChildren(tree, warnings);
   return { nodes, warnings };
 }

@@ -2,6 +2,7 @@ import type { AppState, ArticleStatus, DerivedArticle } from './types';
 import type { ParsedArticle, TermRef } from '../types/domain';
 import { termMappingIdOf } from '../core/mappings/termId';
 import { getReader } from '../core/builders';
+import { reviewMessages, infoMessages } from '../core/builders/types';
 import { collectMediaRefs, rewriteMediaRefs } from '../core/build/collectMediaRefs';
 import { resolveArticleTerms } from '../core/build/resolveTerms';
 import { writeBlocks } from '../core/gutenberg/writeBlocks';
@@ -24,7 +25,7 @@ export function getArticleStatus(
   article: ParsedArticle,
   index: number,
   state: AppState,
-): { status: ArticleStatus; reason?: string; warnings: string[]; mediaCount: number } {
+): { status: ArticleStatus; reason?: string; warnings: string[]; infoWarnings: string[]; mediaCount: number } {
   const id = getArticleId(article, index);
   const override = state.articles[id];
 
@@ -39,18 +40,20 @@ export function getArticleStatus(
   });
   const refs = collectMediaRefs(nodes);
   const mediaCount = refs.length;
+  const infoWarnings = infoMessages(readerWarnings);
 
   if (override?.excluded) {
     return {
       status: override.auto ? 'excluded_auto' : 'excluded_manual',
       reason: override.reason || 'Excluded by user',
       warnings: [],
+      infoWarnings: [],
       mediaCount,
     };
   }
 
   if (override?.editedHtml != null && override.editedHtml.trim().length > 0) {
-    return { status: 'edited', warnings: [], mediaCount };
+    return { status: 'edited', warnings: [], infoWarnings: [], mediaCount };
   }
 
   const termWarnings: string[] = [];
@@ -76,12 +79,12 @@ export function getArticleStatus(
     }
   }
 
-  const allWarnings = [...readerWarnings, ...termWarnings, ...mediaWarnings];
+  const allWarnings = [...reviewMessages(readerWarnings), ...termWarnings, ...mediaWarnings];
   if (allWarnings.length > 0) {
-    return { status: 'review', warnings: allWarnings, mediaCount };
+    return { status: 'review', warnings: allWarnings, infoWarnings, mediaCount };
   }
 
-  return { status: 'ready', warnings: [], mediaCount };
+  return { status: 'ready', warnings: [], infoWarnings, mediaCount };
 }
 
 export function getDerivedArticles(state: AppState): DerivedArticle[] {
@@ -91,7 +94,7 @@ export function getDerivedArticles(state: AppState): DerivedArticle[] {
 
   return state.source.articles.map((art, index) => {
     const id = getArticleId(art, index);
-    const { status, reason, warnings, mediaCount } = getArticleStatus(art, index, state);
+    const { status, reason, warnings, infoWarnings, mediaCount } = getArticleStatus(art, index, state);
     const override = state.articles[id];
 
     return {
@@ -100,6 +103,7 @@ export function getDerivedArticles(state: AppState): DerivedArticle[] {
       status,
       statusReason: reason,
       warnings,
+      infoWarnings,
       mediaCount,
       isEdited: status === 'edited',
       isExcluded: status.startsWith('excluded'),
@@ -142,7 +146,10 @@ export function getArticlePreviewHtml(article: ParsedArticle, editedHtml: string
     (ref) => `Image not found in this export: ${ref} — the WXR file has no media item for this attachment ID.`,
   );
 
-  return { html: writeBlocks(rewrittenNodes, state.settings), warnings: [...readerWarnings, ...mediaWarnings, ...attachmentWarnings] };
+  return {
+    html: writeBlocks(rewrittenNodes, state.settings),
+    warnings: [...readerWarnings.map((w) => w.message), ...mediaWarnings, ...attachmentWarnings],
+  };
 }
 
 export function getStatusCounts(derivedArticles: DerivedArticle[]): Record<ArticleStatus | 'total', number> {

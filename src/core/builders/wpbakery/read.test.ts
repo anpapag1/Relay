@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { readWpbakery } from './read';
+import type { ReaderWarning } from '../types';
+
+const msgs = (warnings: ReaderWarning[]) => warnings.map((w) => w.message);
 
 describe('readWpbakery', () => {
   it('converts vc_row/vc_column into a columns node, delegating vc_column_text to plainHtml', () => {
@@ -59,7 +62,7 @@ describe('readWpbakery', () => {
   it('keeps an unrecognised shortcode as raw with a warning', () => {
     const { nodes, warnings } = readWpbakery({ contentHtml: '[vc_testimonial name="X"]', postmeta: {} });
     expect(nodes[0].kind).toBe('raw');
-    expect(warnings.some((w) => w.includes('vc_testimonial'))).toBe(true);
+    expect(msgs(warnings).some((m) => m.includes('vc_testimonial'))).toBe(true);
   });
 
   it('decodes vc_raw_html\'s base64+urlencoded payload into real HTML instead of a literal placeholder', () => {
@@ -70,7 +73,7 @@ describe('readWpbakery', () => {
       postmeta: {},
     });
     expect(nodes).toEqual([{ kind: 'raw', html: '<div class="ad-banner">Sponsored content</div>', note: 'vc_raw_html (decoded)' }]);
-    expect(warnings).toEqual(['vc_raw_html decoded and kept as raw HTML.']);
+    expect(warnings).toEqual([{ message: 'vc_raw_html decoded and kept as raw HTML.', severity: 'review' }]);
   });
 
   it('drops a decoded vc_raw_html payload that is the known-empty sidebar widget anchor, well-formed or not', () => {
@@ -81,7 +84,10 @@ describe('readWpbakery', () => {
     });
     expect(wellFormed.nodes).toEqual([]);
     expect(wellFormed.warnings).toEqual([
-      'vc_raw_html was a known-empty sidebar widget anchor (depends on the old theme\'s JavaScript, which won\'t exist on the new site) — dropped rather than kept as dead markup.',
+      {
+        message: 'vc_raw_html was a known-empty sidebar widget anchor (depends on the old theme\'s JavaScript, which won\'t exist on the new site) — dropped rather than kept as dead markup.',
+        severity: 'info',
+      },
     ]);
 
     // The exact malformed encoding (missing the closing >) observed across
@@ -91,23 +97,24 @@ describe('readWpbakery', () => {
       postmeta: {},
     });
     expect(malformed.nodes).toEqual([]);
-    expect(malformed.warnings.some((w) => w.includes('known-empty sidebar widget anchor'))).toBe(true);
+    expect(msgs(malformed.warnings).some((m) => m.includes('known-empty sidebar widget anchor'))).toBe(true);
+    expect(malformed.warnings.every((w) => w.severity === 'info')).toBe(true);
   });
 
   it('drops an empty vc_raw_html and reports an undecodable payload rather than crashing', () => {
     const empty = readWpbakery({ contentHtml: '[vc_raw_html][/vc_raw_html]', postmeta: {} });
     expect(empty.nodes).toEqual([]);
-    expect(empty.warnings).toEqual(['vc_raw_html with no content — dropped.']);
+    expect(empty.warnings).toEqual([{ message: 'vc_raw_html with no content — dropped.', severity: 'review' }]);
 
     const garbage = readWpbakery({ contentHtml: '[vc_raw_html]not-valid-base64!!![/vc_raw_html]', postmeta: {} });
     expect(garbage.nodes[0].kind).toBe('raw');
-    expect(garbage.warnings.some((w) => w.includes('could not be decoded'))).toBe(true);
+    expect(msgs(garbage.warnings).some((m) => m.includes('could not be decoded'))).toBe(true);
   });
 
   it('drops a bare vc_icon with a warning, and converts a linked one to a button', () => {
     const bare = readWpbakery({ contentHtml: '[vc_row][vc_column][vc_icon][/vc_column][/vc_row]', postmeta: {} });
     expect(bare.nodes).toEqual([{ kind: 'columns', columns: [[]] }]);
-    expect(bare.warnings.some((w) => w.includes('vc_icon dropped'))).toBe(true);
+    expect(msgs(bare.warnings).some((m) => m.includes('vc_icon dropped'))).toBe(true);
 
     const linked = readWpbakery({
       contentHtml: '[vc_icon title="Go" link="url:https%3A%2F%2Fexample.com|title:Go|target:_blank"]',
@@ -134,7 +141,7 @@ describe('readWpbakery', () => {
   it('keeps a top-level [caption] with no image as raw with a warning, never fabricating one', () => {
     const { nodes, warnings } = readWpbakery({ contentHtml: '[caption]just text, no image[/caption]', postmeta: {} });
     expect(nodes[0].kind).toBe('raw');
-    expect(warnings.some((w) => w.includes('no <img>'))).toBe(true);
+    expect(msgs(warnings).some((m) => m.includes('no <img>'))).toBe(true);
   });
 
   it('converts vc_images_carousel image ids into a static gallery, with a warning that the slider behavior is lost', () => {
@@ -149,13 +156,13 @@ describe('readWpbakery', () => {
         ],
       },
     ]);
-    expect(warnings.some((w) => w.includes('carousel behavior is not preserved'))).toBe(true);
+    expect(msgs(warnings).some((m) => m.includes('carousel behavior is not preserved'))).toBe(true);
   });
 
   it('keeps a vc_images_carousel with no image ids as raw with a warning', () => {
     const { nodes, warnings } = readWpbakery({ contentHtml: '[vc_images_carousel]', postmeta: {} });
     expect(nodes[0].kind).toBe('raw');
-    expect(warnings.some((w) => w.includes('vc_images_carousel'))).toBe(true);
+    expect(msgs(warnings).some((m) => m.includes('vc_images_carousel'))).toBe(true);
   });
 
   it('reads a top-level classic [video] shortcode (distinct from vc_video) as a video node', () => {
@@ -170,7 +177,7 @@ describe('readWpbakery', () => {
   it('keeps a [video] shortcode with no resolvable source as raw with a warning, and does not swallow following siblings', () => {
     const { nodes, warnings } = readWpbakery({ contentHtml: '[video][vc_separator]', postmeta: {} });
     expect(nodes[0].kind).toBe('raw');
-    expect(warnings.some((w) => w.includes('video shortcode'))).toBe(true);
+    expect(msgs(warnings).some((m) => m.includes('video shortcode'))).toBe(true);
     // [video] is void (VOID_TAGS) - it must not have swallowed vc_separator
     // as its "child" the way a non-void unclosed tag would.
     expect(nodes[1]).toEqual({ kind: 'separator' });

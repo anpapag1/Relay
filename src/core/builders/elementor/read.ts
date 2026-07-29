@@ -1,6 +1,10 @@
 import type { IRNode } from '../../ir/nodes';
-import type { ReadInput, ReadResult } from '../types';
+import type { ReadInput, ReadResult, ReaderWarning } from '../types';
 import { readPlainHtml } from '../plainHtml/read';
+
+function warn(warnings: ReaderWarning[], message: string): void {
+  warnings.push({ message, severity: 'review' });
+}
 
 interface ElementorNode {
   id?: string;
@@ -30,7 +34,7 @@ function videoProvider(type: string): 'youtube' | 'vimeo' | 'file' {
   return 'file';
 }
 
-function readWidget(node: ElementorNode, warnings: string[]): IRNode[] {
+function readWidget(node: ElementorNode, warnings: ReaderWarning[]): IRNode[] {
   const settings = node.settings ?? {};
 
   switch (node.widgetType) {
@@ -50,7 +54,7 @@ function readWidget(node: ElementorNode, warnings: string[]): IRNode[] {
       const image = (settings.image ?? {}) as { url?: unknown; alt?: unknown };
       const src = str(image.url);
       if (!src) {
-        warnings.push('Elementor image widget with no url — dropped.');
+        warn(warnings, 'Elementor image widget with no url — dropped.');
         return [];
       }
       return [{ kind: 'image', src, alt: str(image.alt) }];
@@ -59,7 +63,7 @@ function readWidget(node: ElementorNode, warnings: string[]): IRNode[] {
       const gallery = (settings.gallery ?? []) as Array<{ url?: unknown; alt?: unknown }>;
       const images = gallery.filter((item) => str(item.url)).map((item) => ({ src: str(item.url), alt: str(item.alt) }));
       if (images.length === 0) {
-        warnings.push('Elementor image-gallery widget with no images — dropped.');
+        warn(warnings, 'Elementor image-gallery widget with no images — dropped.');
         return [];
       }
       return [{ kind: 'gallery', images }];
@@ -69,7 +73,7 @@ function readWidget(node: ElementorNode, warnings: string[]): IRNode[] {
       const href = str(link.url);
       const text = str(settings.text) || 'Learn more';
       if (!href) {
-        warnings.push('Elementor button widget with no link url — rendered as plain text.');
+        warn(warnings, 'Elementor button widget with no link url — rendered as plain text.');
         return [{ kind: 'paragraph', html: text }];
       }
       return [{ kind: 'button', text, href }];
@@ -83,7 +87,7 @@ function readWidget(node: ElementorNode, warnings: string[]): IRNode[] {
             ? str(settings.vimeo_url)
             : str((settings.hosted_url as { url?: unknown } | undefined)?.url);
       if (!src) {
-        warnings.push('Elementor video widget with no resolvable source — dropped.');
+        warn(warnings, 'Elementor video widget with no resolvable source — dropped.');
         return [];
       }
       return [{ kind: 'video', src, provider: videoProvider(type) }];
@@ -95,12 +99,12 @@ function readWidget(node: ElementorNode, warnings: string[]): IRNode[] {
       return [{ kind: 'spacer', height: size ?? 20 }];
     }
     default:
-      warnings.push(`Unrecognised Elementor widget "${node.widgetType ?? 'unknown'}" — kept as raw.`);
+      warn(warnings, `Unrecognised Elementor widget "${node.widgetType ?? 'unknown'}" — kept as raw.`);
       return [{ kind: 'raw', html: '', note: `unknown elementor widget: ${node.widgetType ?? 'unknown'}` }];
   }
 }
 
-function readNode(node: ElementorNode, warnings: string[]): IRNode[] {
+function readNode(node: ElementorNode, warnings: ReaderWarning[]): IRNode[] {
   if (node.elType === 'section') {
     const columns = (node.elements ?? []).filter((child) => child.elType === 'column');
     if (columns.length === 0) return readChildren(node.elements ?? [], warnings);
@@ -115,7 +119,7 @@ function readNode(node: ElementorNode, warnings: string[]): IRNode[] {
   return readChildren(node.elements ?? [], warnings);
 }
 
-function readChildren(nodes: ElementorNode[], warnings: string[]): IRNode[] {
+function readChildren(nodes: ElementorNode[], warnings: ReaderWarning[]): IRNode[] {
   return nodes.flatMap((node) => readNode(node, warnings));
 }
 
@@ -128,7 +132,7 @@ export function readElementor(input: ReadInput): ReadResult {
   const raw = input.postmeta['_elementor_data'];
   if (!raw) {
     const result = readPlainHtml(input);
-    return { nodes: result.nodes, warnings: [...result.warnings, 'No _elementor_data postmeta — fell back to plain HTML content.'] };
+    return { nodes: result.nodes, warnings: [...result.warnings, { message: 'No _elementor_data postmeta — fell back to plain HTML content.', severity: 'review' }] };
   }
 
   let tree: ElementorNode[];
@@ -136,10 +140,10 @@ export function readElementor(input: ReadInput): ReadResult {
     tree = JSON.parse(raw) as ElementorNode[];
   } catch {
     const result = readPlainHtml(input);
-    return { nodes: result.nodes, warnings: [...result.warnings, '_elementor_data was not valid JSON — fell back to plain HTML content.'] };
+    return { nodes: result.nodes, warnings: [...result.warnings, { message: '_elementor_data was not valid JSON — fell back to plain HTML content.', severity: 'review' }] };
   }
 
-  const warnings: string[] = [];
+  const warnings: ReaderWarning[] = [];
   const nodes = readChildren(tree, warnings);
   return { nodes, warnings };
 }

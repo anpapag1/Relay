@@ -1,7 +1,15 @@
 import type { IRNode } from '../../ir/nodes';
-import type { ReadInput, ReadResult } from '../types';
+import type { ReadInput, ReadResult, ReaderWarning } from '../types';
 import { tokenizeShortcodes, textContent, type ShortcodeElement, type ShortcodeNode } from '../shortcode/tokenize';
 import { readPlainHtml } from '../plainHtml/read';
+
+function warn(warnings: ReaderWarning[], message: string): void {
+  warnings.push({ message, severity: 'review' });
+}
+
+function info(warnings: ReaderWarning[], message: string): void {
+  warnings.push({ message, severity: 'info' });
+}
 
 const ROW_TAGS = new Set(['vc_row', 'vc_row_inner']);
 const COLUMN_TAGS = new Set(['vc_column', 'vc_column_inner']);
@@ -42,11 +50,11 @@ function videoProvider(src: string): 'youtube' | 'vimeo' | 'file' {
  * divs in general. */
 const NOOP_SIDEBAR_ANCHOR_RE = /^<div id=["']sidebar-at-visual["']>\s*<\/div\s*>?$/i;
 
-function readColumn(el: ShortcodeElement, warnings: string[]): IRNode[] {
+function readColumn(el: ShortcodeElement, warnings: ReaderWarning[]): IRNode[] {
   return readChildren(el.children, warnings);
 }
 
-function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
+function readElement(el: ShortcodeElement, warnings: ReaderWarning[]): IRNode[] {
   if (ROW_TAGS.has(el.tag)) {
     const columnElements = el.children.filter(
       (child): child is ShortcodeElement => child.type === 'element' && COLUMN_TAGS.has(child.tag),
@@ -81,7 +89,7 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
   if (el.tag === 'vc_gallery') {
     const ids = (el.attrs.images ?? '').split(',').map((id) => id.trim()).filter(Boolean);
     if (ids.length === 0) {
-      warnings.push('vc_gallery with no image ids — kept as raw.');
+      warn(warnings, 'vc_gallery with no image ids — kept as raw.');
       return [{ kind: 'raw', html: `[vc_gallery]`, note: 'vc_gallery with no images attribute' }];
     }
     return [{ kind: 'gallery', images: ids.map((id) => ({ src: `attachment:${id}`, alt: '' })) }];
@@ -94,10 +102,10 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
     // is gone, not just re-implemented differently.
     const ids = (el.attrs.images ?? '').split(',').map((id) => id.trim()).filter(Boolean);
     if (ids.length === 0) {
-      warnings.push('vc_images_carousel with no image ids — kept as raw.');
+      warn(warnings, 'vc_images_carousel with no image ids — kept as raw.');
       return [{ kind: 'raw', html: textFallback(el), note: 'vc_images_carousel with no images attribute' }];
     }
-    warnings.push('vc_images_carousel converted to a static image gallery — the sliding carousel behavior is not preserved.');
+    warn(warnings, 'vc_images_carousel converted to a static image gallery — the sliding carousel behavior is not preserved.');
     return [{ kind: 'gallery', images: ids.map((id) => ({ src: `attachment:${id}`, alt: '' })) }];
   }
 
@@ -108,7 +116,7 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
     // encoded body or [caption]'s embedded <img> tag.
     const src = el.attrs.src ?? el.attrs.mp4 ?? el.attrs.m4v ?? el.attrs.webm ?? el.attrs.ogv ?? el.attrs.wmv ?? el.attrs.flv ?? '';
     if (!src) {
-      warnings.push('video shortcode with no resolvable source — kept as raw.');
+      warn(warnings, 'video shortcode with no resolvable source — kept as raw.');
       return [{ kind: 'raw', html: textFallback(el), note: 'video shortcode with no src/mp4/etc. attribute' }];
     }
     return [{ kind: 'video', src, provider: videoProvider(src) }];
@@ -118,7 +126,7 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
     const href = parseVcLinkUrl(el.attrs.link);
     const text = el.attrs.title || 'Learn more';
     if (!href) {
-      warnings.push('vc_btn with no resolvable link — rendered as plain text.');
+      warn(warnings, 'vc_btn with no resolvable link — rendered as plain text.');
       return [{ kind: 'paragraph', html: text }];
     }
     return [{ kind: 'button', text, href }];
@@ -127,7 +135,7 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
   if (el.tag === 'vc_video') {
     const src = el.attrs.link ?? el.attrs.src ?? '';
     if (!src) {
-      warnings.push('vc_video with no source — dropped.');
+      warn(warnings, 'vc_video with no source — dropped.');
       return [];
     }
     return [{ kind: 'video', src, provider: videoProvider(src) }];
@@ -147,19 +155,19 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
     // then base64-encoded, as the shortcode's text content (not an attr).
     const encoded = textContent(el.children).trim();
     if (!encoded) {
-      warnings.push('vc_raw_html with no content — dropped.');
+      warn(warnings, 'vc_raw_html with no content — dropped.');
       return [];
     }
     try {
       const decoded = decodeURIComponent(atob(encoded));
       if (NOOP_SIDEBAR_ANCHOR_RE.test(decoded.trim())) {
-        warnings.push('vc_raw_html was a known-empty sidebar widget anchor (depends on the old theme\'s JavaScript, which won\'t exist on the new site) — dropped rather than kept as dead markup.');
+        info(warnings, 'vc_raw_html was a known-empty sidebar widget anchor (depends on the old theme\'s JavaScript, which won\'t exist on the new site) — dropped rather than kept as dead markup.');
         return [];
       }
-      warnings.push('vc_raw_html decoded and kept as raw HTML.');
+      warn(warnings, 'vc_raw_html decoded and kept as raw HTML.');
       return [{ kind: 'raw', html: decoded, note: 'vc_raw_html (decoded)' }];
     } catch {
-      warnings.push('vc_raw_html payload could not be decoded — kept as raw shortcode text.');
+      warn(warnings, 'vc_raw_html payload could not be decoded — kept as raw shortcode text.');
       return [{ kind: 'raw', html: textFallback(el), note: 'vc_raw_html: undecodable payload' }];
     }
   }
@@ -177,7 +185,7 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
     const inner = textContent(el.children);
     const imgMatch = /<img\b[^>]*>/i.exec(inner);
     if (!imgMatch) {
-      warnings.push('caption shortcode with no <img> — kept as raw.');
+      warn(warnings, 'caption shortcode with no <img> — kept as raw.');
       return [{ kind: 'raw', html: textFallback(el), note: 'caption shortcode without an image' }];
     }
     const captionText = inner
@@ -187,7 +195,7 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
     const result = readPlainHtml({ contentHtml: imgMatch[0], postmeta: {} });
     const imageNode = result.nodes.find((n): n is Extract<IRNode, { kind: 'image' }> => n.kind === 'image');
     if (!imageNode) {
-      warnings.push('caption shortcode image could not be parsed — kept as raw.');
+      warn(warnings, 'caption shortcode image could not be parsed — kept as raw.');
       return [{ kind: 'raw', html: textFallback(el), note: 'caption shortcode: image parse failed' }];
     }
     return [{ ...imageNode, caption: captionText || undefined }];
@@ -199,14 +207,14 @@ function readElement(el: ShortcodeElement, warnings: string[]): IRNode[] {
     // icon's own visual (icon fonts/SVGs aren't portable across builders).
     const href = parseVcLinkUrl(el.attrs.link);
     if (href) {
-      warnings.push('vc_icon with a link converted to a button — the icon glyph itself is not preserved.');
+      warn(warnings, 'vc_icon with a link converted to a button — the icon glyph itself is not preserved.');
       return [{ kind: 'button', text: el.attrs.title || 'Learn more', href }];
     }
-    warnings.push('vc_icon dropped — decorative icon shortcode has no Gutenberg equivalent.');
+    warn(warnings, 'vc_icon dropped — decorative icon shortcode has no Gutenberg equivalent.');
     return [];
   }
 
-  warnings.push(`Unrecognised WPBakery shortcode [${el.tag}] — kept as raw.`);
+  warn(warnings, `Unrecognised WPBakery shortcode [${el.tag}] — kept as raw.`);
   return [{ kind: 'raw', html: textFallback(el), note: `unknown shortcode: ${el.tag}` }];
 }
 
@@ -217,7 +225,7 @@ function textFallback(el: ShortcodeElement): string {
   return `[${el.tag}${attrs ? ` ${attrs}` : ''}]`;
 }
 
-function readChildren(nodes: ShortcodeNode[], warnings: string[]): IRNode[] {
+function readChildren(nodes: ShortcodeNode[], warnings: ReaderWarning[]): IRNode[] {
   const out: IRNode[] = [];
   for (const node of nodes) {
     if (node.type === 'text') {
@@ -241,7 +249,7 @@ function readChildren(nodes: ShortcodeNode[], warnings: string[]): IRNode[] {
  * the WXR attachment index. */
 export function readWpbakery(input: ReadInput): ReadResult {
   const tree = tokenizeShortcodes(input.contentHtml, VOID_TAGS);
-  const warnings: string[] = [];
+  const warnings: ReaderWarning[] = [];
   const nodes = readChildren(tree, warnings);
   return { nodes, warnings };
 }
