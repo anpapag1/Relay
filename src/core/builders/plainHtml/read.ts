@@ -83,6 +83,48 @@ function readImageElement(img: Element, caption?: string): IRNode {
   return { kind: 'image', ...imageRefFrom(img), caption };
 }
 
+/** Splits a <p>'s children into standalone image node(s) plus the
+ * surrounding text as separate paragraph(s), instead of keeping an <img>
+ * (bare, or wrapped in a plain link-to-full-size <a>) embedded inside a
+ * single wp:paragraph block's HTML — real WordPress content commonly has
+ * this shape (an image immediately followed by a caption-like sentence,
+ * no blank line between them), and a block-level image sitting inside a
+ * paragraph block is invalid Gutenberg structure a real editor would
+ * never produce. Runs of non-image content are buffered and flushed as
+ * one paragraph each, so a sentence split across inline tags doesn't
+ * fragment into several. */
+function splitInlineContent(childNodes: ArrayLike<ChildNode>): IRNode[] {
+  const out: IRNode[] = [];
+  let buffer = '';
+  const flush = () => {
+    const trimmed = buffer.trim();
+    buffer = '';
+    if (trimmed) out.push({ kind: 'paragraph', html: trimmed });
+  };
+
+  for (const child of Array.from(childNodes)) {
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      const el = child as Element;
+      if (el.tagName === 'IMG') {
+        flush();
+        out.push(readImageElement(el));
+        continue;
+      }
+      if (el.tagName === 'A' && el.children.length === 1 && el.children[0].tagName === 'IMG' && !el.textContent?.trim()) {
+        flush();
+        out.push(readImageElement(el.children[0] as Element));
+        continue;
+      }
+      buffer += el.outerHTML;
+      continue;
+    }
+    buffer += child.textContent ?? '';
+  }
+  flush();
+
+  return out;
+}
+
 /** A real WordPress gallery block is a `<figure class="wp-block-gallery">`
  * wrapping several nested `<figure class="wp-block-image"><img></figure>`
  * items, one per photo — structurally just an outer figure containing
@@ -158,13 +200,13 @@ function readElement(el: Element, warnings: ReaderWarning[]): IRNode[] {
 
   switch (tag) {
     case 'P': {
-      // A <p> whose entire content is one or more images becomes standalone
-      // image blocks instead of an image nested (illegally, in Gutenberg
-      // terms) inside a paragraph block.
-      const imgs = Array.from(el.querySelectorAll('img'));
-      const textOnly = el.textContent?.trim() ?? '';
-      if (imgs.length > 0 && !textOnly) {
-        return imgs.map((img) => readImageElement(img));
+      // A <p> containing any image — whether it's the paragraph's entire
+      // content or mixed in with real text — gets that image split out
+      // into its own standalone block instead of nested (illegally, in
+      // Gutenberg terms) inside a wp:paragraph block.
+      const imgs = el.querySelectorAll('img');
+      if (imgs.length > 0) {
+        return splitInlineContent(el.childNodes);
       }
       return [{ kind: 'paragraph', html: el.innerHTML.trim() }];
     }

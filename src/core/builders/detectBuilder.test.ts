@@ -38,4 +38,20 @@ describe('detectBuilder', () => {
     ]);
     expect(result.builderId).toBe('wpbakery');
   });
+
+  it('still picks wpbakery when its shortcodes only appear in a small minority of posts, not plainHtml\'s flat per-post score', () => {
+    // A site that migrated builders partway through, or has some
+    // already-Gutenberg-native posts mixed in with WPBakery ones: only
+    // 2 of 20 posts have real vc_row/vc_column shortcodes, so wpbakery's
+    // *average* score (2 * 0.95 / 20 = 0.095) is well below plainHtml's
+    // flat 0.2 — but wpbakery is still unambiguously the real builder
+    // wherever it actually shows up, and should still win.
+    const posts = [
+      { contentHtml: '[vc_row][vc_column][vc_column_text]<p>A</p>[/vc_column_text][/vc_column][/vc_row]', postmeta: {} },
+      { contentHtml: '[vc_row][vc_column][vc_column_text]<p>B</p>[/vc_column_text][/vc_column][/vc_row]', postmeta: {} },
+      ...Array.from({ length: 18 }, () => ({ contentHtml: '<p>An ordinary plain post</p>', postmeta: {} })),
+    ];
+    const result = detectBuilder(posts);
+    expect(result.builderId).toBe('wpbakery');
+  });
 });

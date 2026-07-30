@@ -47,6 +47,12 @@ export const BuildTab: React.FC = () => {
   const countIncluded = includedArticles.length;
   const countReview = reviewArticles.length;
   const countExcluded = excludedArticles.length;
+  // The real build live-fetches media the import-time estimate above
+  // can't — an inline image that only turns out unreachable once actually
+  // fetched gets flagged 'review' in the true build result even though
+  // countReview never saw it coming. Once a build has actually finished,
+  // show what it really found instead of repeating the pre-build guess.
+  const countReviewInBuild = state.build.report?.articles.filter((a) => a.status === 'review').length ?? countReview;
 
   // Collect warnings for instant check
   const checkWarnings = includedArticles.flatMap((art) =>
@@ -108,7 +114,7 @@ export const BuildTab: React.FC = () => {
             <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>will be included</div>
           </div>
           <div>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(55% 0.14 60)' }}>{countReview}</div>
+            <div data-testid="pre-build-review-count" style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(55% 0.14 60)' }}>{countReview}</div>
             <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>still need review</div>
           </div>
           <div>
@@ -308,7 +314,7 @@ export const BuildTab: React.FC = () => {
                 <div style={{ fontSize: '12px', color: 'oklch(45% 0.05 150)', marginTop: '2px' }}>included articles</div>
               </div>
               <div style={{ background: 'oklch(97% 0.04 60)', borderRadius: '10px', padding: '16px', border: '1px solid oklch(88% 0.1 60)' }}>
-                <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(50% 0.16 60)' }}>{countReview}</div>
+                <div data-testid="post-build-review-count" style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(50% 0.16 60)' }}>{countReviewInBuild}</div>
                 <div style={{ fontSize: '12px', color: 'oklch(50% 0.08 60)', marginTop: '2px' }}>flagged in log</div>
               </div>
               <div style={{ background: 'oklch(96% 0.005 250)', borderRadius: '10px', padding: '16px', border: '1px solid oklch(90% 0.005 250)' }}>
