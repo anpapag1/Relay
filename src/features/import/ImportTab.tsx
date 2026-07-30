@@ -18,9 +18,23 @@ const BUILDER_LABELS: Record<BuilderId, string> = {
   divi: 'Divi',
 };
 
-function builderOptionLabel(id: BuilderId): string {
+function builderOptionLabel(id: BuilderId, scorePct: number | null): string {
   const label = BUILDER_LABELS[id];
-  return BUILDER_VALIDATION_STATUS[id] === 'beta' ? `${label} (beta)` : label;
+  const withScore = scorePct === null ? label : `${label} — ${scorePct}% match`;
+  return BUILDER_VALIDATION_STATUS[id] === 'beta' ? `${withScore} (beta)` : withScore;
+}
+
+/** Colors the "% match" pill by how confident the score actually is — a
+ * low/ambiguous match should visually stand out from a clean one, not
+ * just report a number in the same green pill regardless of value. */
+function matchPillStyle(scorePct: number): React.CSSProperties {
+  if (scorePct >= 70) {
+    return { color: 'oklch(50% 0.14 150)', background: 'oklch(95% 0.03 150)' };
+  }
+  if (scorePct >= 40) {
+    return { color: 'oklch(55% 0.16 60)', background: 'oklch(96% 0.06 60)' };
+  }
+  return { color: 'oklch(55% 0.18 25)', background: 'oklch(96% 0.05 25)' };
 }
 
 export const ImportTab: React.FC = () => {
@@ -392,6 +406,13 @@ export const ImportTab: React.FC = () => {
   }
 
   const { source, builderId, builderConfidence } = state;
+  const builderScorePct: Partial<Record<BuilderId, number>> = Object.fromEntries(
+    builderRanking.map((r) => [r.builderId, Math.round(r.score * 100)]),
+  );
+  // Falls back to the confidence captured at detection time when the local
+  // ranking hasn't been (re)computed this session — e.g. a restored backup.
+  const selectedBuilderScorePct =
+    builderId && builderScorePct[builderId] !== undefined ? builderScorePct[builderId]! : Math.round(builderConfidence * 100);
   let domain = 'old-site.com';
   if (source.siteUrl) {
     try {
@@ -475,7 +496,7 @@ export const ImportTab: React.FC = () => {
             >
               {BUILDER_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>
-                  {builderOptionLabel(opt)}
+                  {builderOptionLabel(opt, builderScorePct[opt] ?? null)}
                 </option>
               ))}
             </select>
@@ -483,14 +504,13 @@ export const ImportTab: React.FC = () => {
               style={{
                 fontSize: '12px',
                 fontWeight: 700,
-                color: 'oklch(50% 0.14 150)',
-                background: 'oklch(95% 0.03 150)',
                 padding: '5px 9px',
                 borderRadius: '6px',
                 whiteSpace: 'nowrap',
+                ...matchPillStyle(selectedBuilderScorePct),
               }}
             >
-              {Math.round(builderConfidence * 100)}% match
+              {selectedBuilderScorePct}% match
             </div>
             {builderId && <BuilderStatusPill status={BUILDER_VALIDATION_STATUS[builderId]} />}
           </div>
