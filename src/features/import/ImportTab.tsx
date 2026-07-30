@@ -18,23 +18,32 @@ const BUILDER_LABELS: Record<BuilderId, string> = {
   divi: 'Divi',
 };
 
-function builderOptionLabel(id: BuilderId, scorePct: number | null): string {
+function builderOptionLabel(id: BuilderId, entry: BuilderScore | undefined): string {
   const label = BUILDER_LABELS[id];
-  const withScore = scorePct === null ? label : `${label} — ${scorePct}% match`;
+  const withScore = entry ? `${label} — ${entry.confidentCount}/${entry.totalPosts} posts` : label;
   return BUILDER_VALIDATION_STATUS[id] === 'beta' ? `${withScore} (beta)` : withScore;
 }
 
-/** Colors the "% match" pill by how confident the score actually is — a
- * low/ambiguous match should visually stand out from a clean one, not
- * just report a number in the same green pill regardless of value. */
-function matchPillStyle(scorePct: number): React.CSSProperties {
-  if (scorePct >= 70) {
+/** Colors the match pill by whether this builder was actually found on any
+ * post with real confidence — NOT by the raw average score. The average is
+ * diluted by however much of the site is plain content, so a builder used
+ * on a small fraction of posts can average lower than plainHtml's flat
+ * per-post score while still being the unambiguous, correct answer (see
+ * confidentCount in rankBuilders). Coloring by average would flag a
+ * correct-but-partial match as "bad" and a meaningless flat fallback as
+ * "good", so this keys off confidentCount instead:
+ *   - any confident post match at all -> green, it's real
+ *   - the top pick with zero confident matches anywhere -> amber, this is
+ *     the no-signal-found fallback, not a genuine detection
+ *   - anything else -> neutral gray */
+function confidenceTierStyle(confidentCount: number, isTopPick: boolean): React.CSSProperties {
+  if (confidentCount > 0) {
     return { color: 'oklch(50% 0.14 150)', background: 'oklch(95% 0.03 150)' };
   }
-  if (scorePct >= 40) {
+  if (isTopPick) {
     return { color: 'oklch(55% 0.16 60)', background: 'oklch(96% 0.06 60)' };
   }
-  return { color: 'oklch(55% 0.18 25)', background: 'oklch(96% 0.05 25)' };
+  return { color: 'oklch(55% 0.01 250)', background: 'oklch(95% 0.01 250)' };
 }
 
 export const ImportTab: React.FC = () => {
@@ -406,13 +415,12 @@ export const ImportTab: React.FC = () => {
   }
 
   const { source, builderId, builderConfidence } = state;
-  const builderScorePct: Partial<Record<BuilderId, number>> = Object.fromEntries(
-    builderRanking.map((r) => [r.builderId, Math.round(r.score * 100)]),
+  const builderScoreById: Partial<Record<BuilderId, BuilderScore>> = Object.fromEntries(
+    builderRanking.map((r) => [r.builderId, r]),
   );
-  // Falls back to the confidence captured at detection time when the local
-  // ranking hasn't been (re)computed this session — e.g. a restored backup.
-  const selectedBuilderScorePct =
-    builderId && builderScorePct[builderId] !== undefined ? builderScorePct[builderId]! : Math.round(builderConfidence * 100);
+  const topBuilderId = builderRanking[0]?.builderId;
+  const selectedScore = builderId ? builderScoreById[builderId] : undefined;
+  const selectedIsTopPick = builderId !== undefined && builderId === topBuilderId;
   let domain = 'old-site.com';
   if (source.siteUrl) {
     try {
@@ -496,7 +504,7 @@ export const ImportTab: React.FC = () => {
             >
               {BUILDER_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>
-                  {builderOptionLabel(opt, builderScorePct[opt] ?? null)}
+                  {builderOptionLabel(opt, builderScoreById[opt])}
                 </option>
               ))}
             </select>
@@ -507,10 +515,12 @@ export const ImportTab: React.FC = () => {
                 padding: '5px 9px',
                 borderRadius: '6px',
                 whiteSpace: 'nowrap',
-                ...matchPillStyle(selectedBuilderScorePct),
+                ...confidenceTierStyle(selectedScore?.confidentCount ?? 0, selectedIsTopPick),
               }}
             >
-              {selectedBuilderScorePct}% match
+              {selectedScore
+                ? `${selectedScore.confidentCount}/${selectedScore.totalPosts} posts matched`
+                : `${Math.round(builderConfidence * 100)}% match`}
             </div>
             {builderId && <BuilderStatusPill status={BUILDER_VALIDATION_STATUS[builderId]} />}
           </div>
@@ -531,38 +541,48 @@ export const ImportTab: React.FC = () => {
           >
             Builder match breakdown
           </div>
+          <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginBottom: '12px' }}>
+            Share of posts where each builder&apos;s markup was unambiguously found — not a raw score, so a builder
+            used on only part of the site can still be the correct pick.
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {builderRanking.map((entry, i) => (
-              <div
-                key={entry.builderId}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '8px 10px',
-                  borderRadius: '8px',
-                  background: i === 0 ? 'oklch(97% 0.02 150)' : 'transparent',
-                  border: i === 0 ? '1px solid oklch(88% 0.05 150)' : '1px solid transparent',
-                }}
-              >
-                <div style={{ width: '110px', fontSize: '13px', fontWeight: i === 0 ? 700 : 500 }}>
-                  {BUILDER_LABELS[entry.builderId]}
+            {builderRanking.map((entry, i) => {
+              const confidenceSharePct = entry.totalPosts > 0 ? Math.round((entry.confidentCount / entry.totalPosts) * 100) : 0;
+              return (
+                <div
+                  key={entry.builderId}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    background: i === 0 ? 'oklch(97% 0.02 150)' : 'transparent',
+                    border: i === 0 ? '1px solid oklch(88% 0.05 150)' : '1px solid transparent',
+                  }}
+                >
+                  <div style={{ width: '110px', fontSize: '13px', fontWeight: i === 0 ? 700 : 500 }}>
+                    {BUILDER_LABELS[entry.builderId]}
+                  </div>
+                  <div style={{ flex: 1, height: '6px', background: 'oklch(93% 0.005 250)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        width: `${confidenceSharePct}%`,
+                        height: '100%',
+                        background: i === 0 ? 'oklch(60% 0.14 150)' : 'oklch(75% 0.01 250)',
+                      }}
+                    />
+                  </div>
+                  <div style={{ width: '78px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: 'oklch(45% 0.01 250)' }}>
+                    {entry.confidentCount}/{entry.totalPosts} posts
+                  </div>
+                  <div style={{ width: '56px', textAlign: 'right', fontSize: '11px', color: 'oklch(60% 0.01 250)' }}>
+                    avg {Math.round(entry.score * 100)}%
+                  </div>
+                  <BuilderStatusPill status={BUILDER_VALIDATION_STATUS[entry.builderId]} />
                 </div>
-                <div style={{ flex: 1, height: '6px', background: 'oklch(93% 0.005 250)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div
-                    style={{
-                      width: `${Math.round(entry.score * 100)}%`,
-                      height: '100%',
-                      background: i === 0 ? 'oklch(60% 0.14 150)' : 'oklch(75% 0.01 250)',
-                    }}
-                  />
-                </div>
-                <div style={{ width: '48px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: 'oklch(45% 0.01 250)' }}>
-                  {Math.round(entry.score * 100)}%
-                </div>
-                <BuilderStatusPill status={BUILDER_VALIDATION_STATUS[entry.builderId]} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
