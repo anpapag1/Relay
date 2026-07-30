@@ -83,16 +83,40 @@ function readImageElement(img: Element, caption?: string): IRNode {
   return { kind: 'image', ...imageRefFrom(img), caption };
 }
 
+/** Recursively looks for an <img> that leads an element made only of
+ * inline-formatting wrappers (A, STRONG, EM, ...) — e.g. a bare <img>, an
+ * <a> wrapping just an <img>, or real-world WordPress markup like
+ * `<strong><a><img></a>caption text</strong>` where a caption sentence
+ * sits inside the same <strong> as the image, not as its own sibling.
+ * Only the *first* element child of each wrapper is followed, since that
+ * is the shape a leading image + trailing caption actually takes. Returns
+ * the found <img> plus `restHtml` — the wrapper reconstructed with that
+ * image (and its solo anchor, if any) removed, so trailing text keeps its
+ * formatting instead of being dropped. */
+function extractWrappedImage(el: Element): { img: Element; restHtml: string } | null {
+  if (el.tagName === 'IMG') return { img: el, restHtml: '' };
+  if (!INLINE_TAGS.has(el.tagName) || el.children.length === 0) return null;
+
+  const nested = extractWrappedImage(el.children[0]);
+  if (!nested) return null;
+
+  const clone = el.cloneNode(true) as Element;
+  clone.children[0].remove();
+  const innerRest = nested.restHtml + clone.innerHTML;
+  const restHtml = innerRest.trim() ? `<${el.tagName.toLowerCase()}>${innerRest}</${el.tagName.toLowerCase()}>` : '';
+  return { img: nested.img, restHtml };
+}
+
 /** Splits a <p>'s children into standalone image node(s) plus the
  * surrounding text as separate paragraph(s), instead of keeping an <img>
- * (bare, or wrapped in a plain link-to-full-size <a>) embedded inside a
- * single wp:paragraph block's HTML — real WordPress content commonly has
- * this shape (an image immediately followed by a caption-like sentence,
- * no blank line between them), and a block-level image sitting inside a
- * paragraph block is invalid Gutenberg structure a real editor would
- * never produce. Runs of non-image content are buffered and flushed as
- * one paragraph each, so a sentence split across inline tags doesn't
- * fragment into several. */
+ * (bare, or wrapped in inline formatting/a link-to-full-size <a>, however
+ * deeply nested) embedded inside a single wp:paragraph block's HTML —
+ * real WordPress content commonly has this shape (an image immediately
+ * followed by a caption-like sentence, no blank line between them), and a
+ * block-level image sitting inside a paragraph block is invalid Gutenberg
+ * structure a real editor would never produce. Runs of non-image content
+ * are buffered and flushed as one paragraph each, so a sentence split
+ * across inline tags doesn't fragment into several. */
 function splitInlineContent(childNodes: ArrayLike<ChildNode>): IRNode[] {
   const out: IRNode[] = [];
   let buffer = '';
@@ -105,14 +129,11 @@ function splitInlineContent(childNodes: ArrayLike<ChildNode>): IRNode[] {
   for (const child of Array.from(childNodes)) {
     if (child.nodeType === Node.ELEMENT_NODE) {
       const el = child as Element;
-      if (el.tagName === 'IMG') {
+      const wrapped = extractWrappedImage(el);
+      if (wrapped) {
         flush();
-        out.push(readImageElement(el));
-        continue;
-      }
-      if (el.tagName === 'A' && el.children.length === 1 && el.children[0].tagName === 'IMG' && !el.textContent?.trim()) {
-        flush();
-        out.push(readImageElement(el.children[0] as Element));
+        out.push(readImageElement(wrapped.img));
+        if (wrapped.restHtml) buffer += wrapped.restHtml;
         continue;
       }
       buffer += el.outerHTML;

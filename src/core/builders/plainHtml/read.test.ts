@@ -36,6 +36,18 @@ describe('readPlainHtml', () => {
     ]);
   });
 
+  it('splits a paragraph mixing a leading image wrapped in inline formatting (e.g. <strong><a><img></a>caption</strong>) plus real following text into a standalone image plus a separate formatted paragraph', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml:
+        '<p><strong><a href="https://x/full.jpg"><img class="aligncenter wp-image-1" src="https://x/a.jpg" alt="" width="1750" height="1165"></a>Real caption text inside the bold wrapper.</strong></p>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'image', src: 'https://x/a.jpg', alt: '', caption: undefined, href: 'https://x/full.jpg', width: 1750, height: 1165 },
+      { kind: 'paragraph', html: '<strong>Real caption text inside the bold wrapper.</strong>' },
+    ]);
+  });
+
   it('reads a figure with a figcaption as an image with a caption', () => {
     const { nodes } = readPlainHtml({
       contentHtml: '<figure><img src="https://x/a.jpg" alt="A"/><figcaption>Caption text</figcaption></figure>',
