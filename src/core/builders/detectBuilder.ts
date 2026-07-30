@@ -8,10 +8,13 @@ export interface DetectBuilderResult {
 
 export interface BuilderScore {
   builderId: BuilderId;
-  /** Average detect() score across all posts (0..1). */
+  /** Average detect() score across all posts (0..1). Diluted on any site
+   * where the builder is only used on a fraction of posts — prefer
+   * confidentCount/totalPosts for a user-facing "how sure are we" figure. */
   score: number;
   /** Count of posts scoring at or above CONFIDENT_MATCH_THRESHOLD. */
   confidentCount: number;
+  totalPosts: number;
 }
 
 /** A post-level score at or above this is treated as an unambiguous match
@@ -35,14 +38,14 @@ export function rankBuilders(posts: DetectInput[]): BuilderScore[] {
   const entries = Object.entries(builderReaders) as [BuilderId, (typeof builderReaders)[BuilderId]][];
 
   if (posts.length === 0) {
-    return entries.map(([id]) => ({ builderId: id, score: 0, confidentCount: 0 }));
+    return entries.map(([id]) => ({ builderId: id, score: 0, confidentCount: 0, totalPosts: 0 }));
   }
 
   const scored = entries.map(([id, reader]) => {
     const scores = posts.map((post) => reader.detect(post));
     const confidentCount = scores.filter((score) => score >= CONFIDENT_MATCH_THRESHOLD).length;
     const average = scores.reduce((sum, score) => sum + score, 0) / posts.length;
-    return { builderId: id, score: average, confidentCount };
+    return { builderId: id, score: average, confidentCount, totalPosts: posts.length };
   });
 
   return scored.sort((a, b) => b.confidentCount - a.confidentCount || b.score - a.score);
