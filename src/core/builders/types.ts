@@ -3,6 +3,18 @@ import type { PostMeta } from '../../types/domain';
 
 export type BuilderId = 'plainHtml' | 'wpbakery' | 'elementor' | 'divi';
 
+export type BuilderValidationStatus = 'validated' | 'beta';
+
+/** Hand-maintained, not derived at runtime. A builder flips to 'validated'
+ * once its reader has been run against a real exported site and its output
+ * checked — not just synthetic unit-test fixtures. */
+export const BUILDER_VALIDATION_STATUS: Record<BuilderId, BuilderValidationStatus> = {
+  plainHtml: 'validated',
+  wpbakery: 'validated',
+  elementor: 'beta',
+  divi: 'beta',
+};
+
 export interface DetectInput {
   contentHtml: string;
   postmeta: PostMeta;

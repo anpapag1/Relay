@@ -1,14 +1,27 @@
 import React, { useMemo, useState } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import { parseWxr } from '../../core/wxr/parseWxr';
-import { detectBuilder } from '../../core/builders/detectBuilder';
+import { rankBuilders, type BuilderScore } from '../../core/builders/detectBuilder';
 import { SAMPLE_WXR } from './sampleWxr';
 import { createSessionBackup, restoreSessionBackup } from '../../state/session';
 import { findMissingOldTerms, mergeMissingIntoOldTables } from '../../core/mappings/reconcileOldTables';
-import type { BuilderId } from '../../core/builders/types';
+import { BUILDER_VALIDATION_STATUS, type BuilderId } from '../../core/builders/types';
 import type { TermTable } from '../../types/domain';
+import { BuilderStatusPill } from '../../ui/Badge';
 
 const BUILDER_OPTIONS: BuilderId[] = ['plainHtml', 'elementor', 'divi', 'wpbakery'];
+
+const BUILDER_LABELS: Record<BuilderId, string> = {
+  plainHtml: 'Plain HTML',
+  wpbakery: 'WPBakery',
+  elementor: 'Elementor',
+  divi: 'Divi',
+};
+
+function builderOptionLabel(id: BuilderId): string {
+  const label = BUILDER_LABELS[id];
+  return BUILDER_VALIDATION_STATUS[id] === 'beta' ? `${label} (beta)` : label;
+}
 
 export const ImportTab: React.FC = () => {
   const { state, dispatch } = useAppState();
@@ -18,6 +31,7 @@ export const ImportTab: React.FC = () => {
   const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
   const [expandedOldTables, setExpandedOldTables] = useState<Record<string, boolean>>({});
   const [expandedNewTables, setExpandedNewTables] = useState<Record<string, boolean>>({});
+  const [builderRanking, setBuilderRanking] = useState<BuilderScore[]>([]);
 
   const toggleOldTable = (tableId: string) => {
     setExpandedOldTables((prev) => ({ ...prev, [tableId]: !(prev[tableId] ?? true) }));
@@ -38,12 +52,14 @@ export const ImportTab: React.FC = () => {
           setImporting(false);
           return;
         }
-        const detection = detectBuilder(result.articles);
+        const ranking = rankBuilders(result.articles);
+        setBuilderRanking(ranking);
+        const [best] = ranking;
         dispatch({
           type: 'LOAD_SOURCE',
           result,
-          defaultBuilder: detection.builderId,
-          confidence: detection.score,
+          defaultBuilder: best.builderId,
+          confidence: best.score,
         });
       } catch (err) {
         alert('Failed to parse WXR file. Please check the XML console logs or format.');
@@ -451,7 +467,7 @@ export const ImportTab: React.FC = () => {
           >
             Detected page builder
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <select
               value={builderId ?? 'plainHtml'}
               onChange={(e) => dispatch({ type: 'SET_BUILDER', builderId: e.target.value as BuilderId })}
@@ -459,7 +475,7 @@ export const ImportTab: React.FC = () => {
             >
               {BUILDER_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>
-                  {opt}
+                  {builderOptionLabel(opt)}
                 </option>
               ))}
             </select>
@@ -476,9 +492,60 @@ export const ImportTab: React.FC = () => {
             >
               {Math.round(builderConfidence * 100)}% match
             </div>
+            {builderId && <BuilderStatusPill status={BUILDER_VALIDATION_STATUS[builderId]} />}
           </div>
         </div>
       </div>
+
+      {builderRanking.length > 0 && (
+        <div style={cardStyleBase}>
+          <div
+            style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: 'oklch(50% 0.01 250)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              marginBottom: '10px',
+            }}
+          >
+            Builder match breakdown
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {builderRanking.map((entry, i) => (
+              <div
+                key={entry.builderId}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '8px 10px',
+                  borderRadius: '8px',
+                  background: i === 0 ? 'oklch(97% 0.02 150)' : 'transparent',
+                  border: i === 0 ? '1px solid oklch(88% 0.05 150)' : '1px solid transparent',
+                }}
+              >
+                <div style={{ width: '110px', fontSize: '13px', fontWeight: i === 0 ? 700 : 500 }}>
+                  {BUILDER_LABELS[entry.builderId]}
+                </div>
+                <div style={{ flex: 1, height: '6px', background: 'oklch(93% 0.005 250)', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      width: `${Math.round(entry.score * 100)}%`,
+                      height: '100%',
+                      background: i === 0 ? 'oklch(60% 0.14 150)' : 'oklch(75% 0.01 250)',
+                    }}
+                  />
+                </div>
+                <div style={{ width: '48px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: 'oklch(45% 0.01 250)' }}>
+                  {Math.round(entry.score * 100)}%
+                </div>
+                <BuilderStatusPill status={BUILDER_VALIDATION_STATUS[entry.builderId]} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
         <div style={cardStyleBase}>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detectBuilder } from './detectBuilder';
+import { detectBuilder, rankBuilders } from './detectBuilder';
 
 describe('detectBuilder', () => {
   it('detects wpbakery from vc_row/vc_column shortcodes', () => {
@@ -53,5 +53,47 @@ describe('detectBuilder', () => {
     ];
     const result = detectBuilder(posts);
     expect(result.builderId).toBe('wpbakery');
+  });
+});
+
+describe('rankBuilders', () => {
+  it('returns all 4 registered builders', () => {
+    const ranking = rankBuilders([{ contentHtml: '<p>Hi</p>', postmeta: {} }]);
+    expect(ranking.map((r) => r.builderId).sort()).toEqual(['divi', 'elementor', 'plainHtml', 'wpbakery']);
+  });
+
+  it('sorts descending by confidence, with the winner matching detectBuilder', () => {
+    const posts = [
+      { contentHtml: '[vc_row][vc_column][vc_column_text]<p>Hi</p>[/vc_column_text][/vc_column][/vc_row]', postmeta: {} },
+    ];
+    const ranking = rankBuilders(posts);
+    const winner = detectBuilder(posts);
+
+    expect(ranking[0].builderId).toBe(winner.builderId);
+    expect(ranking[0].score).toBe(winner.score);
+    for (let i = 1; i < ranking.length; i++) {
+      const prev = ranking[i - 1];
+      const cur = ranking[i];
+      const prevRank = [prev.confidentCount, prev.score];
+      const curRank = [cur.confidentCount, cur.score];
+      expect(prevRank[0] > curRank[0] || (prevRank[0] === curRank[0] && prevRank[1] >= curRank[1])).toBe(true);
+    }
+  });
+
+  it('populates confidentCount per builder', () => {
+    const posts = [
+      { contentHtml: '[vc_row][vc_column][vc_column_text]<p>A</p>[/vc_column_text][/vc_column][/vc_row]', postmeta: {} },
+      { contentHtml: '[vc_row][vc_column][vc_column_text]<p>B</p>[/vc_column_text][/vc_column][/vc_row]', postmeta: {} },
+    ];
+    const ranking = rankBuilders(posts);
+    const wpbakery = ranking.find((r) => r.builderId === 'wpbakery');
+    expect(wpbakery?.confidentCount).toBe(2);
+  });
+
+  it('returns all builders at zero score for an empty post list, plainHtml first', () => {
+    const ranking = rankBuilders([]);
+    expect(ranking).toHaveLength(4);
+    expect(ranking.every((r) => r.score === 0 && r.confidentCount === 0)).toBe(true);
+    expect(ranking[0].builderId).toBe('plainHtml');
   });
 });
