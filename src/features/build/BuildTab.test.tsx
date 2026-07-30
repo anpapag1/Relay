@@ -166,3 +166,60 @@ describe('BuildTab build survives navigating away mid-build', () => {
     expect(container.textContent).not.toContain('Build cancelled');
   });
 });
+
+describe('BuildTab post-build review count reflects the real build result', () => {
+  it('shows the true count of review-flagged articles from the finished build, not the pre-build import-time estimate', async () => {
+    // This article's inline image isn't in the export's own attachments,
+    // so the import-time estimate (state.media.resolved, stage-1 only)
+    // has no entry for it at all and counts zero review articles before
+    // the build ever runs. The real build additionally live-fetches
+    // unresolved media — here mocked to fail — which is what actually
+    // flags this article 'review', a fact only the finished build knows.
+    const withImage: ParseResult = {
+      ...MOCK_PARSE_RESULT,
+      articles: [
+        {
+          ...MOCK_PARSE_RESULT.articles[0],
+          terms: [],
+          contentHtml: '<figure><img src="https://old.example/wp-content/uploads/unresolvable.jpg"/></figure>',
+        },
+      ],
+    };
+    const seeded = appReducer(initialState, {
+      type: 'LOAD_SOURCE',
+      result: withImage,
+      defaultBuilder: 'plainHtml',
+      confidence: 100,
+    });
+
+    const originalFetch = window.fetch;
+    window.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: 'unreachable' }), { status: 502 })) as any;
+
+    try {
+      await act(async () => {
+        root.render(
+          <AppStateProvider enableAutosave={false} initialStateOverride={seeded}>
+            <BuildTab />
+          </AppStateProvider>,
+        );
+      });
+
+      // Pre-build estimate: no visibility into the live-fetch outcome yet.
+      const dashboardReviewCount = container.querySelector('[data-testid="pre-build-review-count"]');
+      expect(dashboardReviewCount?.textContent).toBe('0');
+
+      const buildBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Build now');
+      await act(async () => {
+        buildBtn?.click();
+      });
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      });
+
+      const postBuildReviewCount = container.querySelector('[data-testid="post-build-review-count"]');
+      expect(postBuildReviewCount?.textContent).toBe('1');
+    } finally {
+      window.fetch = originalFetch;
+    }
+  });
+});

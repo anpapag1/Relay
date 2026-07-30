@@ -24,6 +24,18 @@ describe('readPlainHtml', () => {
     expect(nodes).toEqual([{ kind: 'image', src: 'https://x/a.jpg', alt: 'A', caption: undefined, href: undefined, width: 100, height: 50 }]);
   });
 
+  it('splits a paragraph mixing a linked leading image with real following text into a standalone image plus a separate paragraph', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml:
+        '<p><a href="https://x/full.jpg"><img class="aligncenter wp-image-1" src="https://x/a.jpg" alt="" width="2560" height="1920"></a>Some real caption-like sentence follows immediately.</p>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'image', src: 'https://x/a.jpg', alt: '', caption: undefined, href: 'https://x/full.jpg', width: 2560, height: 1920 },
+      { kind: 'paragraph', html: 'Some real caption-like sentence follows immediately.' },
+    ]);
+  });
+
   it('reads a figure with a figcaption as an image with a caption', () => {
     const { nodes } = readPlainHtml({
       contentHtml: '<figure><img src="https://x/a.jpg" alt="A"/><figcaption>Caption text</figcaption></figure>',
