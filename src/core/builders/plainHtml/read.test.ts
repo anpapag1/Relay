@@ -16,6 +16,28 @@ describe('readPlainHtml', () => {
     ]);
   });
 
+  it('drops genuinely empty paragraphs, and WordPress spacer paragraphs containing only &nbsp;, instead of emitting empty wp:paragraph blocks', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml: '<p>Real text.</p><p></p><p>&nbsp;</p><p> </p><p> </p><p>More real text.</p>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'paragraph', html: 'Real text.' },
+      { kind: 'paragraph', html: 'More real text.' },
+    ]);
+  });
+
+  it('drops an empty bare (unwrapped) blank-line-separated chunk instead of emitting an empty paragraph', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml: 'First paragraph.\n\n&nbsp;\n\nSecond paragraph.',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'paragraph', html: 'First paragraph.' },
+      { kind: 'paragraph', html: 'Second paragraph.' },
+    ]);
+  });
+
   it('promotes a paragraph containing only an image to a standalone image block', () => {
     const { nodes } = readPlainHtml({
       contentHtml: '<p><img src="https://x/a.jpg" alt="A" width="100" height="50"/></p>',

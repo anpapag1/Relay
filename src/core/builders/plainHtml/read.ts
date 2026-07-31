@@ -83,6 +83,19 @@ function readImageElement(img: Element, caption?: string): IRNode {
   return { kind: 'image', ...imageRefFrom(img), caption };
 }
 
+/** True if html has any real content once tags are stripped and `&nbsp;`
+ * (real-world WordPress content's common "empty" paragraph spacer —
+ * invisible in the editor, but not whitespace to a plain `.trim()`) is
+ * treated as whitespace too. Used everywhere a paragraph/heading node
+ * would otherwise get emitted with nothing actually in it. */
+function hasVisibleText(html: string): boolean {
+  return html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/ /g, ' ')
+    .trim().length > 0;
+}
+
 /** Recursively looks for an <img> that leads an element made only of
  * inline-formatting wrappers (A, STRONG, EM, ...) — e.g. a bare <img>, an
  * <a> wrapping just an <img>, or real-world WordPress markup like
@@ -123,7 +136,7 @@ function splitInlineContent(childNodes: ArrayLike<ChildNode>): IRNode[] {
   const flush = () => {
     const trimmed = buffer.trim();
     buffer = '';
-    if (trimmed) out.push({ kind: 'paragraph', html: trimmed });
+    if (hasVisibleText(trimmed)) out.push({ kind: 'paragraph', html: trimmed });
   };
 
   for (const child of Array.from(childNodes)) {
@@ -204,7 +217,7 @@ function splitHeadingContent(childNodes: ArrayLike<ChildNode>, level: 1 | 2 | 3 
   const flush = () => {
     const trimmed = buffer.trim();
     buffer = '';
-    if (trimmed) out.push({ kind: 'heading', level, html: trimmed });
+    if (hasVisibleText(trimmed)) out.push({ kind: 'heading', level, html: trimmed });
   };
 
   for (const child of Array.from(childNodes)) {
@@ -270,7 +283,11 @@ function readElement(el: Element, warnings: ReaderWarning[]): IRNode[] {
       if (imgs.length > 0) {
         return splitInlineContent(el.childNodes);
       }
-      return [{ kind: 'paragraph', html: el.innerHTML.trim() }];
+      const html = el.innerHTML.trim();
+      // A genuinely empty <p> (or one that's just a WordPress spacer like
+      // <p>&nbsp;</p>) carries no content worth a wp:paragraph block —
+      // dropped rather than emitted empty, same as an image-only heading.
+      return hasVisibleText(html) ? [{ kind: 'paragraph', html }] : [];
     }
     case 'FIGURE':
       return readFigure(el, warnings);
@@ -341,7 +358,7 @@ function flushInlineChunks(html: string, nodes: IRNode[]): void {
     const doc = new DOMParser().parseFromString(`<body>${trimmed}</body>`, 'text/html');
     if (doc.body.querySelector('img')) {
       nodes.push(...splitInlineContent(doc.body.childNodes));
-    } else {
+    } else if (hasVisibleText(trimmed)) {
       nodes.push({ kind: 'paragraph', html: trimmed });
     }
   }
