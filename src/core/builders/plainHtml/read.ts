@@ -1,11 +1,18 @@
 import type { ImageRef, IRNode } from '../../ir/nodes';
 import type { ReadInput, ReadResult, ReaderWarning } from '../types';
+import { filenameOf } from '../../media/attachmentIndex';
 
 function warn(warnings: ReaderWarning[], message: string): void {
   warnings.push({ message, severity: 'review' });
 }
 
 const HEADING_RE = /^H([1-6])$/;
+/** Downloadable document extensions — an <a> pointing at one of these
+ * gets promoted to a real wp:file block instead of staying a plain link
+ * buried in paragraph text (the shape almost every real WPBakery/classic
+ * export uses: "See the report <a href='report.pdf'>here</a>"). */
+const FILE_EXTENSION_RE = /\.(pdf|docx?|xlsx?|pptx?|zip|rar|7z)(?:[?"'\s>]|$)/i;
+const PDF_EXTENSION_RE = /\.pdf(?:[?"'\s>]|$)/i;
 const CAPTION_SHORTCODE_RE = /\[caption[^\]]*\]([\s\S]*?)\[\/caption\]/g;
 const GALLERY_SHORTCODE_RE = /\[gallery([^\]]*)\]/g;
 const VIDEO_SHORTCODE_RE = /\[video([^\]]*)\](?:[\s\S]*?\[\/video\])?/g;
@@ -83,6 +90,16 @@ function readImageElement(img: Element, caption?: string): IRNode {
   return { kind: 'image', ...imageRefFrom(img), caption };
 }
 
+function isFileHref(href: string): boolean {
+  return FILE_EXTENSION_RE.test(href);
+}
+
+function readFileElement(anchor: Element): IRNode {
+  const href = anchor.getAttribute('href') ?? '';
+  const fileName = filenameOf(href) || href;
+  return { kind: 'file', href, fileName, isPdf: PDF_EXTENSION_RE.test(href) };
+}
+
 /** True if html has any real content once tags are stripped and `&nbsp;`
  * (real-world WordPress content's common "empty" paragraph spacer —
  * invisible in the editor, but not whitespace to a plain `.trim()`) is
@@ -120,16 +137,48 @@ function extractWrappedImage(el: Element): { img: Element; restHtml: string } | 
   return { img: nested.img, restHtml };
 }
 
-/** Splits a <p>'s children into standalone image node(s) plus the
+/** Same shape as extractWrappedImage, but for a link to a downloadable
+ * document (pdf/doc/xlsx/...) instead of an image — e.g. a bare `<a
+ * href="report.pdf">here</a>`, or that same anchor wrapped in `<strong>`.
+ * Unlike an image (where the wrapper is peeled back to reveal an <img>
+ * leaf), the anchor itself IS the thing being extracted — its own inner
+ * formatting is discarded, since the file block shows the file's own
+ * name, not the link's display text. */
+function extractFileLink(el: Element): { anchor: Element; restHtml: string } | null {
+  if (el.tagName === 'A' && isFileHref(el.getAttribute('href') ?? '')) {
+    return { anchor: el, restHtml: '' };
+  }
+  if (!INLINE_TAGS.has(el.tagName) || el.children.length === 0) return null;
+
+  const nested = extractFileLink(el.children[0]);
+  if (!nested) return null;
+
+  const clone = el.cloneNode(true) as Element;
+  clone.children[0].remove();
+  const innerRest = nested.restHtml + clone.innerHTML;
+  const restHtml = innerRest.trim() ? `<${el.tagName.toLowerCase()}>${innerRest}</${el.tagName.toLowerCase()}>` : '';
+  return { anchor: nested.anchor, restHtml };
+}
+
+/** Whether readElement/flushInlineChunks should route an element through
+ * the file-aware splitters at all — cheaper than always calling them and
+ * relying on extractFileLink to no-op. */
+function elementHasFileLink(el: Element): boolean {
+  return Array.from(el.querySelectorAll('a')).some((a) => isFileHref(a.getAttribute('href') ?? ''));
+}
+
+/** Splits a <p>'s children into standalone image/file node(s) plus the
  * surrounding text as separate paragraph(s), instead of keeping an <img>
  * (bare, or wrapped in inline formatting/a link-to-full-size <a>, however
- * deeply nested) embedded inside a single wp:paragraph block's HTML —
- * real WordPress content commonly has this shape (an image immediately
- * followed by a caption-like sentence, no blank line between them), and a
- * block-level image sitting inside a paragraph block is invalid Gutenberg
- * structure a real editor would never produce. Runs of non-image content
- * are buffered and flushed as one paragraph each, so a sentence split
- * across inline tags doesn't fragment into several. */
+ * deeply nested) or a document link (e.g. `<a href="report.pdf">here</a>`)
+ * embedded inside a single wp:paragraph block's HTML — real WordPress
+ * content commonly has this shape (an image immediately followed by a
+ * caption-like sentence, no blank line between them; "see the minutes
+ * <a href='...pdf'>here</a>"), and a block-level image/file sitting
+ * inside a paragraph block is invalid Gutenberg structure a real editor
+ * would never produce. Runs of other content are buffered and flushed as
+ * one paragraph each, so a sentence split across inline tags doesn't
+ * fragment into several. */
 function splitInlineContent(childNodes: ArrayLike<ChildNode>): IRNode[] {
   const out: IRNode[] = [];
   let buffer = '';
@@ -147,6 +196,13 @@ function splitInlineContent(childNodes: ArrayLike<ChildNode>): IRNode[] {
         flush();
         out.push(readImageElement(wrapped.img));
         if (wrapped.restHtml) buffer += wrapped.restHtml;
+        continue;
+      }
+      const file = extractFileLink(el);
+      if (file) {
+        flush();
+        out.push(readFileElement(file.anchor));
+        if (file.restHtml) buffer += file.restHtml;
         continue;
       }
       buffer += el.outerHTML;
@@ -230,6 +286,13 @@ function splitHeadingContent(childNodes: ArrayLike<ChildNode>, level: 1 | 2 | 3 
         if (wrapped.restHtml) buffer += wrapped.restHtml;
         continue;
       }
+      const file = extractFileLink(el);
+      if (file) {
+        flush();
+        out.push(readFileElement(file.anchor));
+        if (file.restHtml) buffer += file.restHtml;
+        continue;
+      }
       buffer += el.outerHTML;
       continue;
     }
@@ -267,7 +330,7 @@ function readElement(el: Element, warnings: ReaderWarning[]): IRNode[] {
   const headingMatch = HEADING_RE.exec(tag);
   if (headingMatch) {
     const level = Number(headingMatch[1]) as 1 | 2 | 3 | 4 | 5 | 6;
-    if (el.querySelector('img')) {
+    if (el.querySelector('img') || elementHasFileLink(el)) {
       return splitHeadingContent(el.childNodes, level);
     }
     return [{ kind: 'heading', level, html: el.innerHTML.trim() }];
@@ -275,12 +338,13 @@ function readElement(el: Element, warnings: ReaderWarning[]): IRNode[] {
 
   switch (tag) {
     case 'P': {
-      // A <p> containing any image — whether it's the paragraph's entire
-      // content or mixed in with real text — gets that image split out
-      // into its own standalone block instead of nested (illegally, in
-      // Gutenberg terms) inside a wp:paragraph block.
+      // A <p> containing any image or document link — whether it's the
+      // paragraph's entire content or mixed in with real text — gets
+      // that image/file split out into its own standalone block instead
+      // of nested (illegally, in Gutenberg terms) inside a wp:paragraph
+      // block.
       const imgs = el.querySelectorAll('img');
-      if (imgs.length > 0) {
+      if (imgs.length > 0 || elementHasFileLink(el)) {
         return splitInlineContent(el.childNodes);
       }
       const html = el.innerHTML.trim();
@@ -344,19 +408,21 @@ function readElement(el: Element, warnings: ReaderWarning[]): IRNode[] {
 const BLANK_LINE_RE = /\n\s*\n+/;
 
 /** Splits a buffered run of bare text/inline-tag HTML on blank lines and
- * emits one node per chunk, reusing splitInlineContent's leading-image
- * extraction (the same `<a><img></a>caption text` unwrapping the `<p>`
- * case gets) so a classic-editor chunk — no wrapping `<p>`, just a bare
- * image and its caption sentence run together — promotes the image to
- * its own node too, instead of only the special case where a chunk is
- * *nothing but* image(s) with no caption text at all. */
+ * emits one node per chunk, reusing splitInlineContent's leading-image/
+ * file-link extraction (the same `<a><img></a>caption text` unwrapping
+ * the `<p>` case gets) so a classic-editor chunk — no wrapping `<p>`,
+ * just a bare image/document link and its caption sentence run together
+ * (very common in real WPBakery `vc_column_text` content: "See the
+ * agenda <a href='...pdf'>here</a>") — promotes it to its own node too,
+ * instead of only the special case where a chunk is *nothing but* an
+ * image with no caption text at all. */
 function flushInlineChunks(html: string, nodes: IRNode[]): void {
   for (const chunk of html.split(BLANK_LINE_RE)) {
     const trimmed = chunk.trim();
     if (!trimmed) continue;
 
     const doc = new DOMParser().parseFromString(`<body>${trimmed}</body>`, 'text/html');
-    if (doc.body.querySelector('img')) {
+    if (doc.body.querySelector('img') || elementHasFileLink(doc.body)) {
       nodes.push(...splitInlineContent(doc.body.childNodes));
     } else if (hasVisibleText(trimmed)) {
       nodes.push({ kind: 'paragraph', html: trimmed });

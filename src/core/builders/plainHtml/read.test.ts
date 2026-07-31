@@ -93,6 +93,71 @@ describe('readPlainHtml', () => {
     ]);
   });
 
+  it('promotes a bare document link with no wrapping <p> (e.g. "See the agenda <a href=\'agenda.pdf\'>here</a>", the classic WPBakery vc_column_text shape) to a standalone file block', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml: 'ΔΕΙΤΕ ΤΗΝ ΠΡΟΣΚΛΗΣΗ <a href="https://x/agenda.pdf">ΕΔΩ</a>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'paragraph', html: 'ΔΕΙΤΕ ΤΗΝ ΠΡΟΣΚΛΗΣΗ' },
+      { kind: 'file', href: 'https://x/agenda.pdf', fileName: 'agenda.pdf', isPdf: true },
+    ]);
+  });
+
+  it('promotes a document link wrapped in inline formatting (<strong><a href="...pdf">text</a></strong>, and the reverse <a><strong>) to a standalone file block, discarding the link text in favor of the real file name', () => {
+    const { nodes: a } = readPlainHtml({
+      contentHtml: '<strong><a href="https://x/report.pdf">Πίνακας Κατάταξης 1 </a></strong>',
+      postmeta: {},
+    });
+    expect(a).toEqual([{ kind: 'file', href: 'https://x/report.pdf', fileName: 'report.pdf', isPdf: true }]);
+
+    const { nodes: b } = readPlainHtml({
+      contentHtml: '<a href="https://x/report2.pdf"><strong>Πίνακας απορριπτέων 2 </strong></a>',
+      postmeta: {},
+    });
+    expect(b).toEqual([{ kind: 'file', href: 'https://x/report2.pdf', fileName: 'report2.pdf', isPdf: true }]);
+  });
+
+  it('splits a <p> mixing a document link with real surrounding text into a standalone file block plus separate paragraph(s)', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml: '<p>Δείτε τις αποφάσεις <a href="https://x/decisions.pdf">εδώ</a>.</p>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'paragraph', html: 'Δείτε τις αποφάσεις' },
+      { kind: 'file', href: 'https://x/decisions.pdf', fileName: 'decisions.pdf', isPdf: true },
+      { kind: 'paragraph', html: '.' },
+    ]);
+  });
+
+  it('promotes a non-PDF document link (docx/xlsx/zip) to a file block too, with isPdf false', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml: '<p>Download the <a href="https://x/budget.xlsx">spreadsheet</a>.</p>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'paragraph', html: 'Download the' },
+      { kind: 'file', href: 'https://x/budget.xlsx', fileName: 'budget.xlsx', isPdf: false },
+      { kind: 'paragraph', html: '.' },
+    ]);
+  });
+
+  it('promotes a document link wrapped inside a heading to a standalone file block, dropping the now-empty heading', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml: '<h3><a href="https://x/minutes.pdf">Minutes</a></h3>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([{ kind: 'file', href: 'https://x/minutes.pdf', fileName: 'minutes.pdf', isPdf: true }]);
+  });
+
+  it('leaves a link to a non-document URL (a normal page/anchor, no recognised file extension) alone, inside its paragraph', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml: '<p>Read more <a href="https://x/some-article/">on the site</a>.</p>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([{ kind: 'paragraph', html: 'Read more <a href="https://x/some-article/">on the site</a>.' }]);
+  });
+
   it('reads a figure with a figcaption as an image with a caption', () => {
     const { nodes } = readPlainHtml({
       contentHtml: '<figure><img src="https://x/a.jpg" alt="A"/><figcaption>Caption text</figcaption></figure>',
