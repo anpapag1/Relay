@@ -16,6 +16,12 @@ const PDF_EXTENSION_RE = /\.pdf(?:[?"'\s>]|$)/i;
 const CAPTION_SHORTCODE_RE = /\[caption[^\]]*\]([\s\S]*?)\[\/caption\]/g;
 const GALLERY_SHORTCODE_RE = /\[gallery([^\]]*)\]/g;
 const VIDEO_SHORTCODE_RE = /\[video([^\]]*)\](?:[\s\S]*?\[\/video\])?/g;
+/** The "PDF Embedder" plugin's own shortcode — a different, much more
+ * common shape than a plain <a href="...pdf"> link in real content (400+
+ * occurrences in one real export, vs. a handful of bare links): a
+ * self-contained `[pdf-embedder url="..." title="..."]` with no closing
+ * tag, carrying its own human-readable title separate from the URL. */
+const PDF_EMBEDDER_SHORTCODE_RE = /\[pdf-embedder([^\]]*)\]/g;
 
 function attrValue(attrsString: string, name: string): string | null {
   const match = new RegExp(`${name}=["']([^"']*)["']`).exec(attrsString);
@@ -64,6 +70,11 @@ function preprocessShortcodes(html: string): string {
   out = out.replace(VIDEO_SHORTCODE_RE, (_full, attrs: string) => {
     const src = attrValue(attrs, 'src') ?? attrValue(attrs, 'mp4') ?? attrValue(attrs, 'm4v') ?? attrValue(attrs, 'webm') ?? attrValue(attrs, 'ogv') ?? attrValue(attrs, 'wmv') ?? attrValue(attrs, 'flv') ?? '';
     return `<div data-rl-video-src="${escapeAttr(src)}"></div>`;
+  });
+  out = out.replace(PDF_EMBEDDER_SHORTCODE_RE, (_full, attrs: string) => {
+    const url = attrValue(attrs, 'url') ?? '';
+    const title = attrValue(attrs, 'title') ?? '';
+    return `<div data-rl-pdf-url="${escapeAttr(url)}" data-rl-pdf-title="${escapeAttr(title)}"></div>`;
   });
   return out;
 }
@@ -322,9 +333,20 @@ function readVideoMarker(el: Element, warnings: ReaderWarning[]): IRNode {
   return { kind: 'video', src, provider: videoProvider(src) };
 }
 
+function readPdfEmbedMarker(el: Element, warnings: ReaderWarning[]): IRNode {
+  const url = el.getAttribute('data-rl-pdf-url') ?? '';
+  if (!url) {
+    warn(warnings, '[pdf-embedder] shortcode with no url attribute — kept as raw, never fabricating one.');
+    return { kind: 'raw', html: '[pdf-embedder]', note: 'pdf-embedder shortcode with no url attribute' };
+  }
+  const title = el.getAttribute('data-rl-pdf-title') ?? '';
+  return { kind: 'file', href: url, fileName: title || filenameOf(url) || url, isPdf: true };
+}
+
 function readElement(el: Element, warnings: ReaderWarning[]): IRNode[] {
   if (el.hasAttribute('data-rl-gallery-ids')) return [readGalleryMarker(el, warnings)];
   if (el.hasAttribute('data-rl-video-src')) return [readVideoMarker(el, warnings)];
+  if (el.hasAttribute('data-rl-pdf-url')) return [readPdfEmbedMarker(el, warnings)];
 
   const tag = el.tagName;
   const headingMatch = HEADING_RE.exec(tag);

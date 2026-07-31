@@ -2,11 +2,15 @@ import type { IRNode } from '../../ir/nodes';
 import type { ConversionSettings } from '../../../types/domain';
 import { escapeAttr } from '../escapeHtml';
 
-/** Strips the file extension for display — a real Gutenberg-inserted
- * wp:file block shows the attached media's title, not its raw filename
- * with extension. */
+/** Strips a known document extension for display — a real Gutenberg-
+ * inserted wp:file block shows the attached media's title, not its raw
+ * filename with extension. Matches only recognised document extensions
+ * (not any trailing `.xxx`) because `fileName` isn't always a real
+ * filename — a `[pdf-embedder title="..."]`-sourced file uses the
+ * shortcode's own human title here, which could otherwise get a genuine
+ * trailing ".something" (e.g. "Report v2.5") wrongly truncated. */
 function displayName(fileName: string): string {
-  return fileName.replace(/\.[a-zA-Z0-9]+$/, '');
+  return fileName.replace(/\.(pdf|docx?|xlsx?|pptx?|zip|rar|7z)$/i, '');
 }
 
 /** A real wp:file block's link carries a DOM id of this shape

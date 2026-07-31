@@ -158,6 +158,41 @@ describe('readPlainHtml', () => {
     expect(nodes).toEqual([{ kind: 'paragraph', html: 'Read more <a href="https://x/some-article/">on the site</a>.' }]);
   });
 
+  it('resolves the [pdf-embedder url="..." title="..."] shortcode (a real WordPress PDF Embedder plugin shortcode, structurally unrelated to a plain <a href> link) to a file block, using the shortcode\'s own title as the display name', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml: '[pdf-embedder url="https://x/ΘΕΜΑ-1.pdf" title="ΘΕΜΑ 1 ΑΡ.ΑΠ.341.24"]',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([{ kind: 'file', href: 'https://x/ΘΕΜΑ-1.pdf', fileName: 'ΘΕΜΑ 1 ΑΡ.ΑΠ.341.24', isPdf: true }]);
+  });
+
+  it('falls back to the URL-derived filename when [pdf-embedder] has no title attribute', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml: '[pdf-embedder url="https://x/report.pdf"]',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([{ kind: 'file', href: 'https://x/report.pdf', fileName: 'report.pdf', isPdf: true }]);
+  });
+
+  it('keeps a [pdf-embedder] shortcode with no url attribute as raw with a warning, never fabricating a URL', () => {
+    const { nodes, warnings } = readPlainHtml({ contentHtml: '[pdf-embedder title="Untitled"]', postmeta: {} });
+    expect(nodes).toEqual([{ kind: 'raw', html: '[pdf-embedder]', note: 'pdf-embedder shortcode with no url attribute' }]);
+    expect(warnings.map((w) => w.message).some((m) => m.includes('pdf-embedder'))).toBe(true);
+  });
+
+  it('resolves several [pdf-embedder] shortcodes interleaved with plain headings/text as separate blocks, the real shape a classic-editor decisions post uses', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml: 'ΘΕΜΑ 1ο ΑΡ. ΑΠ.1.25\n\n[pdf-embedder url="https://x/a.pdf" title="Theme A"]\n\nΘΕΜΑ 2ο ΑΡ. ΑΠ.2.25\n\n[pdf-embedder url="https://x/b.pdf" title="Theme B"]',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'paragraph', html: 'ΘΕΜΑ 1ο ΑΡ. ΑΠ.1.25' },
+      { kind: 'file', href: 'https://x/a.pdf', fileName: 'Theme A', isPdf: true },
+      { kind: 'paragraph', html: 'ΘΕΜΑ 2ο ΑΡ. ΑΠ.2.25' },
+      { kind: 'file', href: 'https://x/b.pdf', fileName: 'Theme B', isPdf: true },
+    ]);
+  });
+
   it('reads a figure with a figcaption as an image with a caption', () => {
     const { nodes } = readPlainHtml({
       contentHtml: '<figure><img src="https://x/a.jpg" alt="A"/><figcaption>Caption text</figcaption></figure>',
