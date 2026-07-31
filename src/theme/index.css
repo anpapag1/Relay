@@ -112,6 +112,68 @@ a:hover {
   border: 1px solid oklch(88% 0.1 60);
 }
 
+/* Stat tile grid — same status hues as the badges above (green/amber/
+ * blue/gray), applied as a tinted card instead of a small pill. Responsive
+ * via auto-fit down to two explicit breakpoints so tiles never shrink
+ * below a readable width on narrow viewports. */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+@media (max-width: 640px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 380px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-card {
+  border-radius: 14px;
+  padding: 18px 20px;
+  border: 1px solid oklch(90% 0.005 250);
+}
+.stat-card__value {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.stat-card__label {
+  font-size: 13px;
+  margin-top: 4px;
+  opacity: 0.8;
+}
+
+.stat-card--neutral {
+  background: white;
+  color: oklch(20% 0.01 250);
+}
+.stat-card--neutral .stat-card__label {
+  color: oklch(55% 0.01 250);
+}
+
+.stat-card--good {
+  background: oklch(97% 0.03 150);
+  border-color: oklch(88% 0.08 150);
+  color: oklch(40% 0.15 150);
+}
+
+.stat-card--warning {
+  background: oklch(97% 0.035 60);
+  border-color: oklch(88% 0.1 60);
+  color: oklch(48% 0.16 60);
+}
+
+.stat-card--accent {
+  background: oklch(97% 0.03 260);
+  border-color: oklch(88% 0.08 260);
+  color: oklch(45% 0.16 260);
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

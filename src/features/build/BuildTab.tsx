@@ -112,34 +112,34 @@ export const BuildTab: React.FC = () => {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '14px' }}>
-          <div style={cardStyleBase}>
-            <div style={{ fontSize: '26px', fontWeight: 700, color: 'oklch(45% 0.14 150)' }}>{countIncluded}</div>
-            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Will be included</div>
+        <div className="stat-grid">
+          <div className="stat-card stat-card--good">
+            <div className="stat-card__value">{countIncluded}</div>
+            <div className="stat-card__label">Will be included</div>
           </div>
-          <div style={cardStyleBase}>
-            <div data-testid="pre-build-review-count" style={{ fontSize: '26px', fontWeight: 700, color: countReview > 0 ? 'oklch(55% 0.14 60)' : undefined }}>{countReview}</div>
-            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Still need review</div>
+          <div className={`stat-card ${countReview > 0 ? 'stat-card--warning' : 'stat-card--neutral'}`}>
+            <div data-testid="pre-build-review-count" className="stat-card__value">{countReview}</div>
+            <div className="stat-card__label">Still need review</div>
           </div>
-          <div style={cardStyleBase}>
-            <div style={{ fontSize: '26px', fontWeight: 700 }}>{countExcluded}</div>
-            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Excluded</div>
+          <div className="stat-card stat-card--neutral">
+            <div className="stat-card__value">{countExcluded}</div>
+            <div className="stat-card__label">Excluded</div>
           </div>
-          <div style={cardStyleBase}>
-            <div style={{ fontSize: '26px', fontWeight: 700 }}>{countEdited}</div>
-            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Edited</div>
+          <div className="stat-card stat-card--accent">
+            <div className="stat-card__value">{countEdited}</div>
+            <div className="stat-card__label">Edited</div>
           </div>
-          <div style={cardStyleBase}>
-            <div style={{ fontSize: '26px', fontWeight: 700, color: countFlagged > 0 ? 'oklch(55% 0.14 60)' : undefined }}>{countFlagged}</div>
-            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Flagged for review</div>
+          <div className={`stat-card ${countFlagged > 0 ? 'stat-card--warning' : 'stat-card--neutral'}`}>
+            <div className="stat-card__value">{countFlagged}</div>
+            <div className="stat-card__label">Flagged for review</div>
           </div>
-          <div style={cardStyleBase}>
-            <div style={{ fontSize: '26px', fontWeight: 700 }}>{totalMedia}</div>
-            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Total media</div>
+          <div className="stat-card stat-card--accent">
+            <div className="stat-card__value">{totalMedia}</div>
+            <div className="stat-card__label">Total media</div>
           </div>
-          <div style={cardStyleBase}>
-            <div style={{ fontSize: '26px', fontWeight: 700, color: checkWarnings.length > 0 ? 'oklch(55% 0.14 60)' : undefined }}>{checkWarnings.length}</div>
-            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Total warnings</div>
+          <div className={`stat-card ${checkWarnings.length > 0 ? 'stat-card--warning' : 'stat-card--neutral'}`}>
+            <div className="stat-card__value">{checkWarnings.length}</div>
+            <div className="stat-card__label">Total warnings</div>
           </div>
         </div>
         <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>
