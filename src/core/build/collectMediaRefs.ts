@@ -1,12 +1,34 @@
 import type { IRNode } from '../ir/nodes';
 import type { MediaResolution } from '../../types/domain';
 import type { AttachmentRegistry } from '../media/attachmentRegistry';
+import { filenameOf, stripSizeSuffix } from '../media/attachmentIndex';
+
+/** True if two URLs point at the same underlying WordPress attachment —
+ * either literally the same URL, or one is a generated thumbnail of the
+ * other (`photo-1024x682.jpg` vs `photo.jpg`, the classic "linked to its
+ * own full-size original" wrapper: `<a href="photo.jpg"><img
+ * src="photo-1024x682.jpg">`). Reuses the same size-suffix stripping
+ * resolveMedia already uses to match a thumbnail ref against its
+ * attachment. */
+function isSameAttachment(a: string, b: string): boolean {
+  if (a === b) return true;
+  return stripSizeSuffix(filenameOf(a)) === stripSizeSuffix(filenameOf(b));
+}
 
 /** Walks an IR tree (recursing into columns) and collects every media
  * reference a reader emitted: image src/href, gallery image src/href,
  * and file href. Buttons and embedded videos are left alone — they link
  * to arbitrary pages, not downloadable media the WordPress importer
- * needs to fetch. */
+ * needs to fetch.
+ *
+ * An image's `href` is only pushed when it's a genuinely different
+ * attachment from its `src` — two hugely common real-world patterns both
+ * link an image to itself, not to a second file: `<a href="photo.jpg">
+ * <img src="photo.jpg">` (identical URL), and `<a href="photo.jpg"><img
+ * src="photo-1024x682.jpg">` (a WordPress-generated thumbnail of the
+ * same original). Counting either as two media items inflated the
+ * Articles list's Media column (and every count/build step reading this
+ * list) well past the article's real photo count. */
 export function collectMediaRefs(nodes: IRNode[]): string[] {
   const refs: string[] = [];
 
@@ -15,12 +37,12 @@ export function collectMediaRefs(nodes: IRNode[]): string[] {
       switch (node.kind) {
         case 'image':
           refs.push(node.src);
-          if (node.href) refs.push(node.href);
+          if (node.href && !isSameAttachment(node.href, node.src)) refs.push(node.href);
           break;
         case 'gallery':
           for (const image of node.images) {
             refs.push(image.src);
-            if (image.href) refs.push(image.href);
+            if (image.href && !isSameAttachment(image.href, image.src)) refs.push(image.href);
           }
           break;
         case 'file':

@@ -14,6 +14,39 @@ describe('collectMediaRefs', () => {
     ];
     expect(collectMediaRefs(nodes)).toEqual(['a.jpg', 'a-full.jpg', 'b.jpg', 'c.jpg', 'c-full.jpg', 'doc.pdf', 'd.jpg']);
   });
+
+  it('does not double-count an image/gallery-image whose href just links to its own src (the classic "link to full size" wrapper, <a href="photo.jpg"><img src="photo.jpg">) — same physical file, not two', () => {
+    const nodes: IRNode[] = [
+      { kind: 'image', src: 'self.jpg', alt: '', href: 'self.jpg' },
+      { kind: 'gallery', images: [{ src: 'g1.jpg', alt: '', href: 'g1.jpg' }, { src: 'g2.jpg', alt: '', href: 'g2-full.jpg' }] },
+    ];
+    expect(collectMediaRefs(nodes)).toEqual(['self.jpg', 'g1.jpg', 'g2.jpg', 'g2-full.jpg']);
+  });
+
+  it('does not double-count an image whose href is the original full-size file and src is a WordPress-generated thumbnail of it (<a href="photo.jpg"><img src="photo-1024x682.jpg">) — one attachment, not two', () => {
+    const nodes: IRNode[] = [
+      {
+        kind: 'image',
+        alt: '',
+        src: 'https://old.example/wp-content/uploads/2025/01/photo-1024x682.jpg',
+        href: 'https://old.example/wp-content/uploads/2025/01/photo.jpg',
+      },
+      {
+        kind: 'gallery',
+        images: [
+          { src: 'https://old.example/uploads/pic-150x150.jpg', alt: '', href: 'https://old.example/uploads/pic.jpg' },
+          // A genuinely different attachment (different basename entirely) still counts as two.
+          { src: 'https://old.example/uploads/other.jpg', alt: '', href: 'https://old.example/uploads/other-original.jpg' },
+        ],
+      },
+    ];
+    expect(collectMediaRefs(nodes)).toEqual([
+      'https://old.example/wp-content/uploads/2025/01/photo-1024x682.jpg',
+      'https://old.example/uploads/pic-150x150.jpg',
+      'https://old.example/uploads/other.jpg',
+      'https://old.example/uploads/other-original.jpg',
+    ]);
+  });
 });
 
 describe('rewriteMediaRefs', () => {
