@@ -164,19 +164,45 @@ describe('writeBlocks', () => {
     expect(asLink).not.toContain('target="_blank"');
   });
 
-  it('renders a non-pdf file as a plain wp:file button regardless of pdfRender', () => {
+  it('renders a non-pdf file as a plain wp:file link regardless of pdfRender, with no separate download button', () => {
     const node: IRNode = { kind: 'file', href: 'https://x/doc.docx', fileName: 'doc.docx', isPdf: false };
     const out = writeBlocks([node], { ...DEFAULT_SETTINGS, pdfRender: 'embed' });
     expect(out).toContain('wp:file');
+    expect(out).toContain('"displayPreview":false');
     expect(out).not.toContain('wp-block-file__embed');
+    expect(out).not.toContain('wp-block-file__button');
+    expect(out).not.toContain('>Download<');
   });
 
-  it('renders a pdf per pdfRender: link, button, or embed', () => {
+  it('renders a pdf as a real wp:file block per pdfRender (link vs embed), never degrading to a plain wp:paragraph', () => {
     const node: IRNode = { kind: 'file', href: 'https://x/doc.pdf', fileName: 'doc.pdf', isPdf: true };
-    expect(writeBlocks([node], { ...DEFAULT_SETTINGS, pdfRender: 'link' })).toContain('wp:paragraph');
-    expect(writeBlocks([node], { ...DEFAULT_SETTINGS, pdfRender: 'button' })).toContain('wp:file');
+
+    const link = writeBlocks([node], { ...DEFAULT_SETTINGS, pdfRender: 'link' });
+    expect(link).toContain('wp:file');
+    expect(link).not.toContain('wp:paragraph');
+    expect(link).toContain('"displayPreview":false');
+    expect(link).not.toContain('wp-block-file__embed');
+
     const embed = writeBlocks([node], { ...DEFAULT_SETTINGS, pdfRender: 'embed' });
+    expect(embed).toContain('"displayPreview":true');
     expect(embed).toContain('wp-block-file__embed');
+    expect(embed).toContain('data="https://x/doc.pdf"');
+  });
+
+  it('matches the exact real-WordPress wp:file markup shape: link text has no extension, id attr from a migrated attachment, no download button, target=_blank', () => {
+    const node: IRNode = { kind: 'file', href: 'https://new-site.example/uploads/report.pdf', fileName: 'report.pdf', isPdf: true, attachmentId: 900000443 };
+    const out = writeBlocks([node], { ...DEFAULT_SETTINGS, pdfRender: 'embed' });
+
+    expect(out).toContain('<!-- wp:file {"id":900000443,"href":"https://new-site.example/uploads/report.pdf","showDownloadButton":false,"displayPreview":true} -->');
+    expect(out).toMatch(/<a id="wp-block-file--media-[0-9a-f-]+" href="https:\/\/new-site\.example\/uploads\/report\.pdf" target="_blank" rel="noreferrer noopener">report<\/a>/);
+    expect(out).not.toContain('report.pdf<');
+    expect(out).not.toContain('download');
+  });
+
+  it('omits the id attr entirely when the file has no migrated attachment yet', () => {
+    const node: IRNode = { kind: 'file', href: 'https://x/doc.pdf', fileName: 'doc.pdf', isPdf: true };
+    const out = writeBlocks([node], DEFAULT_SETTINGS);
+    expect(out).toContain('<!-- wp:file {"href":"https://x/doc.pdf","showDownloadButton":false,"displayPreview":false} -->');
   });
 
   it('writes a file-provider video as wp:video and youtube/vimeo as wp:embed', () => {

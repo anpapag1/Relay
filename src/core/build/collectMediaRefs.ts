@@ -76,10 +76,10 @@ function resolveRef(ref: string, resolved: Record<string, MediaResolution>, warn
  * (matched-export/matched-live); anything unresolved or unreachable is
  * left as the original reference (never fabricated) and reported as a
  * warning instead. When an `attachmentRegistry` is given (built once, up
- * front, across every article — see runBuild), a resolved image also
- * gets its `attachmentId` stamped on, so writeImage/writeGallery can emit
- * the `id`/`wp-image-<id>` a real WordPress-inserted image carries,
- * instead of the image floating unattached in the new post. */
+ * front, across every article — see runBuild), a resolved image or file
+ * also gets its `attachmentId` stamped on, so writeImage/writeGallery/
+ * writeFile can emit the `id`/`wp-image-<id>` a real WordPress-inserted
+ * attachment carries, instead of floating unattached in the new post. */
 export function rewriteMediaRefs(
   nodes: IRNode[],
   resolved: Record<string, MediaResolution>,
@@ -113,8 +113,10 @@ export function rewriteMediaRefs(
               };
             }),
           };
-        case 'file':
-          return { ...node, href: resolveRef(node.href, resolved, warnings) };
+        case 'file': {
+          const href = resolveRef(node.href, resolved, warnings);
+          return { ...node, href, attachmentId: attachmentIdFor(href) };
+        }
         case 'columns':
           return { ...node, columns: node.columns.map(visit) };
         default:

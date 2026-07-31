@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { collectMediaRefs, rewriteMediaRefs } from './collectMediaRefs';
+import { buildAttachmentRegistry } from '../media/attachmentRegistry';
 import type { IRNode } from '../ir/nodes';
 import type { MediaResolution } from '../../types/domain';
 
@@ -79,5 +80,34 @@ describe('rewriteMediaRefs', () => {
     const { nodes: out, warnings } = rewriteMediaRefs(nodes, {});
     expect(out).toEqual(nodes);
     expect(warnings).toEqual([]);
+  });
+
+  it('stamps a resolved file with its migrated attachmentId, the same way an image gets one, so writeFile can emit a real wp:file id instead of the file just linking back to the old site', () => {
+    const nodes: IRNode[] = [{ kind: 'file', href: 'report.pdf', fileName: 'report.pdf', isPdf: true }];
+    const resolved: Record<string, MediaResolution> = { 'report.pdf': { outcome: 'matched-export', url: 'https://new-site.example/uploads/report.pdf' } };
+    const attachmentRegistry = buildAttachmentRegistry(['https://new-site.example/uploads/report.pdf']);
+
+    const { nodes: out } = rewriteMediaRefs(nodes, resolved, attachmentRegistry);
+    expect(out).toEqual([
+      {
+        kind: 'file',
+        href: 'https://new-site.example/uploads/report.pdf',
+        fileName: 'report.pdf',
+        isPdf: true,
+        attachmentId: attachmentRegistry.get('https://new-site.example/uploads/report.pdf')!.id,
+      },
+    ]);
+  });
+
+  it('leaves a file with no attachmentRegistry entry (or no registry given at all) without an attachmentId, rather than fabricating one', () => {
+    const nodes: IRNode[] = [{ kind: 'file', href: 'report.pdf', fileName: 'report.pdf', isPdf: true }];
+    const resolved: Record<string, MediaResolution> = { 'report.pdf': { outcome: 'matched-export', url: 'https://x/report.pdf' } };
+
+    const { nodes: withoutRegistry } = rewriteMediaRefs(nodes, resolved);
+    expect((withoutRegistry[0] as { attachmentId?: number }).attachmentId).toBeUndefined();
+
+    const emptyRegistry = buildAttachmentRegistry([]);
+    const { nodes: withEmptyRegistry } = rewriteMediaRefs(nodes, resolved, emptyRegistry);
+    expect((withEmptyRegistry[0] as { attachmentId?: number }).attachmentId).toBeUndefined();
   });
 });

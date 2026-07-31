@@ -24,7 +24,12 @@ export type IRNode =
   | ({ kind: 'image' } & ImageRef)
   | { kind: 'gallery'; images: ImageRef[] }
   | { kind: 'button'; text: string; href: string }
-  | { kind: 'file'; href: string; fileName: string; isPdf: boolean }
+  // attachmentId mirrors ImageRef's — set by rewriteMediaRefs from the same
+  // attachment registry generateWxr uses to emit the matching
+  // <wp:attachment> item, so the wp:file block's `id` links to a real
+  // migrated attachment on the new site instead of just linking back to
+  // the old site's URL.
+  | { kind: 'file'; href: string; fileName: string; isPdf: boolean; attachmentId?: number }
   | { kind: 'video'; src: string; provider: 'youtube' | 'vimeo' | 'file' }
   | { kind: 'separator' }
   | { kind: 'spacer'; height: number }

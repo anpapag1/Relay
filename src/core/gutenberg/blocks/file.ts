@@ -2,32 +2,56 @@ import type { IRNode } from '../../ir/nodes';
 import type { ConversionSettings } from '../../../types/domain';
 import { escapeAttr } from '../escapeHtml';
 
-function writeFileButton(href: string, fileName: string): string {
-  return `<!-- wp:file {"href":"${href}","fileName":"${escapeAttr(fileName)}"} -->\n<div class="wp-block-file"><a href="${href}">${fileName}</a><a href="${href}" class="wp-block-file__button" download>Download</a></div>\n<!-- /wp:file -->`;
+/** Strips the file extension for display — a real Gutenberg-inserted
+ * wp:file block shows the attached media's title, not its raw filename
+ * with extension. */
+function displayName(fileName: string): string {
+  return fileName.replace(/\.[a-zA-Z0-9]+$/, '');
 }
 
-function writeFileEmbed(href: string, fileName: string): string {
-  return `<!-- wp:file {"href":"${href}","fileName":"${escapeAttr(fileName)}","displayPreview":true,"previewHeight":600} -->\n<div class="wp-block-file"><object class="wp-block-file__embed" data="${href}" type="application/pdf" style="width:100%;height:600px" aria-label="${escapeAttr(fileName)}"></object><a href="${href}">${fileName}</a><a href="${href}" class="wp-block-file__button" download>Download</a></div>\n<!-- /wp:file -->`;
+/** A real wp:file block's link carries a DOM id of this shape
+ * (`wp-block-file--media-<uuid>`), assigned per block instance for
+ * accessibility linking — it has no persisted meaning across rebuilds,
+ * so a fresh random one each time matches how the block editor itself
+ * behaves (a new client id every time the block is inserted). */
+function randomBlockId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
-/** pdfRender only distinguishes behaviour for PDFs (only they can be
- * embedded); every other file type always renders as a plain wp:file
- * button regardless of the setting. */
+/** Matches the exact markup a real WordPress editor produces for an
+ * inserted media-library file: a single link (no separate "Download"
+ * button — real WordPress only adds that second link when the user
+ * explicitly turns on "Show download button", which this migration never
+ * does) plus, for a PDF rendered inline, a preview `<object>` ahead of
+ * it. `id` in the block's JSON attrs is the file's migrated attachment id
+ * (see rewriteMediaRefs) — set only once the file has actually been
+ * resolved and registered, exactly like an image's `id`. pdfRender only
+ * affects PDFs (only they can be embedded); every other file type always
+ * renders as a plain link. */
 export function writeFile(
   node: Extract<IRNode, { kind: 'file' }>,
   settings: ConversionSettings,
 ): string {
   const href = escapeAttr(node.href);
+  const name = displayName(node.fileName);
+  const displayPreview = node.isPdf && settings.pdfRender === 'embed';
 
-  if (!node.isPdf) {
-    return writeFileButton(href, node.fileName);
-  }
+  const attrs: Record<string, unknown> = {};
+  if (node.attachmentId) attrs.id = node.attachmentId;
+  attrs.href = node.href;
+  attrs.showDownloadButton = false;
+  attrs.displayPreview = displayPreview;
 
-  if (settings.pdfRender === 'link') {
-    return `<!-- wp:paragraph -->\n<p><a href="${href}">${node.fileName}</a></p>\n<!-- /wp:paragraph -->`;
-  }
-  if (settings.pdfRender === 'embed') {
-    return writeFileEmbed(href, node.fileName);
-  }
-  return writeFileButton(href, node.fileName);
+  const blockId = `wp-block-file--media-${randomBlockId()}`;
+  const link = `<a id="${blockId}" href="${href}" target="_blank" rel="noreferrer noopener">${name}</a>`;
+  const embed = displayPreview
+    ? `<object class="wp-block-file__embed" data="${href}" type="application/pdf" style="width:100%;height:600px" aria-label="${escapeAttr(name)}"></object>`
+    : '';
+
+  return `<!-- wp:file ${JSON.stringify(attrs)} -->\n<div class="wp-block-file">${embed}${link}</div>\n<!-- /wp:file -->`;
 }
