@@ -87,6 +87,52 @@ export function restoreSessionBackup(
   }
 }
 
+/** The user-facing "Export/Import JSON" file on the Import tab — portable
+ * across imports, unlike SessionBackup: no per-import bookkeeping
+ * (version/timestamp), no builder auto-detection result (re-detected fresh
+ * from whatever XR is loaded next), and no article overrides/media-resolve
+ * cache (both keyed to articles/media refs from THIS specific WXR, meaningless
+ * against a different one). Just the portable "site data, mappings, and
+ * conversion settings" the button's own label already promises. */
+export interface SiteDataBackup {
+  targetTables: Record<string, TermTable>;
+  oldTables?: Record<string, TermTable>;
+  mappings: Record<string, TermMapping>;
+  settings: ConversionSettings;
+}
+
+export function createSiteDataBackup(state: AppState): SiteDataBackup {
+  return {
+    targetTables: state.target.tables,
+    oldTables: state.oldTables,
+    mappings: state.mappings,
+    settings: state.settings,
+  };
+}
+
+export function restoreSiteDataBackup(
+  raw: string | unknown,
+  currentState: AppState,
+): { ok: true; state: Partial<AppState> } | { ok: false; message: string } {
+  try {
+    const data = (typeof raw === 'string' ? JSON.parse(raw) : raw) as Partial<SiteDataBackup>;
+    if (!data || typeof data !== 'object' || !data.targetTables || !data.mappings || !data.settings) {
+      return { ok: false, message: "Couldn't parse that JSON — check the file and try again." };
+    }
+
+    const restoredState: Partial<AppState> = {
+      target: { tables: data.targetTables },
+      mappings: normalizeMappings(data.mappings as Record<string, unknown>),
+      settings: { ...currentState.settings, ...data.settings },
+    };
+    if (data.oldTables) restoredState.oldTables = data.oldTables;
+
+    return { ok: true, state: restoredState };
+  } catch {
+    return { ok: false, message: "Couldn't parse that JSON — check the file and try again." };
+  }
+}
+
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function saveToLocalStorage(state: AppState, debounceMs = 500): void {

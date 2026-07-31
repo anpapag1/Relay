@@ -3,7 +3,7 @@ import { useAppState } from '../../state/AppStateContext';
 import { parseWxr } from '../../core/wxr/parseWxr';
 import { rankBuilders, type BuilderScore } from '../../core/builders/detectBuilder';
 import { SAMPLE_WXR } from './sampleWxr';
-import { createSessionBackup, restoreSessionBackup } from '../../state/session';
+import { createSiteDataBackup, restoreSiteDataBackup } from '../../state/session';
 import { findMissingOldTerms, mergeMissingIntoOldTables } from '../../core/mappings/reconcileOldTables';
 import { BUILDER_VALIDATION_STATUS, type BuilderId } from '../../core/builders/types';
 import type { TermTable } from '../../types/domain';
@@ -125,12 +125,12 @@ export const ImportTab: React.FC = () => {
   };
 
   const exportFullBackup = () => {
-    const backup = createSessionBackup(state);
+    const backup = createSiteDataBackup(state);
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `relay-session-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `relay-site-data-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -142,10 +142,10 @@ export const ImportTab: React.FC = () => {
     reader.onload = (event) => {
       const text = event.target?.result as string;
       if (text) {
-        const res = restoreSessionBackup(text, state);
+        const res = restoreSiteDataBackup(text, state);
         if (res.ok) {
           dispatch({ type: 'RESTORE_SESSION', state: res.state });
-          setRestoreStatus('Session successfully restored!');
+          setRestoreStatus('Site data successfully restored!');
         } else {
           setRestoreStatus(res.message);
         }
@@ -615,7 +615,7 @@ export const ImportTab: React.FC = () => {
           <div>
             <div style={{ fontSize: '15px', fontWeight: 700 }}>Old &amp; new site data</div>
             <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
-              Export/Import JSON covers this whole session — site data, mappings, and conversion settings.
+              Export/Import JSON covers taxonomy tables, term mappings, and conversion settings — reusable across a different WXR import.
             </div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
