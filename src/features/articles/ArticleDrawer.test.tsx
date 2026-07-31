@@ -80,7 +80,7 @@ describe('ArticleDrawer before/after preview toggle', () => {
   // A bare top-level <img> (no wrapping <p>) is a good differentiator: the
   // "After" reader/writeBlocks pipeline promotes it into a real
   // wp:image/figure block, while "Before" shows the original tag exactly
-  // as it appeared in the source, unpromoted.
+  // as it appeared in the source — as literal escaped text, not rendered.
   const IMG_HTML = '<img src="https://old.example/photo.jpg" alt="A photo">';
 
   it('shows the converted ("After") content by default', async () => {
@@ -110,7 +110,11 @@ describe('ArticleDrawer before/after preview toggle', () => {
     await act(async () => { beforeBtn.click(); });
 
     let preview = container.querySelector('.wp-preview');
-    expect(preview?.innerHTML).toContain(IMG_HTML);
+    // "Before" shows the raw source as literal escaped text (not rendered
+    // HTML), so the original tag reads back via textContent, not as an
+    // actual <img> element in the DOM.
+    expect(preview?.textContent).toContain(IMG_HTML);
+    expect(preview?.querySelector('img')).toBeNull();
     expect(preview?.innerHTML).not.toContain('wp-block-image');
 
     const afterBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'After') as HTMLButtonElement;
@@ -184,6 +188,9 @@ describe('ArticleDrawer navigation buttons', () => {
         </AppStateProvider>,
       );
     });
+    const editBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Edit') as HTMLButtonElement;
+    await act(async () => { editBtn.click(); });
+
     const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
     await act(async () => {
       const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
@@ -239,6 +246,9 @@ describe('ArticleDrawer keyboard navigation', () => {
         </AppStateProvider>,
       );
     });
+    const editBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Edit') as HTMLButtonElement;
+    await act(async () => { editBtn.click(); });
+
     const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
     textarea.focus();
     await act(async () => {

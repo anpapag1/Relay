@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import type { DerivedArticle } from '../../state/types';
 import { getArticlePreviewHtml } from '../../state/selectors';
@@ -29,6 +29,19 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
   const [draftHtml, setDraftHtml] = useState<string>('');
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+  const sidebarScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollToTop = (behavior: ScrollBehavior = 'smooth') => {
+    for (const el of [mainScrollRef.current, sidebarScrollRef.current]) {
+      if (!el) continue;
+      // jsdom (unit tests) doesn't implement Element.scrollTo — falls back
+      // to a plain scrollTop assignment there; real browsers take the
+      // smooth/instant path.
+      if (typeof el.scrollTo === 'function') el.scrollTo({ top: 0, behavior });
+      else el.scrollTop = 0;
+    }
+  };
 
   const converted = useMemo(() => {
     if (!article) return { html: '', warnings: [] as string[] };
@@ -147,6 +160,27 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [article, requestPrev, requestNext]);
 
+  // Jumps both scroll panes back to the top on every article change —
+  // otherwise Prev/Next keeps whatever scroll position the previous
+  // article was left at, landing you mid-way (or at the bottom) of the
+  // next article instead of its start.
+  useEffect(() => {
+    scrollToTop('instant');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [article?.id]);
+
+  // Locks page scroll while the drawer is open — otherwise scrolling the
+  // mouse/trackpad over the dimmed backdrop still scrolls the Articles
+  // list underneath, which is disorienting with the drawer overlaid on top.
+  useEffect(() => {
+    if (!article) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [article]);
+
   if (!article) return null;
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -189,7 +223,9 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
   };
 
   const isExcluded = article.status.startsWith('excluded');
-  const showBefore = state.ui.previewMode === 'before';
+  const previewMode = state.ui.previewMode;
+  const showBefore = previewMode === 'before';
+  const showEdit = previewMode === 'edit';
   const previewHtml = showBefore ? article.contentHtml : draftHtml;
 
   return (
@@ -208,6 +244,7 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
         onClick={requestClose}
       >
         <div
+          ref={mainScrollRef}
           style={{
             flex: 1,
             minWidth: 0,
@@ -259,6 +296,23 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
                 >
                   After
                 </button>
+                <button
+                  type="button"
+                  onClick={() => dispatch({ type: 'SET_PREVIEW_MODE', mode: 'edit' })}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: showEdit ? 'white' : 'transparent',
+                    color: showEdit ? 'oklch(30% 0.02 250)' : 'white',
+                    boxShadow: showEdit ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
+                  }}
+                >
+                  Edit
+                </button>
               </div>
             </div>
             <div
@@ -270,10 +324,66 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
                 padding: '32px',
                 width: '100%',
                 height: 'min(700px, calc(100vh - 220px))',
-                overflowY: 'auto',
+                overflowY: showEdit || showBefore ? 'hidden' : 'auto',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
-              {previewHtml.trim() ? (
+              <div style={{ fontSize: '2.2em', fontWeight: 600, lineHeight: 1.3, marginBottom: '20px', color: 'oklch(20% 0.01 250)', flexShrink: 0 }}>
+                {article.title || '(Untitled)'}
+              </div>
+              {showEdit ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexShrink: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', color: 'oklch(30% 0.02 250)' }}>
+                      Edit converted HTML
+                      {article.isEdited && (
+                        <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em', padding: '2px 6px', borderRadius: '5px', background: 'oklch(93% 0.05 265)', color: 'oklch(40% 0.18 265)' }}>
+                          Manual override
+                        </span>
+                      )}
+                    </div>
+                    {article.isEdited && (
+                      <button
+                        type="button"
+                        onClick={handleRevert}
+                        style={{ padding: '5px 10px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
+                      >
+                        Revert to auto-generated
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginBottom: '8px', flexShrink: 0 }}>
+                    Saving replaces the automatic conversion for this article entirely.
+                  </div>
+                  <textarea
+                    value={draftHtml}
+                    onChange={handleTextChange}
+                    style={{ width: '100%', flex: 1, minHeight: 0, border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', padding: '10px', fontSize: '12px', fontFamily: 'monospace', resize: 'none' }}
+                  />
+                </>
+              ) : showBefore ? (
+                article.contentHtml.trim() ? (
+                  <pre
+                    style={{
+                      flex: 1,
+                      minHeight: 0,
+                      margin: 0,
+                      width: '100%',
+                      overflow: 'auto',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      fontSize: '12px',
+                      fontFamily: 'monospace',
+                      color: 'oklch(30% 0.02 250)',
+                    }}
+                  >
+                    {article.contentHtml}
+                  </pre>
+                ) : (
+                  <div className="wp-preview-empty">Nothing to preview yet</div>
+                )
+              ) : previewHtml.trim() ? (
                 <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
               ) : (
                 <div className="wp-preview-empty">Nothing to preview yet</div>
@@ -298,11 +408,20 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
               >
                 Next →
               </button>
+              <button
+                type="button"
+                onClick={() => scrollToTop()}
+                className="btn btn-secondary"
+                style={{ padding: '10px 24px' }}
+              >
+                ↑ Top
+              </button>
             </div>
           </div>
         </div>
 
         <div
+          ref={sidebarScrollRef}
           style={{
             width: '640px',
             maxWidth: '100%',
@@ -448,34 +567,6 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
               {article.isManualReview ? 'Flagged (Click to Unflag)' : 'Flag for Review'}
             </button>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              Edit converted HTML
-              {article.isEdited && (
-                <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em', padding: '2px 6px', borderRadius: '5px', background: 'oklch(93% 0.05 265)', color: 'oklch(40% 0.18 265)' }}>
-                  Manual override
-                </span>
-              )}
-            </div>
-            {article.isEdited && (
-              <button
-                type="button"
-                onClick={handleRevert}
-                style={{ padding: '5px 10px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Revert to auto-generated
-              </button>
-            )}
-          </div>
-          <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginBottom: '8px' }}>
-            Saving replaces the automatic conversion for this article entirely.
-          </div>
-          <textarea
-            value={draftHtml}
-            onChange={handleTextChange}
-            style={{ width: '100%', height: '160px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', padding: '10px', fontSize: '12px', fontFamily: 'monospace', resize: 'vertical', marginBottom: '12px' }}
-          />
 
           <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
             {isDirty && (

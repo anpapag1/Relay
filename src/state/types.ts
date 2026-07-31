@@ -27,7 +27,7 @@ export interface AppState {
   ui: {
     activeTab: 'import' | 'mappings' | 'settings' | 'articles' | 'build';
     selectedArticleId: number | null;
-    previewMode: 'before' | 'after' | 'split';
+    previewMode: 'before' | 'after' | 'edit';
     modals: {
       resetConfirm: boolean;
       sessionRestore: boolean;

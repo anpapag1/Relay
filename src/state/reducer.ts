@@ -25,7 +25,7 @@ export const initialState: AppState = {
   ui: {
     activeTab: 'import',
     selectedArticleId: null,
-    previewMode: 'split',
+    previewMode: 'after',
     modals: {
       resetConfirm: false,
       sessionRestore: false,
