@@ -225,6 +225,26 @@ describe('readPlainHtml', () => {
     ]);
   });
 
+  it('splits a bare leading image sharing its blank-line-separated chunk with caption text (e.g. WPBakery vc_column_text content with no wrapping <p>) into a standalone image plus a separate paragraph', () => {
+    // Real WPBakery export shape: [vc_column_text] delegates its raw inner
+    // HTML straight here with no <p> wrapper, so the image and its caption
+    // sentence land in the same blank-line-separated chunk, e.g.
+    // "<a><img></a>Caption sentence.\n\nNext paragraph." Before this fix,
+    // flushInlineChunks only promoted a chunk that was *entirely* image(s)
+    // with no text — a chunk mixing a leading image with real text stayed
+    // one giant unconverted paragraph.
+    const { nodes } = readPlainHtml({
+      contentHtml:
+        '<a href="https://x/full.jpg"><img src="https://x/a.jpg" alt="" width="640" height="426"></a>Caption sentence right after the image.\n\nA second, unrelated paragraph.',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'image', src: 'https://x/a.jpg', alt: '', caption: undefined, href: 'https://x/full.jpg', width: 640, height: 426 },
+      { kind: 'paragraph', html: 'Caption sentence right after the image.' },
+      { kind: 'paragraph', html: 'A second, unrelated paragraph.' },
+    ]);
+  });
+
   it('promotes multiple bare images in the same blank-line-separated chunk to separate image blocks', () => {
     const { nodes } = readPlainHtml({
       contentHtml: '<img src="https://x/a.jpg" alt="A"><img src="https://x/b.jpg" alt="B">\n\nSome text.',

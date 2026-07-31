@@ -327,20 +327,20 @@ function readElement(el: Element, warnings: ReaderWarning[]): IRNode[] {
 const BLANK_LINE_RE = /\n\s*\n+/;
 
 /** Splits a buffered run of bare text/inline-tag HTML on blank lines and
- * emits one node per chunk: a chunk that's only an image (optionally
- * wrapped in inline formatting/an anchor, exactly like the `<p>` image
- * -promotion case above) becomes a standalone image node; everything else
- * becomes a paragraph. */
+ * emits one node per chunk, reusing splitInlineContent's leading-image
+ * extraction (the same `<a><img></a>caption text` unwrapping the `<p>`
+ * case gets) so a classic-editor chunk — no wrapping `<p>`, just a bare
+ * image and its caption sentence run together — promotes the image to
+ * its own node too, instead of only the special case where a chunk is
+ * *nothing but* image(s) with no caption text at all. */
 function flushInlineChunks(html: string, nodes: IRNode[]): void {
   for (const chunk of html.split(BLANK_LINE_RE)) {
     const trimmed = chunk.trim();
     if (!trimmed) continue;
 
     const doc = new DOMParser().parseFromString(`<body>${trimmed}</body>`, 'text/html');
-    const imgs = Array.from(doc.body.querySelectorAll('img'));
-    const textOnly = doc.body.textContent?.trim() ?? '';
-    if (imgs.length > 0 && !textOnly) {
-      for (const img of imgs) nodes.push(readImageElement(img));
+    if (doc.body.querySelector('img')) {
+      nodes.push(...splitInlineContent(doc.body.childNodes));
     } else {
       nodes.push({ kind: 'paragraph', html: trimmed });
     }
