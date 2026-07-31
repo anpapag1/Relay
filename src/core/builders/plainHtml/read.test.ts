@@ -48,6 +48,29 @@ describe('readPlainHtml', () => {
     ]);
   });
 
+  it('promotes an image wrapped inside a heading (e.g. <h2><span><a><img></a></span></h2>, a leftover WYSIWYG styling mistake) to a standalone image node, dropping the now-empty heading', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml:
+        '<h2 class="wp-block-heading"><span style="font-size: 14pt;"><a href="https://x/full.jpg"><img class="size-full wp-image-1 aligncenter" src="https://x/a.jpg" alt="" width="700" height="438"></a></span></h2>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'image', src: 'https://x/a.jpg', alt: '', caption: undefined, href: 'https://x/full.jpg', width: 700, height: 438 },
+    ]);
+  });
+
+  it('splits a heading mixing a wrapped leading image with real heading text into a standalone image plus the remaining heading', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml:
+        '<h2><a href="https://x/full.jpg"><img src="https://x/a.jpg" alt=""></a>Real heading text</h2>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'image', src: 'https://x/a.jpg', alt: '', caption: undefined, href: 'https://x/full.jpg', width: undefined, height: undefined },
+      { kind: 'heading', level: 2, html: 'Real heading text' },
+    ]);
+  });
+
   it('reads a figure with a figcaption as an image with a caption', () => {
     const { nodes } = readPlainHtml({
       contentHtml: '<figure><img src="https://x/a.jpg" alt="A"/><figcaption>Caption text</figcaption></figure>',

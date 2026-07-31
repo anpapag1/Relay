@@ -190,6 +190,43 @@ function readBlockquote(el: Element): IRNode {
   return { kind: 'quote', html: clone.innerHTML.trim(), cite: cite || undefined };
 }
 
+/** Mirrors splitInlineContent's leading-image extraction, but for
+ * headings: old exported content sometimes wraps a photo in an <h2>/<h3>
+ * (a leftover from a WYSIWYG editor using a heading tag for its styling,
+ * not real heading text) — Gutenberg's text-only heading block can't
+ * represent that, so the image needs to become its own standalone image
+ * block. Any real heading text left after the image is removed stays a
+ * heading of the same level; a heading left with no text at all is
+ * dropped rather than emitted empty. */
+function splitHeadingContent(childNodes: ArrayLike<ChildNode>, level: 1 | 2 | 3 | 4 | 5 | 6): IRNode[] {
+  const out: IRNode[] = [];
+  let buffer = '';
+  const flush = () => {
+    const trimmed = buffer.trim();
+    buffer = '';
+    if (trimmed) out.push({ kind: 'heading', level, html: trimmed });
+  };
+
+  for (const child of Array.from(childNodes)) {
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      const el = child as Element;
+      const wrapped = extractWrappedImage(el);
+      if (wrapped) {
+        flush();
+        out.push(readImageElement(wrapped.img));
+        if (wrapped.restHtml) buffer += wrapped.restHtml;
+        continue;
+      }
+      buffer += el.outerHTML;
+      continue;
+    }
+    buffer += child.textContent ?? '';
+  }
+  flush();
+
+  return out;
+}
+
 function readGalleryMarker(el: Element, warnings: ReaderWarning[]): IRNode {
   const idsAttr = el.getAttribute('data-rl-gallery-ids') ?? '';
   const ids = idsAttr.split(',').map((id) => id.trim()).filter(Boolean);
@@ -216,7 +253,11 @@ function readElement(el: Element, warnings: ReaderWarning[]): IRNode[] {
   const tag = el.tagName;
   const headingMatch = HEADING_RE.exec(tag);
   if (headingMatch) {
-    return [{ kind: 'heading', level: Number(headingMatch[1]) as 1 | 2 | 3 | 4 | 5 | 6, html: el.innerHTML.trim() }];
+    const level = Number(headingMatch[1]) as 1 | 2 | 3 | 4 | 5 | 6;
+    if (el.querySelector('img')) {
+      return splitHeadingContent(el.childNodes, level);
+    }
+    return [{ kind: 'heading', level, html: el.innerHTML.trim() }];
   }
 
   switch (tag) {
