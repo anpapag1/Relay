@@ -289,9 +289,9 @@ describe('BuildTab pre-build stats: edited, flagged, total media, total warnings
       return labelEl?.previousElementSibling?.textContent;
     };
 
-    expect(labelValue('edited')).toBe('1');
-    expect(labelValue('flagged for review')).toBe('1');
-    expect(labelValue('total media')).toBe('3');
-    expect(labelValue('total warnings')).toBe('2');
+    expect(labelValue('Edited')).toBe('1');
+    expect(labelValue('Flagged for review')).toBe('1');
+    expect(labelValue('Total media')).toBe('3');
+    expect(labelValue('Total warnings')).toBe('2');
   });
 });

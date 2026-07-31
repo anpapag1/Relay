@@ -111,38 +111,38 @@ export const BuildTab: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ ...cardStyleBase, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: '28px', flexWrap: 'wrap', rowGap: '16px' }}>
-          <div>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(45% 0.14 150)' }}>{countIncluded}</div>
-            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>will be included</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '14px' }}>
+          <div style={cardStyleBase}>
+            <div style={{ fontSize: '26px', fontWeight: 700, color: 'oklch(45% 0.14 150)' }}>{countIncluded}</div>
+            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Will be included</div>
           </div>
-          <div>
-            <div data-testid="pre-build-review-count" style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(55% 0.14 60)' }}>{countReview}</div>
-            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>still need review</div>
+          <div style={cardStyleBase}>
+            <div data-testid="pre-build-review-count" style={{ fontSize: '26px', fontWeight: 700, color: countReview > 0 ? 'oklch(55% 0.14 60)' : undefined }}>{countReview}</div>
+            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Still need review</div>
           </div>
-          <div>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(55% 0.01 250)' }}>{countExcluded}</div>
-            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>excluded</div>
+          <div style={cardStyleBase}>
+            <div style={{ fontSize: '26px', fontWeight: 700 }}>{countExcluded}</div>
+            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Excluded</div>
           </div>
-          <div>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(40% 0.18 265)' }}>{countEdited}</div>
-            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>edited</div>
+          <div style={cardStyleBase}>
+            <div style={{ fontSize: '26px', fontWeight: 700 }}>{countEdited}</div>
+            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Edited</div>
           </div>
-          <div>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(55% 0.14 60)' }}>{countFlagged}</div>
-            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>flagged for review</div>
+          <div style={cardStyleBase}>
+            <div style={{ fontSize: '26px', fontWeight: 700, color: countFlagged > 0 ? 'oklch(55% 0.14 60)' : undefined }}>{countFlagged}</div>
+            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Flagged for review</div>
           </div>
-          <div>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(55% 0.01 250)' }}>{totalMedia}</div>
-            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>total media</div>
+          <div style={cardStyleBase}>
+            <div style={{ fontSize: '26px', fontWeight: 700 }}>{totalMedia}</div>
+            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Total media</div>
           </div>
-          <div>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(55% 0.14 60)' }}>{checkWarnings.length}</div>
-            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>total warnings</div>
+          <div style={cardStyleBase}>
+            <div style={{ fontSize: '26px', fontWeight: 700, color: checkWarnings.length > 0 ? 'oklch(55% 0.14 60)' : undefined }}>{checkWarnings.length}</div>
+            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Total warnings</div>
           </div>
         </div>
-        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', maxWidth: '240px', textAlign: 'right', lineHeight: 1.4 }}>
+        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>
           {countReview > 0
             ? 'Articles flagged for review will still be converted using automatic settings.'
             : 'All included articles are ready for conversion.'}
