@@ -18,10 +18,14 @@ export function filenameOf(url: string): string {
 }
 
 /** WordPress appends a size suffix to generated thumbnails
- * (`photo-150x150.jpg`); stripping it lets a reference to a specific
- * thumbnail match the original attachment. */
+ * (`photo-150x150.jpg`), and a distinct `-scaled` suffix to the
+ * auto-downsized copy it creates when an upload exceeds the "big image"
+ * threshold (`photo-scaled.jpg`, a same-attachment sibling of the
+ * original `photo.jpg`, not a numbered thumbnail) — stripping either
+ * lets a reference to a specific generated size match the original
+ * attachment. */
 export function stripSizeSuffix(filename: string): string {
-  return filename.replace(/-\d+x\d+(?=\.[a-zA-Z0-9]+$)/, '');
+  return filename.replace(/-(?:\d+x\d+|scaled)(?=\.[a-zA-Z0-9]+$)/i, '');
 }
 
 export function buildAttachmentIndex(attachments: ParsedAttachment[]): AttachmentIndex {

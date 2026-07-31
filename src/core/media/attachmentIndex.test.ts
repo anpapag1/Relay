@@ -16,6 +16,16 @@ describe('filenameOf / stripSizeSuffix', () => {
     expect(stripSizeSuffix('photo-150x150.jpg')).toBe('photo.jpg');
     expect(stripSizeSuffix('photo.jpg')).toBe('photo.jpg');
   });
+
+  it('strips WordPress\'s distinct "-scaled" suffix (the auto-downsized copy of an upload past the "big image" threshold) the same way as a numbered thumbnail suffix', () => {
+    expect(stripSizeSuffix('photo-scaled.jpg')).toBe('photo.jpg');
+    expect(stripSizeSuffix('photo-scaled.JPG')).toBe('photo.JPG');
+    // A real filename that happens to end in "-scaled" for unrelated
+    // reasons is rare enough that treating it the same as a real
+    // WordPress-generated suffix is the right call, same tradeoff the
+    // numeric -WxH suffix already makes.
+    expect(stripSizeSuffix('unrelated-name.jpg')).toBe('unrelated-name.jpg');
+  });
 });
 
 describe('matchAttachment', () => {
