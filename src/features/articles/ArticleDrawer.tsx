@@ -180,6 +180,14 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
     });
   };
 
+  const handleToggleManualReview = () => {
+    dispatch({
+      type: 'SET_ARTICLE_MANUAL_REVIEW',
+      articleId: article.id,
+      manualReview: !article.isManualReview,
+    });
+  };
+
   const isExcluded = article.status.startsWith('excluded');
   const showBefore = state.ui.previewMode === 'before';
   const previewHtml = showBefore ? article.contentHtml : draftHtml;
@@ -416,6 +424,28 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
               style={{ padding: '6px 12px', fontSize: '12px' }}
             >
               {isExcluded ? 'Exclude (Click to Include)' : 'Included (Click to Exclude)'}
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', padding: '12px 14px', background: article.isManualReview ? 'oklch(97% 0.04 60)' : 'oklch(98% 0.003 250)', borderRadius: '8px', border: article.isManualReview ? '1px solid oklch(88% 0.1 60)' : '1px solid oklch(92% 0.005 250)' }}>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 600 }}>Flag for review</div>
+              <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)' }}>
+                {article.isManualReview ? 'Manually flagged — needs a human look before export' : 'Mark this article for a manual check'}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleManualReview}
+              className="btn btn-secondary"
+              style={{
+                padding: '6px 12px',
+                fontSize: '12px',
+                color: article.isManualReview ? 'oklch(50% 0.16 60)' : 'oklch(35% 0.01 250)',
+                borderColor: article.isManualReview ? 'oklch(85% 0.1 60)' : 'oklch(88% 0.005 250)',
+              }}
+            >
+              {article.isManualReview ? 'Flagged (Click to Unflag)' : 'Flag for Review'}
             </button>
           </div>
 

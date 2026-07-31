@@ -272,6 +272,19 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
         },
       };
     }
+    case 'SET_ARTICLE_MANUAL_REVIEW': {
+      const prev = state.articles[action.articleId] ?? {};
+      return {
+        ...state,
+        articles: {
+          ...state.articles,
+          [action.articleId]: {
+            ...prev,
+            manualReview: action.manualReview,
+          },
+        },
+      };
+    }
     case 'SAVE_ARTICLE_EDIT': {
       const prev = state.articles[action.articleId] ?? {};
       return {

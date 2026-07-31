@@ -1,5 +1,6 @@
 import type { AppState, ArticleStatus, DerivedArticle } from './types';
 import type { ParsedArticle, TermRef } from '../types/domain';
+import type { IRNode } from '../core/ir/nodes';
 import { termMappingIdOf } from '../core/mappings/termId';
 import { getReader } from '../core/builders';
 import { reviewMessages, infoMessages } from '../core/builders/types';
@@ -20,6 +21,23 @@ export function getArticleId(article: ParsedArticle, index: number): number {
  * yet", it's "will never resolve": the WXR simply never included that
  * media item. */
 const ATTACHMENT_REF_RE = /^attachment:(\d+)$/;
+
+/** A file-extension hint that the original content references a photo —
+ * used to catch a reader that silently swallowed an image into raw/plain
+ * text instead of emitting a real `image`/`gallery` node for it (the exact
+ * failure mode a `<strong><a><img></a>caption</strong>`-shaped paragraph
+ * used to hit before the reader learned to unwrap inline formatting). */
+const IMAGE_EXTENSION_RE = /\.(jpe?g|png|gif|webp|svg|bmp|avif)(?:[?"'\s>]|$)/i;
+
+/** Recurses into `columns` (the only IR node kind that nests other nodes)
+ * to check whether an image ever made it into the parsed tree at all. */
+function containsImageNode(nodes: IRNode[]): boolean {
+  return nodes.some((node) => {
+    if (node.kind === 'image' || node.kind === 'gallery') return true;
+    if (node.kind === 'columns') return node.columns.some(containsImageNode);
+    return false;
+  });
+}
 
 export function getArticleStatus(
   article: ParsedArticle,
@@ -52,6 +70,10 @@ export function getArticleStatus(
     };
   }
 
+  if (override?.manualReview) {
+    return { status: 'review', reason: 'Flagged for review by user', warnings: [], infoWarnings, mediaCount };
+  }
+
   if (override?.editedHtml != null && override.editedHtml.trim().length > 0) {
     return { status: 'edited', warnings: [], infoWarnings: [], mediaCount };
   }
@@ -79,7 +101,12 @@ export function getArticleStatus(
     }
   }
 
-  const allWarnings = [...reviewMessages(readerWarnings), ...termWarnings, ...mediaWarnings];
+  const imageWarnings: string[] = [];
+  if (IMAGE_EXTENSION_RE.test(article.contentHtml) && !containsImageNode(nodes)) {
+    imageWarnings.push('Original content references an image file, but no image block was produced from it — check for an unconverted image.');
+  }
+
+  const allWarnings = [...reviewMessages(readerWarnings), ...termWarnings, ...mediaWarnings, ...imageWarnings];
   if (allWarnings.length > 0) {
     return { status: 'review', warnings: allWarnings, infoWarnings, mediaCount };
   }
@@ -107,6 +134,7 @@ export function getDerivedArticles(state: AppState): DerivedArticle[] {
       mediaCount,
       isEdited: status === 'edited',
       isExcluded: status.startsWith('excluded'),
+      isManualReview: override?.manualReview ?? false,
       editedHtml: override?.editedHtml,
       destinationTerms: resolveArticleTerms(art.terms, state.mappings, newTables),
     };

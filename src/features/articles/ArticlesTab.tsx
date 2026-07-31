@@ -178,7 +178,7 @@ export const ArticlesTab: React.FC = () => {
       </div>
 
       <div style={{ background: 'white', border: '1px solid oklch(90% 0.005 250)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px oklch(0% 0 0 / 0.02)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2.2fr 0.9fr 0.9fr 0.7fr 1fr 0.8fr', padding: '12px 20px', fontSize: '11px', fontWeight: 600, color: 'oklch(55% 0.01 250)', textTransform: 'uppercase', letterSpacing: '0.03em', background: 'oklch(97% 0.003 250)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 0.85fr 0.85fr 0.6fr 0.9fr 1.3fr', padding: '12px 20px', fontSize: '11px', fontWeight: 600, color: 'oklch(55% 0.01 250)', textTransform: 'uppercase', letterSpacing: '0.03em', background: 'oklch(97% 0.003 250)' }}>
           <div onClick={() => toggleSort('title')} style={{ cursor: 'pointer' }}>
             Title{getSortArrow('title')}
           </div>
@@ -201,7 +201,7 @@ export const ArticlesTab: React.FC = () => {
               onClick={() => setSelectedArticleId(art.id)}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '2.2fr 0.9fr 0.9fr 0.7fr 1fr 0.8fr',
+                gridTemplateColumns: '2fr 0.85fr 0.85fr 0.6fr 0.9fr 1.3fr',
                 padding: '14px 20px',
                 alignItems: 'center',
                 borderTop: '1px solid oklch(95% 0.005 250)',
@@ -225,7 +225,7 @@ export const ArticlesTab: React.FC = () => {
               <div>
                 <Badge status={art.status} />
               </div>
-              <div onClick={(e) => e.stopPropagation()}>
+              <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '6px' }}>
                 <button
                   type="button"
                   onClick={() => {
@@ -244,6 +244,26 @@ export const ArticlesTab: React.FC = () => {
                   }}
                 >
                   {isExc ? 'Include' : 'Exclude'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    dispatch({
+                      type: 'SET_ARTICLE_MANUAL_REVIEW',
+                      articleId: art.id,
+                      manualReview: !art.isManualReview,
+                    });
+                  }}
+                  className="btn btn-secondary"
+                  title={art.isManualReview ? 'Unflag for review' : 'Flag for review'}
+                  style={{
+                    padding: '5px 10px',
+                    fontSize: '12px',
+                    color: art.isManualReview ? 'oklch(50% 0.16 60)' : 'oklch(35% 0.01 250)',
+                    borderColor: art.isManualReview ? 'oklch(85% 0.1 60)' : 'oklch(88% 0.005 250)',
+                  }}
+                >
+                  {art.isManualReview ? 'Unflag' : 'Flag'}
                 </button>
               </div>
             </div>

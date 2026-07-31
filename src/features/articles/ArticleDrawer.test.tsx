@@ -26,6 +26,7 @@ function makeArticle(overrides: Partial<DerivedArticle> = {}): DerivedArticle {
     mediaCount: 0,
     isEdited: false,
     isExcluded: false,
+    isManualReview: false,
     destinationTerms: [],
     ...overrides,
   };

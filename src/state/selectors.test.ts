@@ -170,6 +170,61 @@ describe('selectors', () => {
     expect(derived[0].infoWarnings.some((w) => w.includes('known-empty sidebar widget anchor'))).toBe(true);
   });
 
+  it('forces status to "review" when an article is manually flagged, taking priority over "ready"/"edited"', () => {
+    let s = getTestState();
+    s = appReducer(s, { type: 'SET_ARTICLE_MANUAL_REVIEW', articleId: 101, manualReview: true });
+    const derived = getDerivedArticles(s);
+
+    const flagged = derived.find((a) => a.id === 101);
+    expect(flagged?.status).toBe('review');
+    expect(flagged?.isManualReview).toBe(true);
+    expect(flagged?.statusReason).toBe('Flagged for review by user');
+
+    const notFlagged = derived.find((a) => a.id === 103);
+    expect(notFlagged?.isManualReview).toBe(false);
+  });
+
+  it('flags an article for review when the original content references an image file but no image/gallery block was produced', () => {
+    const result: ParseResult = {
+      ok: true,
+      siteUrl: 'https://old.example',
+      totalItems: 1,
+      articles: [
+        {
+          postId: 301,
+          postType: 'post',
+          status: 'publish',
+          title: 'Lost Image Article',
+          link: 'https://old.example/lost-image/',
+          postDate: '2026-01-06',
+          postName: 'lost-image-article',
+          creator: 'alice',
+          // An unrecognised WPBakery shortcode: readElement's fallback for
+          // an unknown tag re-serialises only the opening tag itself
+          // (textFallback), discarding its children entirely - so the .jpg
+          // reference inside never reaches a real image node.
+          contentHtml: '[unknown_widget]<img src="https://old.example/photo.jpg">[/unknown_widget]',
+          excerptHtml: '',
+          terms: [],
+          postmeta: {},
+        },
+      ],
+      attachments: [],
+      taxonomies: {},
+      authors: ['alice'],
+      statusCounts: { publish: 1 },
+    };
+
+    const s = appReducer(initialState, { type: 'LOAD_SOURCE', result, defaultBuilder: 'wpbakery', confidence: 90 });
+    const derived = getDerivedArticles(s);
+
+    expect(derived).toHaveLength(1);
+    expect(derived[0].status).toBe('review');
+    expect(derived[0].warnings).toContain(
+      'Original content references an image file, but no image block was produced from it — check for an unconverted image.',
+    );
+  });
+
   it('computes mediaCount from the article\'s real media references, for every status including excluded/edited', () => {
     const s = getTestState();
     const derived = getDerivedArticles(s);

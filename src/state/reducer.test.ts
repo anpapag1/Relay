@@ -311,6 +311,21 @@ describe('appReducer', () => {
     expect(next2.articles[2]).toEqual({ excluded: false, reason: undefined, auto: false });
   });
 
+  it('handles SET_ARTICLE_MANUAL_REVIEW and toggles it back off', () => {
+    const loaded = appReducer(initialState, {
+      type: 'LOAD_SOURCE',
+      result: MOCK_PARSE_RESULT,
+      defaultBuilder: 'plainHtml',
+      confidence: 95,
+    });
+
+    const flagged = appReducer(loaded, { type: 'SET_ARTICLE_MANUAL_REVIEW', articleId: 1, manualReview: true });
+    expect(flagged.articles[1]).toEqual({ manualReview: true });
+
+    const unflagged = appReducer(flagged, { type: 'SET_ARTICLE_MANUAL_REVIEW', articleId: 1, manualReview: false });
+    expect(unflagged.articles[1]).toEqual({ manualReview: false });
+  });
+
   it('handles SAVE_ARTICLE_EDIT and REVERT_ARTICLE_EDIT', () => {
     const edited = appReducer(initialState, { type: 'SAVE_ARTICLE_EDIT', articleId: 1, editedHtml: '<!-- wp:paragraph -->Edited<!-- /wp:paragraph -->' });
     expect(edited.articles[1]?.editedHtml).toBe('<!-- wp:paragraph -->Edited<!-- /wp:paragraph -->');

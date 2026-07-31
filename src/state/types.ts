@@ -10,6 +10,9 @@ export interface ArticleOverride {
   editedHtml?: string;
   /** Whether the exclusion was automatically decided at parse time (duplicate slug or empty content). */
   auto?: boolean;
+  /** Manually flagged by the user as needing a human look, independent of
+   * any warnings the reader/media/term resolution produced on their own. */
+  manualReview?: boolean;
 }
 
 export interface BuildHistoryEntry {
@@ -80,6 +83,7 @@ export interface DerivedArticle extends ParsedArticle {
   mediaCount: number;
   isEdited: boolean;
   isExcluded: boolean;
+  isManualReview: boolean;
   editedHtml?: string;
   /** The article's terms resolved through the mapping table to their
    * new-site destination — what will actually ship in the export, as

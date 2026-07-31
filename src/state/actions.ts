@@ -24,6 +24,7 @@ export type Action =
   | { type: 'AUTO_MATCH_MAPPINGS' }
   | { type: 'UPDATE_SETTINGS'; settings: Partial<ConversionSettings> }
   | { type: 'SET_ARTICLE_EXCLUDED'; articleId: number; excluded: boolean }
+  | { type: 'SET_ARTICLE_MANUAL_REVIEW'; articleId: number; manualReview: boolean }
   | { type: 'SAVE_ARTICLE_EDIT'; articleId: number; editedHtml: string }
   | { type: 'REVERT_ARTICLE_EDIT'; articleId: number }
   | { type: 'SET_MEDIA_RESOLUTIONS'; resolutions: Record<string, MediaResolution> }
@@ -81,6 +82,7 @@ export const actions = {
   autoMatchMappings: (): Action => ({ type: 'AUTO_MATCH_MAPPINGS' }),
   updateSettings: (settings: Partial<ConversionSettings>): Action => ({ type: 'UPDATE_SETTINGS', settings }),
   setArticleExcluded: (articleId: number, excluded: boolean): Action => ({ type: 'SET_ARTICLE_EXCLUDED', articleId, excluded }),
+  setArticleManualReview: (articleId: number, manualReview: boolean): Action => ({ type: 'SET_ARTICLE_MANUAL_REVIEW', articleId, manualReview }),
   saveArticleEdit: (articleId: number, editedHtml: string): Action => ({ type: 'SAVE_ARTICLE_EDIT', articleId, editedHtml }),
   revertArticleEdit: (articleId: number): Action => ({ type: 'REVERT_ARTICLE_EDIT', articleId }),
   setMediaResolutions: (resolutions: Record<string, MediaResolution>): Action => ({ type: 'SET_MEDIA_RESOLUTIONS', resolutions }),
