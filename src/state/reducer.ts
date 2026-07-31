@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS: ConversionSettings = {
   autoSpacing: true,
   spacerSize: 30,
   combineConsecutiveImages: false,
+  galleryColumns: 3,
   pdfRender: 'embed',
   buttonRender: 'button',
   headingShift: 0,

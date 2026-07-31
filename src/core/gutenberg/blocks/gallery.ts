@@ -1,31 +1,25 @@
 import type { IRNode } from '../../ir/nodes';
 import type { ConversionSettings } from '../../../types/domain';
 import { escapeAttr } from '../escapeHtml';
-import { resolveImageDimensions } from './image';
 
-/** Matches WordPress's own default gallery block markup (no explicit
- * column count — `columns-default` lets the block's own responsive CSS
- * decide) rather than a fixed per-migration column setting. */
+/** Gallery images always link to the WordPress core lightbox and never
+ * carry per-image id/sizeSlug/width/height — unlike a standalone image,
+ * a gallery photo is meant to be clicked open at full size rather than
+ * pinned to one export-time size, so baking in a size or attachment id
+ * would just go stale the moment the media library changes. */
 export function writeGallery(
   node: Extract<IRNode, { kind: 'gallery' }>,
   settings: ConversionSettings,
 ): string {
-  const sizeSlug = settings.imageSize !== 'custom' ? settings.imageSize : undefined;
+  const columns = settings.galleryColumns;
 
   const images = node.images
     .map((image) => {
-      const { width, height } = resolveImageDimensions(image, settings);
-      const dimAttrs = `${width ? ` width="${width}"` : ''}${height ? ` height="${height}"` : ''}`;
-      const imgClass = image.attachmentId ? ` class="wp-image-${image.attachmentId}"` : '';
-      const img = `<img src="${escapeAttr(image.src)}" alt="${escapeAttr(image.alt)}"${imgClass}${dimAttrs}/>`;
-      const attrs: Record<string, unknown> = {};
-      if (image.attachmentId) attrs.id = image.attachmentId;
-      if (sizeSlug) attrs.sizeSlug = sizeSlug;
-      attrs.linkDestination = 'none';
-      const classes = ['wp-block-image', ...(sizeSlug ? [`size-${sizeSlug}`] : [])];
-      return `<!-- wp:image ${JSON.stringify(attrs)} -->\n<figure class="${classes.join(' ')}">${img}</figure>\n<!-- /wp:image -->`;
+      const img = `<img src="${escapeAttr(image.src)}" alt="${escapeAttr(image.alt)}"/>`;
+      const attrs = { lightbox: { enabled: true }, linkDestination: 'none' };
+      return `<!-- wp:image ${JSON.stringify(attrs)} -->\n<figure class="wp-block-image">${img}</figure>\n<!-- /wp:image -->`;
     })
     .join('\n\n');
 
-  return `<!-- wp:gallery {"linkTo":"none"} -->\n<figure class="wp-block-gallery has-nested-images columns-default is-cropped">\n${images}\n</figure>\n<!-- /wp:gallery -->`;
+  return `<!-- wp:gallery {"columns":${columns},"linkTo":"lightbox"} -->\n<figure class="wp-block-gallery has-nested-images columns-${columns} is-cropped">\n${images}\n</figure>\n<!-- /wp:gallery -->`;
 }

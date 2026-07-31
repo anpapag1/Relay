@@ -246,6 +246,19 @@ export const SettingsTab: React.FC = () => {
           </div>
 
           <div>
+            <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>Gallery columns: {settings.galleryColumns}</div>
+            <input
+              type="range"
+              min="1"
+              max="8"
+              step="1"
+              value={settings.galleryColumns}
+              onChange={(e) => updateSetting('galleryColumns', Number(e.target.value))}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <div>
             <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>Embedded PDFs render as</div>
             <div style={{ display: 'flex', gap: '6px' }}>
               {pdfOptions.map((p) => (

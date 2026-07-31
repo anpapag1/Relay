@@ -25,18 +25,18 @@ exports[`golden fixtures > converts the divi fixture to the expected Gutenberg m
 <div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
 <!-- /wp:spacer -->
 
-<!-- wp:gallery {"linkTo":"none"} -->
-<figure class="wp-block-gallery has-nested-images columns-default is-cropped">
-<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
-<figure class="wp-block-image size-large"><img src="attachment:10" alt=""/></figure>
+<!-- wp:gallery {"columns":3,"linkTo":"lightbox"} -->
+<figure class="wp-block-gallery has-nested-images columns-3 is-cropped">
+<!-- wp:image {"lightbox":{"enabled":true},"linkDestination":"none"} -->
+<figure class="wp-block-image"><img src="attachment:10" alt=""/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
-<figure class="wp-block-image size-large"><img src="attachment:11" alt=""/></figure>
+<!-- wp:image {"lightbox":{"enabled":true},"linkDestination":"none"} -->
+<figure class="wp-block-image"><img src="attachment:11" alt=""/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
-<figure class="wp-block-image size-large"><img src="attachment:12" alt=""/></figure>
+<!-- wp:image {"lightbox":{"enabled":true},"linkDestination":"none"} -->
+<figure class="wp-block-image"><img src="attachment:12" alt=""/></figure>
 <!-- /wp:image -->
 </figure>
 <!-- /wp:gallery -->
@@ -98,14 +98,14 @@ exports[`golden fixtures > converts the elementor fixture to the expected Gutenb
 <div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
 <!-- /wp:spacer -->
 
-<!-- wp:gallery {"linkTo":"none"} -->
-<figure class="wp-block-gallery has-nested-images columns-default is-cropped">
-<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
-<figure class="wp-block-image size-large"><img src="https://old-elementor.example/wp-content/uploads/2020/01/g1.jpg" alt="G1"/></figure>
+<!-- wp:gallery {"columns":3,"linkTo":"lightbox"} -->
+<figure class="wp-block-gallery has-nested-images columns-3 is-cropped">
+<!-- wp:image {"lightbox":{"enabled":true},"linkDestination":"none"} -->
+<figure class="wp-block-image"><img src="https://old-elementor.example/wp-content/uploads/2020/01/g1.jpg" alt="G1"/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
-<figure class="wp-block-image size-large"><img src="https://old-elementor.example/wp-content/uploads/2020/01/g2.jpg" alt="G2"/></figure>
+<!-- wp:image {"lightbox":{"enabled":true},"linkDestination":"none"} -->
+<figure class="wp-block-image"><img src="https://old-elementor.example/wp-content/uploads/2020/01/g2.jpg" alt="G2"/></figure>
 <!-- /wp:image -->
 </figure>
 <!-- /wp:gallery -->
@@ -171,18 +171,18 @@ exports[`golden fixtures > converts the plainHtml fixture to the expected Gutenb
 <div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
 <!-- /wp:spacer -->
 
-<!-- wp:gallery {"linkTo":"none"} -->
-<figure class="wp-block-gallery has-nested-images columns-default is-cropped">
-<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
-<figure class="wp-block-image size-large"><img src="attachment:10" alt=""/></figure>
+<!-- wp:gallery {"columns":3,"linkTo":"lightbox"} -->
+<figure class="wp-block-gallery has-nested-images columns-3 is-cropped">
+<!-- wp:image {"lightbox":{"enabled":true},"linkDestination":"none"} -->
+<figure class="wp-block-image"><img src="attachment:10" alt=""/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
-<figure class="wp-block-image size-large"><img src="attachment:11" alt=""/></figure>
+<!-- wp:image {"lightbox":{"enabled":true},"linkDestination":"none"} -->
+<figure class="wp-block-image"><img src="attachment:11" alt=""/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
-<figure class="wp-block-image size-large"><img src="attachment:12" alt=""/></figure>
+<!-- wp:image {"lightbox":{"enabled":true},"linkDestination":"none"} -->
+<figure class="wp-block-image"><img src="attachment:12" alt=""/></figure>
 <!-- /wp:image -->
 </figure>
 <!-- /wp:gallery -->
@@ -227,18 +227,18 @@ exports[`golden fixtures > converts the wpbakery fixture to the expected Gutenbe
 <div style="height:30px" aria-hidden="true" class="wp-block-spacer"></div>
 <!-- /wp:spacer -->
 
-<!-- wp:gallery {"linkTo":"none"} -->
-<figure class="wp-block-gallery has-nested-images columns-default is-cropped">
-<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
-<figure class="wp-block-image size-large"><img src="attachment:10" alt=""/></figure>
+<!-- wp:gallery {"columns":3,"linkTo":"lightbox"} -->
+<figure class="wp-block-gallery has-nested-images columns-3 is-cropped">
+<!-- wp:image {"lightbox":{"enabled":true},"linkDestination":"none"} -->
+<figure class="wp-block-image"><img src="attachment:10" alt=""/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
-<figure class="wp-block-image size-large"><img src="attachment:11" alt=""/></figure>
+<!-- wp:image {"lightbox":{"enabled":true},"linkDestination":"none"} -->
+<figure class="wp-block-image"><img src="attachment:11" alt=""/></figure>
 <!-- /wp:image -->
 
-<!-- wp:image {"sizeSlug":"large","linkDestination":"none"} -->
-<figure class="wp-block-image size-large"><img src="attachment:12" alt=""/></figure>
+<!-- wp:image {"lightbox":{"enabled":true},"linkDestination":"none"} -->
+<figure class="wp-block-image"><img src="attachment:12" alt=""/></figure>
 <!-- /wp:image -->
 </figure>
 <!-- /wp:gallery -->

@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS: ConversionSettings = {
   autoSpacing: true,
   spacerSize: 30,
   combineConsecutiveImages: false,
+  galleryColumns: 3,
   pdfRender: 'button',
   buttonRender: 'button',
   headingShift: 0,
@@ -87,13 +88,13 @@ describe('writeBlocks', () => {
     expect(out).not.toContain('width="400"');
   });
 
-  it('scales a gallery image\'s missing custom dimension proportionally from its own intrinsic size', () => {
+  it('never emits width/height on a gallery image, even under a custom image size — a gallery photo opens via the lightbox at full size, not pinned to an export-time size', () => {
     const out = writeBlocks(
       [{ kind: 'gallery', images: [{ src: 'https://x/a.jpg', alt: '', width: 200, height: 100 }] }],
       { ...DEFAULT_SETTINGS, imageSize: 'custom', customWidth: 400 },
     );
-    expect(out).toContain('width="400"');
-    expect(out).toContain('height="200"');
+    expect(out).not.toContain('width=');
+    expect(out).not.toContain('height=');
   });
 
   it('never links an image to its full-size original, even when the source had one, matching a real WordPress-inserted image\'s default (linkDestination: none)', () => {
@@ -105,15 +106,19 @@ describe('writeBlocks', () => {
     expect(out).toContain('"linkDestination":"none"');
   });
 
-  it('writes a gallery with WordPress-default columns and per-image sizeSlug', () => {
+  it('writes a gallery at the configured column count, linking to the lightbox, with no id/sizeSlug/dimensions on its images', () => {
     const out = writeBlocks(
-      [{ kind: 'gallery', images: [{ src: 'a.jpg', alt: '' }, { src: 'b.jpg', alt: '' }] }],
-      DEFAULT_SETTINGS,
+      [{ kind: 'gallery', images: [{ src: 'a.jpg', alt: '', attachmentId: 42, width: 600, height: 400 }, { src: 'b.jpg', alt: '' }] }],
+      { ...DEFAULT_SETTINGS, galleryColumns: 4 },
     );
-    expect(out).toContain('columns-default');
+    expect(out).toContain('columns-4');
+    expect(out).toContain('"columns":4');
     expect(out).toContain('is-cropped');
-    expect(out).toContain('"linkTo":"none"');
-    expect(out.match(/<!-- wp:image \{"sizeSlug":"large","linkDestination":"none"\} -->/g)).toHaveLength(2);
+    expect(out).toContain('"linkTo":"lightbox"');
+    expect(out.match(/<!-- wp:image \{"lightbox":\{"enabled":true\},"linkDestination":"none"\} -->/g)).toHaveLength(2);
+    expect(out).not.toContain('sizeSlug');
+    expect(out).not.toContain('"id":42');
+    expect(out).not.toContain('width="600"');
   });
 
   it('combines consecutive standalone images into a gallery when combineConsecutiveImages is on', () => {

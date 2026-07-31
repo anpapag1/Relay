@@ -148,6 +148,5 @@ describe('SettingsTab live preview', () => {
 
     expect(container.textContent).toContain('Width (px)');
     expect(container.textContent).toContain('Height (px)');
-    expect(container.textContent).not.toContain('Gallery columns');
   });
 });

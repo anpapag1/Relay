@@ -139,6 +139,9 @@ export interface ConversionSettings {
    * standalone images into a single wp:gallery block instead of emitting
    * each as its own wp:image. */
   combineConsecutiveImages: boolean;
+  /** Column count for wp:gallery blocks — both the block's own "columns"
+   * attribute and the figure's "columns-N" class. */
+  galleryColumns: number;
   pdfRender: FileRender;
   buttonRender: ButtonRender;
   headingShift: number;

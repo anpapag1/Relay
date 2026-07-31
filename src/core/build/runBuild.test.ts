@@ -10,6 +10,7 @@ const SETTINGS: ConversionSettings = {
   autoSpacing: true,
   spacerSize: 30,
   combineConsecutiveImages: false,
+  galleryColumns: 3,
   pdfRender: 'button',
   buttonRender: 'button',
   headingShift: 0,
