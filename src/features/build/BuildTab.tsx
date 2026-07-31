@@ -43,10 +43,14 @@ export const BuildTab: React.FC = () => {
   const reviewArticles = includedArticles.filter((a) => a.status === 'review' || (a.warnings && a.warnings.length > 0));
   const readyArticles = includedArticles.filter((a) => a.status === 'ready');
   const editedArticles = includedArticles.filter((a) => a.status === 'edited');
+  const flaggedArticles = includedArticles.filter((a) => a.isManualReview);
 
   const countIncluded = includedArticles.length;
   const countReview = reviewArticles.length;
   const countExcluded = excludedArticles.length;
+  const countEdited = editedArticles.length;
+  const countFlagged = flaggedArticles.length;
+  const totalMedia = includedArticles.reduce((sum, a) => sum + a.mediaCount, 0);
   // The real build live-fetches media the import-time estimate above
   // can't — an inline image that only turns out unreachable once actually
   // fetched gets flagged 'review' in the true build result even though
@@ -107,8 +111,8 @@ export const BuildTab: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ ...cardStyleBase, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px' }}>
-        <div style={{ display: 'flex', gap: '28px' }}>
+      <div style={{ ...cardStyleBase, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '28px', flexWrap: 'wrap', rowGap: '16px' }}>
           <div>
             <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(45% 0.14 150)' }}>{countIncluded}</div>
             <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>will be included</div>
@@ -120,6 +124,22 @@ export const BuildTab: React.FC = () => {
           <div>
             <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(55% 0.01 250)' }}>{countExcluded}</div>
             <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>excluded</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(40% 0.18 265)' }}>{countEdited}</div>
+            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>edited</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(55% 0.14 60)' }}>{countFlagged}</div>
+            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>flagged for review</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(55% 0.01 250)' }}>{totalMedia}</div>
+            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>total media</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(55% 0.14 60)' }}>{checkWarnings.length}</div>
+            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>total warnings</div>
           </div>
         </div>
         <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', maxWidth: '240px', textAlign: 'right', lineHeight: 1.4 }}>

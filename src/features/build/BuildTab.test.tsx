@@ -223,3 +223,75 @@ describe('BuildTab post-build review count reflects the real build result', () =
     }
   });
 });
+
+describe('BuildTab pre-build stats: edited, flagged, total media, total warnings', () => {
+  it('counts edited/flagged articles, sums media across all included articles, and sums every warning (not just how many articles have one)', async () => {
+    const threeArticles: ParseResult = {
+      ...MOCK_PARSE_RESULT,
+      articles: [
+        {
+          // Edited articles short-circuit to warnings:[] regardless of
+          // content, but mediaCount is still computed up front — this
+          // exercises that mediaCount keeps counting past the edit.
+          ...MOCK_PARSE_RESULT.articles[0],
+          postId: 1,
+          postName: 'article-one',
+          link: 'https://old.example/article-one/',
+          terms: [],
+          contentHtml: '<figure><img src="https://old.example/a.jpg"/></figure><figure><img src="https://old.example/b.jpg"/></figure>',
+        },
+        {
+          // Same for a manually flagged article.
+          ...MOCK_PARSE_RESULT.articles[0],
+          postId: 2,
+          postName: 'article-two',
+          link: 'https://old.example/article-two/',
+          terms: [],
+          contentHtml: '<figure><img src="https://old.example/c.jpg"/></figure>',
+        },
+        {
+          // Untouched — its two unmapped terms actually surface as two
+          // separate warnings, proving the stat sums every warning
+          // message rather than just counting articles that have one.
+          ...MOCK_PARSE_RESULT.articles[0],
+          postId: 3,
+          postName: 'article-three',
+          link: 'https://old.example/article-three/',
+          terms: [
+            { domain: 'category', nicename: 'unmapped-a', name: 'Unmapped A' },
+            { domain: 'category', nicename: 'unmapped-b', name: 'Unmapped B' },
+          ],
+          contentHtml: '<p>No media here.</p>',
+        },
+      ],
+    };
+    let seeded = appReducer(initialState, {
+      type: 'LOAD_SOURCE',
+      result: threeArticles,
+      defaultBuilder: 'plainHtml',
+      confidence: 100,
+    });
+    // Article 1: manually edited (its own converted-HTML override).
+    seeded = appReducer(seeded, { type: 'SAVE_ARTICLE_EDIT', articleId: 1, editedHtml: '<p>edited</p>' });
+    // Article 2: flagged for manual review — independent of any warnings.
+    seeded = appReducer(seeded, { type: 'SET_ARTICLE_MANUAL_REVIEW', articleId: 2, manualReview: true });
+
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false} initialStateOverride={seeded}>
+          <BuildTab />
+        </AppStateProvider>,
+      );
+    });
+
+    const labelValue = (label: string) => {
+      const labelEl = Array.from(container.querySelectorAll('div')).find((d) => d.textContent === label);
+      return labelEl?.previousElementSibling?.textContent;
+    };
+
+    expect(labelValue('edited')).toBe('1');
+    expect(labelValue('flagged for review')).toBe('1');
+    expect(labelValue('total media')).toBe('3');
+    expect(labelValue('total warnings')).toBe('2');
+  });
+});
