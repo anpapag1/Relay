@@ -92,6 +92,9 @@ export interface GenerateWxrOptions {
 export type ImageSize = 'thumbnail' | 'medium' | 'large' | 'full' | 'custom';
 export type ImageAlign = 'left' | 'center' | 'right' | 'none';
 export type FileRender = 'button' | 'link' | 'embed';
+/** Matches the real Gutenberg gallery-image aspect-ratio dropdown's own
+ * values exactly ("none" = "Original", the un-cropped default). */
+export type GalleryAspectRatio = 'none' | '1' | '4/3' | '3/4' | '3/2' | '2/3' | '16/9' | '9/16';
 export type ButtonRender = 'button' | 'link';
 
 export interface NewSiteTerm {
@@ -142,6 +145,9 @@ export interface ConversionSettings {
   /** Column count for wp:gallery blocks — both the block's own "columns"
    * attribute and the figure's "columns-N" class. */
   galleryColumns: number;
+  /** Crop ratio applied to every image in a gallery block — "none" (the
+   * default) leaves images uncropped at their original ratio. */
+  galleryAspectRatio: GalleryAspectRatio;
   pdfRender: FileRender;
   buttonRender: ButtonRender;
   headingShift: number;

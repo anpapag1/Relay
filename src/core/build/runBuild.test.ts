@@ -11,6 +11,7 @@ const SETTINGS: ConversionSettings = {
   spacerSize: 30,
   combineConsecutiveImages: false,
   galleryColumns: 3,
+  galleryAspectRatio: 'none',
   pdfRender: 'button',
   buttonRender: 'button',
   headingShift: 0,

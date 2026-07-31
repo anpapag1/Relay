@@ -12,14 +12,30 @@ export function writeGallery(
   settings: ConversionSettings,
 ): string {
   const columns = settings.galleryColumns;
+  const ratio = settings.galleryAspectRatio;
+  const cropped = ratio !== 'none';
+
+  const galleryAttrs: Record<string, unknown> = { columns, linkTo: 'lightbox' };
+  if (cropped) galleryAttrs.aspectRatio = ratio;
 
   const images = node.images
-    .map((image) => {
-      const img = `<img src="${escapeAttr(image.src)}" alt="${escapeAttr(image.alt)}"/>`;
-      const attrs = { lightbox: { enabled: true }, linkDestination: 'none' };
-      return `<!-- wp:image ${JSON.stringify(attrs)} -->\n<figure class="wp-block-image">${img}</figure>\n<!-- /wp:image -->`;
+    .map((image, index) => {
+      const style = cropped ? ` style="aspect-ratio:${ratio}"` : '';
+      const img = `<img src="${escapeAttr(image.src)}" alt="${escapeAttr(image.alt)}"${style}/>`;
+      const attrs: Record<string, unknown> = { lightbox: { enabled: true } };
+      if (cropped) attrs.aspectRatio = ratio;
+      attrs.linkDestination = 'none';
+      // A real WordPress editor only stamps the "is-style-default" style
+      // class (and its matching className attr) onto the gallery's first
+      // image block when a crop ratio is applied to the whole gallery —
+      // every image after it stays unclassed. Reproduced exactly, quirk
+      // and all, rather than "fixed" into applying to every image.
+      const isFirstCropped = cropped && index === 0;
+      if (isFirstCropped) attrs.className = 'is-style-default';
+      const figureClass = isFirstCropped ? 'wp-block-image is-style-default' : 'wp-block-image';
+      return `<!-- wp:image ${JSON.stringify(attrs)} -->\n<figure class="${figureClass}">${img}</figure>\n<!-- /wp:image -->`;
     })
     .join('\n\n');
 
-  return `<!-- wp:gallery {"columns":${columns},"linkTo":"lightbox"} -->\n<figure class="wp-block-gallery has-nested-images columns-${columns} is-cropped">\n${images}\n</figure>\n<!-- /wp:gallery -->`;
+  return `<!-- wp:gallery ${JSON.stringify(galleryAttrs)} -->\n<figure class="wp-block-gallery has-nested-images columns-${columns} is-cropped">\n${images}\n</figure>\n<!-- /wp:gallery -->`;
 }

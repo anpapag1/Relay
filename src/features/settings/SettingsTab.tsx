@@ -259,6 +259,24 @@ export const SettingsTab: React.FC = () => {
           </div>
 
           <div>
+            <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>Gallery image aspect ratio</div>
+            <select
+              value={settings.galleryAspectRatio}
+              onChange={(e) => updateSetting('galleryAspectRatio', e.target.value)}
+              style={{ width: '100%', padding: '9px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px' }}
+            >
+              <option value="none">Original</option>
+              <option value="1">Square — 1:1</option>
+              <option value="4/3">Standard — 4:3</option>
+              <option value="3/4">Portrait — 3:4</option>
+              <option value="3/2">Classic — 3:2</option>
+              <option value="2/3">Classic Portrait — 2:3</option>
+              <option value="16/9">Wide — 16:9</option>
+              <option value="9/16">Tall — 9:16</option>
+            </select>
+          </div>
+
+          <div>
             <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>Embedded PDFs render as</div>
             <div style={{ display: 'flex', gap: '6px' }}>
               {pdfOptions.map((p) => (

@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS: ConversionSettings = {
   spacerSize: 30,
   combineConsecutiveImages: false,
   galleryColumns: 3,
+  galleryAspectRatio: 'none',
   pdfRender: 'button',
   buttonRender: 'button',
   headingShift: 0,
@@ -119,6 +120,42 @@ describe('writeBlocks', () => {
     expect(out).not.toContain('sizeSlug');
     expect(out).not.toContain('"id":42');
     expect(out).not.toContain('width="600"');
+  });
+
+  it('applies galleryAspectRatio to the gallery block and every image, matching the real Gutenberg markup exactly — including its quirk of only stamping is-style-default on the first image', () => {
+    const out = writeBlocks(
+      [{ kind: 'gallery', images: [{ src: 'a.jpg', alt: '' }, { src: 'b.jpg', alt: '' }] }],
+      { ...DEFAULT_SETTINGS, galleryColumns: 3, galleryAspectRatio: '1' },
+    );
+    expect(out).toContain('<!-- wp:gallery {"columns":3,"linkTo":"lightbox","aspectRatio":"1"} -->');
+    expect(out).toContain(
+      '<!-- wp:image {"lightbox":{"enabled":true},"aspectRatio":"1","linkDestination":"none","className":"is-style-default"} -->\n' +
+      '<figure class="wp-block-image is-style-default"><img src="a.jpg" alt="" style="aspect-ratio:1"/></figure>',
+    );
+    expect(out).toContain(
+      '<!-- wp:image {"lightbox":{"enabled":true},"aspectRatio":"1","linkDestination":"none"} -->\n' +
+      '<figure class="wp-block-image"><img src="b.jpg" alt="" style="aspect-ratio:1"/></figure>',
+    );
+  });
+
+  it('supports every real Gutenberg aspect ratio value (4/3, 3/4, 3/2, 2/3, 16/9, 9/16), and omits aspectRatio/style entirely for "none" (Original)', () => {
+    const ratios: Array<'4/3' | '3/4' | '3/2' | '2/3' | '16/9' | '9/16'> = ['4/3', '3/4', '3/2', '2/3', '16/9', '9/16'];
+    for (const ratio of ratios) {
+      const out = writeBlocks(
+        [{ kind: 'gallery', images: [{ src: 'a.jpg', alt: '' }] }],
+        { ...DEFAULT_SETTINGS, galleryAspectRatio: ratio },
+      );
+      expect(out).toContain(`"aspectRatio":"${ratio}"`);
+      expect(out).toContain(`style="aspect-ratio:${ratio}"`);
+    }
+
+    const original = writeBlocks(
+      [{ kind: 'gallery', images: [{ src: 'a.jpg', alt: '' }] }],
+      { ...DEFAULT_SETTINGS, galleryAspectRatio: 'none' },
+    );
+    expect(original).not.toContain('aspectRatio');
+    expect(original).not.toContain('aspect-ratio');
+    expect(original).not.toContain('is-style-default');
   });
 
   it('combines consecutive standalone images into a gallery when combineConsecutiveImages is on', () => {
