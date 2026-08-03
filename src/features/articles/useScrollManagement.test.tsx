@@ -12,7 +12,7 @@ function makeArticle(id: number): DerivedArticle {
     postType: 'post',
     status: 'ready',
     title: 'Test',
-    link: null,
+    link: '',
     postDate: '',
     postName: '',
     creator: '',
