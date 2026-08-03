@@ -1,0 +1,46 @@
+import { useState, useEffect } from 'react';
+import type { DerivedArticle } from '../../state/types';
+import type { Action } from '../../state/actions';
+
+export interface UseArticleDraftResult {
+  draftHtml: string;
+  isDirty: boolean;
+  handleTextChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  handleSave: () => void;
+  handleRevert: () => void;
+}
+
+export function useArticleDraft(
+  article: DerivedArticle | null,
+  previewHtml: string,
+  dispatch: React.Dispatch<Action>,
+): UseArticleDraftResult {
+  const [draftHtml, setDraftHtml] = useState<string>('');
+  const [isDirty, setIsDirty] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (article) {
+      setDraftHtml(previewHtml);
+      setIsDirty(false);
+    }
+  }, [article, previewHtml]);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setDraftHtml(e.target.value);
+    setIsDirty(e.target.value !== (article?.editedHtml || article?.contentHtml || ''));
+  };
+
+  const handleSave = () => {
+    if (!article) return;
+    dispatch({ type: 'SAVE_ARTICLE_EDIT', articleId: article.id, editedHtml: draftHtml });
+    setIsDirty(false);
+  };
+
+  const handleRevert = () => {
+    if (!article) return;
+    dispatch({ type: 'REVERT_ARTICLE_EDIT', articleId: article.id });
+    setIsDirty(false);
+  };
+
+  return { draftHtml, isDirty, handleTextChange, handleSave, handleRevert };
+}
