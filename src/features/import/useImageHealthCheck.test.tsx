@@ -120,4 +120,60 @@ describe('useImageHealthCheck', () => {
 
     expect(verifyResolvedImages).toHaveBeenCalledTimes(1);
   });
+
+  it('passes every media ref collected from the real article content as allRefs', async () => {
+    // Real-world case: a raw <img src="https://..."> whose URL never matched
+    // any <wp:attachment> in the WXR gets no entry in state.media.resolved at
+    // all (see verifyImages.ts's doc comment) — this is how such a ref still
+    // reaches verifyResolvedImages, via the second `allRefs` argument computed
+    // independently of `resolved` by re-running the reader over every article.
+    vi.mocked(verifyResolvedImages).mockResolvedValue({});
+
+    const resultWithArticle: ParseResult = {
+      ...MOCK_RESULT,
+      articles: [
+        {
+          postId: 1,
+          postType: 'post',
+          status: 'publish',
+          title: 'Test',
+          link: 'https://old.example/test/',
+          postDate: '',
+          postName: 'test',
+          creator: '',
+          contentHtml: '<p>Hi <img src="https://dad.gr/wp-content/uploads/photo.jpg" alt=""></p>',
+          excerptHtml: '',
+          terms: [],
+          postmeta: {},
+        },
+      ],
+    };
+
+    let capturedDispatch: React.Dispatch<Action> | null = null;
+    function Inner() {
+      useImageHealthCheck();
+      const { dispatch } = useAppState();
+      capturedDispatch = dispatch;
+      return null;
+    }
+
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false}>
+          <Inner />
+        </AppStateProvider>,
+      );
+    });
+    await act(async () => {
+      capturedDispatch!({ type: 'LOAD_SOURCE', result: resultWithArticle, defaultBuilder: 'plainHtml', confidence: 90 });
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(verifyResolvedImages).toHaveBeenCalledTimes(1);
+    const [, allRefsArg] = vi.mocked(verifyResolvedImages).mock.calls[0];
+    expect(allRefsArg).toContain('https://dad.gr/wp-content/uploads/photo.jpg');
+  });
 });
