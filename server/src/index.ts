@@ -39,7 +39,9 @@ async function handleImageCheck(target: string, res: http.ServerResponse): Promi
   }
 
   const result = await checkImage(target);
-  setCached(cacheKey, result);
+  if (result.ok) {
+    setCached(cacheKey, result);
+  }
   sendJson(res, 200, result);
 }
 

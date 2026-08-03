@@ -43,6 +43,21 @@ describe('verifyResolvedImages', () => {
     });
   });
 
+  it('omits the ref from updates when the check fails with no status (unconfirmed/transient failure)', async () => {
+    const resolved: Record<string, MediaResolution> = {
+      'attachment:1': { outcome: 'matched-export', url: 'https://old.example/photo.jpg' },
+    };
+    const fetchImpl = stubFetch(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: false, reason: 'the old site did not respond in time' }),
+    }));
+
+    const updates = await verifyResolvedImages(resolved, fetchImpl);
+
+    expect(updates).toEqual({});
+  });
+
   it('dedupes two refs that share the same URL into a single check call', async () => {
     const resolved: Record<string, MediaResolution> = {
       'attachment:1': { outcome: 'matched-export', url: 'https://old.example/shared.jpg' },
