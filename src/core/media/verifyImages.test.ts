@@ -14,7 +14,7 @@ describe('verifyResolvedImages', () => {
     };
     const fetchImpl = stubFetch(async () => ({ ok: true, status: 200, json: async () => ({ ok: true, status: 200 }) }));
 
-    const updates = await verifyResolvedImages(resolved, [], fetchImpl);
+    const updates = await verifyResolvedImages(resolved, ['attachment:1'], fetchImpl);
 
     expect(updates).toEqual({
       'attachment:1': { outcome: 'matched-export', url: 'https://old.example/photo.jpg', verified: 'ok', verifiedReason: undefined },
@@ -31,7 +31,7 @@ describe('verifyResolvedImages', () => {
       json: async () => ({ ok: false, status: 404, reason: 'the old site responded with status 404' }),
     }));
 
-    const updates = await verifyResolvedImages(resolved, [], fetchImpl);
+    const updates = await verifyResolvedImages(resolved, ['https://old.example/photo.jpg'], fetchImpl);
 
     expect(updates).toEqual({
       'https://old.example/photo.jpg': {
@@ -41,6 +41,28 @@ describe('verifyResolvedImages', () => {
         verifiedReason: 'the old site responded with status 404',
       },
     });
+  });
+
+  it('does NOT check a matched-export entry whose ref is not in imageSrcRefs — e.g. a file href or a link-destination href', async () => {
+    // The real-world regression this guards: a PDF (file node href) or an
+    // image's link-destination href can get a perfectly valid matched-export
+    // resolution via the very same Stage-1 attachment lookup images use, but
+    // HEAD-checking it and expecting image/* content-type would wrongly flag
+    // a working PDF/page as "broken". Only refs the caller has identified as
+    // genuine image src values (via collectImageSrcRefs) are ever checked.
+    const resolved: Record<string, MediaResolution> = {
+      'https://old.example/brochure.pdf': { outcome: 'matched-export', url: 'https://old.example/brochure.pdf' },
+    };
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: false, status: 200, reason: 'unexpected content-type: application/pdf' }),
+    }));
+
+    const updates = await verifyResolvedImages(resolved, [], fetchImpl as unknown as FetchLike);
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(updates).toEqual({});
   });
 
   it('omits the ref from updates when the check fails with no status (unconfirmed/transient failure)', async () => {
@@ -53,7 +75,7 @@ describe('verifyResolvedImages', () => {
       json: async () => ({ ok: false, reason: 'the old site did not respond in time' }),
     }));
 
-    const updates = await verifyResolvedImages(resolved, [], fetchImpl);
+    const updates = await verifyResolvedImages(resolved, ['attachment:1'], fetchImpl);
 
     expect(updates).toEqual({});
   });
@@ -65,7 +87,11 @@ describe('verifyResolvedImages', () => {
     };
     const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ok: true, status: 200 }) }));
 
-    const updates = await verifyResolvedImages(resolved, [], fetchImpl as unknown as FetchLike);
+    const updates = await verifyResolvedImages(
+      resolved,
+      ['attachment:1', 'https://old.example/shared.jpg'],
+      fetchImpl as unknown as FetchLike,
+    );
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(Object.keys(updates)).toHaveLength(2);
@@ -79,7 +105,7 @@ describe('verifyResolvedImages', () => {
     };
     const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ok: true, status: 200 }) }));
 
-    const updates = await verifyResolvedImages(resolved, [], fetchImpl as unknown as FetchLike);
+    const updates = await verifyResolvedImages(resolved, ['attachment:1'], fetchImpl as unknown as FetchLike);
 
     expect(fetchImpl).not.toHaveBeenCalled();
     expect(updates).toEqual({});
@@ -92,7 +118,7 @@ describe('verifyResolvedImages', () => {
     };
     const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ok: true, status: 200 }) }));
 
-    const updates = await verifyResolvedImages(resolved, [], fetchImpl as unknown as FetchLike);
+    const updates = await verifyResolvedImages(resolved, ['attachment:1', 'attachment:2'], fetchImpl as unknown as FetchLike);
 
     expect(fetchImpl).not.toHaveBeenCalled();
     expect(updates).toEqual({});
@@ -105,13 +131,13 @@ describe('verifyResolvedImages', () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it('checks a bare absolute-URL ref that has no resolution entry at all, treating it as self-resolved', async () => {
+  it('checks a bare absolute-URL image-src ref that has no resolution entry at all, treating it as self-resolved', async () => {
     // The real-world case that motivated this: a raw <img src="https://..."> in
     // Gutenberg-native content whose URL never matched any <wp:attachment> item
     // in the WXR — Stage 1 never creates a `resolved` entry for it at all, so
-    // it's neither "matched" nor "unresolved". `allRefs` (every ref the article
-    // actually references, gathered independently of `resolved`) is how such
-    // refs get onto the health-check's radar.
+    // it's neither "matched" nor "unresolved". `imageSrcRefs` (every image src
+    // ref the article actually references, gathered independently of
+    // `resolved`) is how such refs get onto the health-check's radar.
     const fetchImpl = stubFetch(async () => ({
       ok: true,
       status: 200,
@@ -155,7 +181,7 @@ describe('verifyResolvedImages', () => {
     expect(updates).toEqual({});
   });
 
-  it('dedupes a self-resolved ref that also appears twice in allRefs', async () => {
+  it('dedupes a self-resolved ref that also appears twice in imageSrcRefs', async () => {
     const fetchImpl = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ ok: true, status: 200 }) }));
 
     const updates = await verifyResolvedImages(

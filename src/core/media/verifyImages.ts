@@ -24,6 +24,17 @@ interface Candidate {
  * itself needs no "resolution": for a literal absolute src, the ref already
  * IS the final URL.
  *
+ * `imageSrcRefs` is the set of refs known to actually be image `src` values
+ * (see `collectImageSrcRefs`) — deliberately NOT every ref `resolved` might
+ * contain. `state.media.resolved` also carries entries for `file` node
+ * hrefs (a PDF/doc, matched via the very same Stage-1 attachment lookup) and
+ * for an `image`/`gallery` node's `href` (a link destination the image
+ * points to, which can be any URL at all, not necessarily an image). HEAD-
+ * checking either of those and expecting an `image/*` response would flag a
+ * perfectly working PDF or linked page as "broken" — every check, both the
+ * already-resolved path and the self-resolving path, is filtered down to
+ * `imageSrcRefs` for exactly this reason.
+ *
  * Only touches entries with no `verified` yet, and dedupes by URL so an image
  * reused across many articles/refs is checked once. Returns just the updated
  * entries (ref -> MediaResolution with `verified` set), ready to merge via
@@ -39,18 +50,20 @@ interface Candidate {
  * "broken" flag and leaving it eligible for a future check attempt. */
 export async function verifyResolvedImages(
   resolved: Record<string, MediaResolution>,
-  allRefs: string[],
+  imageSrcRefs: string[],
   fetchImpl: FetchLike,
 ): Promise<Record<string, MediaResolution>> {
+  const imageSrcSet = new Set(imageSrcRefs);
   const candidates: Candidate[] = [];
 
   for (const [ref, res] of Object.entries(resolved)) {
+    if (!imageSrcSet.has(ref)) continue; // never check a file href or a link-destination href as if it were an image
     if ((res.outcome === 'matched-export' || res.outcome === 'matched-live') && res.url && res.verified === undefined) {
       candidates.push({ ref, url: res.url, base: res });
     }
   }
 
-  for (const ref of new Set(allRefs)) {
+  for (const ref of imageSrcSet) {
     if (resolved[ref]) continue; // already has a resolution (handled above, or a non-matching outcome we don't touch)
     if (!ABSOLUTE_URL_RE.test(ref)) continue; // attachment:N placeholder, relative path — nothing to self-resolve
     candidates.push({ ref, url: ref, base: { outcome: 'matched-export', url: ref } });
