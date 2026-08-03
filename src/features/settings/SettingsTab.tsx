@@ -114,7 +114,7 @@ export const SettingsTab: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '24px', alignItems: 'start' }}>
+      <div className="settings-grid">
         <div
           style={{
             background: 'white',
@@ -362,7 +362,7 @@ export const SettingsTab: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '600px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: 'min(600px, calc(100vh - 260px))' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'oklch(50% 0.01 250)' }}>Live preview — sample article</div>
             <div style={{ display: 'flex', gap: '4px', background: 'oklch(95% 0.005 250)', borderRadius: '8px', padding: '3px' }}>
