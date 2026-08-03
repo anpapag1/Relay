@@ -65,6 +65,10 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
     dispatch({ type: 'SET_ARTICLE_MANUAL_REVIEW', articleId: article.id, manualReview: !article.isManualReview });
   };
 
+  const handleSelectPreviewMode = (mode: 'before' | 'after' | 'edit') => {
+    dispatch({ type: 'SET_PREVIEW_MODE', mode });
+  };
+
   return (
     <>
       <div
@@ -92,7 +96,7 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
           onNext={requestNext}
           onScrollToTop={() => scrollToTop()}
           scrollRef={mainScrollRef}
-          dispatch={dispatch}
+          onSelectPreviewMode={handleSelectPreviewMode}
         />
 
         <ArticleSidebar

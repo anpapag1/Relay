@@ -13,7 +13,7 @@ function makeArticle(overrides: Partial<DerivedArticle> = {}): DerivedArticle {
     postType: 'post',
     status: 'ready',
     title: 'Test',
-    link: null,
+    link: '',
     postDate: '',
     postName: '',
     creator: '',

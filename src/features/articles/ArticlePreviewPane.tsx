@@ -1,7 +1,6 @@
 // src/features/articles/ArticlePreviewPane.tsx
 import React from 'react';
 import type { DerivedArticle } from '../../state/types';
-import type { Action } from '../../state/actions';
 
 export interface ArticlePreviewPaneProps {
   article: DerivedArticle;
@@ -15,7 +14,7 @@ export interface ArticlePreviewPaneProps {
   onNext: () => void;
   onScrollToTop: () => void;
   scrollRef: React.RefObject<HTMLDivElement>;
-  dispatch: React.Dispatch<Action>;
+  onSelectPreviewMode: (mode: 'before' | 'after' | 'edit') => void;
 }
 
 export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
@@ -30,7 +29,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
   onNext,
   onScrollToTop,
   scrollRef,
-  dispatch,
+  onSelectPreviewMode,
 }) => {
   const showBefore = previewMode === 'before';
   const showEdit = previewMode === 'edit';
@@ -66,7 +65,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
           >
             <button
               type="button"
-              onClick={() => dispatch({ type: 'SET_PREVIEW_MODE', mode: 'before' })}
+              onClick={() => onSelectPreviewMode('before')}
               style={{
                 padding: '6px 14px',
                 borderRadius: '6px',
@@ -83,7 +82,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => dispatch({ type: 'SET_PREVIEW_MODE', mode: 'after' })}
+              onClick={() => onSelectPreviewMode('after')}
               style={{
                 padding: '6px 14px',
                 borderRadius: '6px',
@@ -100,7 +99,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => dispatch({ type: 'SET_PREVIEW_MODE', mode: 'edit' })}
+              onClick={() => onSelectPreviewMode('edit')}
               style={{
                 padding: '6px 14px',
                 borderRadius: '6px',
