@@ -346,6 +346,62 @@ describe('selectors', () => {
     expect(warnings.some((w) => w.includes('attachment:999'))).toBe(true);
   });
 
+  it('flags an article as review with a warning when a resolved image is confirmed broken', () => {
+    // Same attachment-id shortcode/attachment setup as the matched-export
+    // preview test above, but this time the health-check pass (Task 5's
+    // verifyResolvedImages) has already run and merged verified:'broken'
+    // back into state.media.resolved for that ref — simulating the
+    // real flow without needing a live network call in this test.
+    const parseResult: ParseResult = {
+      ...MOCK_PARSE_RESULT,
+      articles: [
+        {
+          postId: 301,
+          postType: 'post',
+          status: 'publish',
+          title: 'Broken Image Article',
+          link: 'https://old.example/broken-image/',
+          postDate: '2026-01-07',
+          postName: 'broken-image-article',
+          creator: 'alice',
+          contentHtml: '[vc_single_image image="77"]',
+          excerptHtml: '',
+          terms: [],
+          postmeta: {},
+        },
+      ],
+      attachments: [
+        { postId: 77, title: 'Dead Photo', attachmentUrl: 'https://old.example/wp-content/uploads/dead.jpg', postParent: 301 },
+      ],
+    };
+    let s = appReducer(initialState, {
+      type: 'LOAD_SOURCE',
+      result: parseResult,
+      defaultBuilder: 'wpbakery',
+      confidence: 90,
+    });
+    s = appReducer(s, { type: 'SET_TARGET_TABLES', tables });
+    s = appReducer(s, {
+      type: 'SET_MEDIA_RESOLUTIONS',
+      resolutions: {
+        'attachment:77': {
+          outcome: 'matched-export',
+          url: 'https://old.example/wp-content/uploads/dead.jpg',
+          verified: 'broken',
+          verifiedReason: 'the old site responded with status 404',
+        },
+      },
+    });
+
+    const derived = getDerivedArticles(s);
+    const article = derived.find((a) => a.id === 301);
+
+    expect(article?.status).toBe('review');
+    expect(article?.warnings).toContain(
+      'Image link is broken: https://old.example/wp-content/uploads/dead.jpg (the old site responded with status 404)',
+    );
+  });
+
   it('lets a saved editedHtml override bypass conversion entirely, like runBuild does', () => {
     const s = getTestState();
     const article = s.source!.articles.find((a) => a.postId === 101)!;

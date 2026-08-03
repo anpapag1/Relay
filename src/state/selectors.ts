@@ -96,6 +96,10 @@ export function getArticleStatus(
       mediaWarnings.push(res.reason || `Unresolved media reference: ${ref}`);
     } else if (res?.outcome === 'unreachable') {
       mediaWarnings.push(res.reason || `Unreachable media reference: ${ref}`);
+    } else if (res?.verified === 'broken') {
+      mediaWarnings.push(
+        `Image link is broken: ${res.url ?? ref}${res.verifiedReason ? ` (${res.verifiedReason})` : ''}`,
+      );
     } else if (!res && ATTACHMENT_REF_RE.test(ref)) {
       mediaWarnings.push(`Image not found in this export: ${ref} — the WXR file has no media item for this attachment ID.`);
     }
