@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import { writeBlocks } from '../../core/gutenberg/writeBlocks';
 import type { IRNode } from '../../core/ir/nodes';
@@ -61,7 +61,6 @@ const PREVIEW_NODES: IRNode[] = [
 
 export const SettingsTab: React.FC = () => {
   const { state, dispatch } = useAppState();
-  const [previewTab, setPreviewTab] = useState<'before' | 'after'>('after');
   const previewHtml = useMemo(() => writeBlocks(PREVIEW_NODES, state.settings), [state.settings]);
 
   if (!state.source) {
@@ -211,7 +210,6 @@ export const SettingsTab: React.FC = () => {
               type="checkbox"
               checked={settings.autoSpacing}
               onChange={(e) => updateSetting('autoSpacing', e.target.checked)}
-              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
             />
           </div>
 
@@ -241,7 +239,6 @@ export const SettingsTab: React.FC = () => {
               type="checkbox"
               checked={settings.combineConsecutiveImages}
               onChange={(e) => updateSetting('combineConsecutiveImages', e.target.checked)}
-              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
             />
           </div>
 
@@ -357,49 +354,12 @@ export const SettingsTab: React.FC = () => {
               type="checkbox"
               checked={settings.linksNewTab}
               onChange={(e) => updateSetting('linksNewTab', e.target.checked)}
-              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
             />
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: 'min(600px, calc(100vh - 260px))' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'oklch(50% 0.01 250)' }}>Live preview — sample article</div>
-            <div style={{ display: 'flex', gap: '4px', background: 'oklch(95% 0.005 250)', borderRadius: '8px', padding: '3px' }}>
-              <button
-                type="button"
-                onClick={() => setPreviewTab('before')}
-                style={{
-                  border: 'none',
-                  background: previewTab === 'before' ? 'white' : 'transparent',
-                  padding: '5px 12px',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  boxShadow: previewTab === 'before' ? '0 1px 2px oklch(0% 0 0 / 0.05)' : 'none',
-                }}
-              >
-                Before
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewTab('after')}
-                style={{
-                  border: 'none',
-                  background: previewTab === 'after' ? 'white' : 'transparent',
-                  padding: '5px 12px',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  boxShadow: previewTab === 'after' ? '0 1px 2px oklch(0% 0 0 / 0.05)' : 'none',
-                }}
-              >
-                After
-              </button>
-            </div>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'oklch(50% 0.01 250)' }}>Live preview — sample article</div>
 
           <div
             style={{
@@ -413,49 +373,7 @@ export const SettingsTab: React.FC = () => {
               boxShadow: '0 1px 3px oklch(0% 0 0 / 0.02)',
             }}
           >
-            {previewTab === 'before' ? (
-              <div style={{ fontSize: '14px', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-                  <div
-                    style={{
-                      width: '100px',
-                      height: '70px',
-                      flexShrink: 0,
-                      borderRadius: '6px',
-                      background: 'repeating-linear-gradient(45deg, oklch(92% 0.005 250), oklch(92% 0.005 250) 8px, oklch(96% 0.003 250) 8px, oklch(96% 0.003 250) 16px)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '11px',
-                      color: 'oklch(55% 0.01 250)',
-                    }}
-                  >
-                    [hero.jpg]
-                  </div>
-                  <div>
-                    <h3 style={{ margin: '0 0 6px', fontSize: '18px' }}>Legacy Heading (H1)</h3>
-                    <p style={{ margin: '0 0 8px', color: 'oklch(35% 0.01 250)' }}>
-                      The team spent six weeks rebuilding the onboarding flow from scratch, focusing on reducing drop-off at step three...
-                    </p>
-                    <div
-                      style={{
-                        background: 'oklch(95% 0.005 250)',
-                        padding: '6px 10px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        fontFamily: 'monospace',
-                        color: 'oklch(45% 0.01 250)',
-                        display: 'inline-block',
-                      }}
-                    >
-                      [button link=&quot;https://example.com/report&quot; text=&quot;Read full report&quot;]
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="wp-preview" dangerouslySetInnerHTML={{ __html: previewHtml }} />
-            )}
+            <div className="wp-preview" dangerouslySetInnerHTML={{ __html: previewHtml }} />
           </div>
         </div>
       </div>

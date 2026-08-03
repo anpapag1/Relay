@@ -21,6 +21,9 @@ input, select, textarea, button {
 
 input[type="checkbox"] {
   accent-color: oklch(50% 0.16 265);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 }
 
 a {
@@ -185,7 +188,7 @@ a:hover {
   display: grid;
   grid-template-columns: 380px 1fr;
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
 }
 @media (max-width: 820px) {
   .settings-grid {
