@@ -127,6 +127,11 @@ export interface MediaResolution {
   outcome: MediaOutcome;
   url?: string;
   reason?: string;
+  /** Set only on matched-export/matched-live outcomes, after the
+   * post-import health check confirms whether the resolved URL actually
+   * loads. Undefined = not yet checked. */
+  verified?: 'ok' | 'broken';
+  verifiedReason?: string;
 }
 
 /** The only place a migration's conversion choices live. writeBlocks is the
