@@ -42,3 +42,30 @@ export async function fetchPageMedia(articleUrl: string, fetchImpl: FetchLike): 
     return { ok: false, reason: 'unreachable' };
   }
 }
+
+export interface CheckImageResult {
+  ok: boolean;
+  status?: number;
+  reason?: string;
+}
+
+function isCheckImageResult(value: unknown): value is CheckImageResult {
+  if (!value || typeof value !== 'object') return false;
+  return typeof (value as Record<string, unknown>).ok === 'boolean';
+}
+
+/** Calls the media proxy's image-check route (server/src/index.ts's
+ * /api/image-check) for one already-resolved image URL. Never throws —
+ * same never-throw contract as fetchPageMedia, so callers never need
+ * try/catch. */
+export async function checkImageUrl(imageUrl: string, fetchImpl: FetchLike): Promise<CheckImageResult> {
+  try {
+    const response = await fetchImpl(`/api/image-check?url=${encodeURIComponent(imageUrl)}`);
+    if (!response.ok) return { ok: false, reason: 'unreachable' };
+    const body = await response.json();
+    if (!isCheckImageResult(body)) return { ok: false, reason: 'unreachable' };
+    return body;
+  } catch {
+    return { ok: false, reason: 'unreachable' };
+  }
+}
