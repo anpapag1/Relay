@@ -11,6 +11,7 @@ describe('checkImage', () => {
   let server: http.Server;
   let baseUrl: string;
   const activeTimers = new Set<NodeJS.Timeout>();
+  let getRequestsToPhoto = 0;
 
   beforeAll(async () => {
     server = http.createServer((req, res) => {
@@ -18,7 +19,15 @@ describe('checkImage', () => {
 
       if (url.pathname === '/photo.jpg') {
         res.writeHead(200, { 'content-type': 'image/jpeg' });
-        res.end();
+        // HEAD responses must never carry a body. If checkImage ever issued a
+        // GET instead of HEAD, this branch would run and the counter below
+        // would catch it — proving the requester really used HEAD.
+        if (req.method === 'GET') {
+          getRequestsToPhoto += 1;
+          res.end('this should never be fetched — HEAD-only means this body must never be requested');
+        } else {
+          res.end();
+        }
         return;
       }
 
@@ -81,11 +90,13 @@ describe('checkImage', () => {
   beforeEach(() => {
     vi.mocked(guardUrl).mockReset();
     vi.mocked(guardUrl).mockResolvedValue({ ok: true, ip: '127.0.0.1' });
+    getRequestsToPhoto = 0;
   });
 
   it('returns ok:true for a 200 response with an image content-type', async () => {
     const res = await checkImage(`${baseUrl}/photo.jpg`);
     expect(res).toEqual({ ok: true, status: 200 });
+    expect(getRequestsToPhoto).toBe(0);
   });
 
   it('returns ok:false with the status for a 404', async () => {
@@ -108,6 +119,7 @@ describe('checkImage', () => {
     const res = await checkImage(`${baseUrl}/redirect-to-photo`);
     expect(res).toEqual({ ok: true, status: 200 });
     expect(guardUrl).toHaveBeenCalledTimes(2);
+    expect(getRequestsToPhoto).toBe(0);
   });
 
   it('returns ok:false when maxRedirects is exceeded', async () => {
