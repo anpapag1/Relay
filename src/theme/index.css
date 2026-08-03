@@ -24,6 +24,12 @@ input[type="checkbox"] {
   width: 16px;
   height: 16px;
   cursor: pointer;
+  /* Without this, a checkbox inside a flex row (every toggle row in
+   * Settings/BuildTab is one) can get compressed toward its native
+   * ~13px minimum whenever its sibling label text is long enough to
+   * put the row under shrink pressure — the checkbox shrinks first
+   * since its content-based minimum is smaller than the label's. */
+  flex-shrink: 0;
 }
 
 a {
