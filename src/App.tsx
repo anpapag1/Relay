@@ -5,11 +5,19 @@ import { MappingsTab } from './features/mappings';
 import { SettingsTab } from './features/settings';
 import { ArticlesTab } from './features/articles';
 import { BuildTab } from './features/build';
+import { useImageHealthCheck } from './features/import/useImageHealthCheck';
 import './theme';
 
 function AppContent() {
   const { state } = useAppState();
   const { activeTab } = state.ui;
+
+  // Lives here, not inside ImportTab, so it survives navigating away from
+  // the Import tab — ImportTab (and anything inside it) unmounts the moment
+  // the user switches tabs, which previously cancelled the in-flight health
+  // check (or meant it never ran at all on a page reload that restores
+  // straight into a different tab).
+  useImageHealthCheck();
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'oklch(98% 0.003 250)', color: 'oklch(20% 0.01 250)' }}>
