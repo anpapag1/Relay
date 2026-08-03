@@ -8,6 +8,7 @@ import { findMissingOldTerms, mergeMissingIntoOldTables } from '../../core/mappi
 import { BUILDER_VALIDATION_STATUS, type BuilderId } from '../../core/builders/types';
 import type { TermTable } from '../../types/domain';
 import { BuilderStatusPill } from '../../ui/Badge';
+import { useImageHealthCheck } from './useImageHealthCheck';
 
 const BUILDER_OPTIONS: BuilderId[] = ['plainHtml', 'elementor', 'divi', 'wpbakery'];
 
@@ -55,6 +56,8 @@ export const ImportTab: React.FC = () => {
   const [expandedOldTables, setExpandedOldTables] = useState<Record<string, boolean>>({});
   const [expandedNewTables, setExpandedNewTables] = useState<Record<string, boolean>>({});
   const [builderRanking, setBuilderRanking] = useState<BuilderScore[]>([]);
+
+  useImageHealthCheck();
 
   const toggleOldTable = (tableId: string) => {
     setExpandedOldTables((prev) => ({ ...prev, [tableId]: !(prev[tableId] ?? true) }));
