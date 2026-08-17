@@ -87,6 +87,18 @@ export const SettingsTab: React.FC = () => {
     dispatch({ type: 'UPDATE_SETTINGS', settings: { [key]: val } });
   };
 
+  const handleFallbackImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        updateSetting('fallbackFeaturedImageDataUrl', reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const alignOptions: Array<{ value: 'center' | 'none' | 'left' | 'right'; label: string }> = [
     { value: 'center', label: 'Center' },
     { value: 'none', label: 'None' },
@@ -355,6 +367,49 @@ export const SettingsTab: React.FC = () => {
               checked={settings.linksNewTab}
               onChange={(e) => updateSetting('linksNewTab', e.target.checked)}
             />
+          </div>
+
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>Fallback article featured image</div>
+            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginBottom: '10px' }}>
+              Articles with no featured image of their own get this one.
+            </div>
+            <input
+              type="text"
+              placeholder="https://example.com/fallback.jpg"
+              value={settings.fallbackFeaturedImageUrl ?? ''}
+              onChange={(e) => updateSetting('fallbackFeaturedImageUrl', e.target.value)}
+              style={{ width: '100%', padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
+              {settings.fallbackFeaturedImageDataUrl && (
+                <img
+                  src={settings.fallbackFeaturedImageDataUrl}
+                  alt="Fallback image preview"
+                  style={{ maxWidth: '48px', maxHeight: '48px', borderRadius: '8px', objectFit: 'cover' }}
+                />
+              )}
+              <label className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: '12px', cursor: 'pointer' }}>
+                {settings.fallbackFeaturedImageDataUrl ? 'Replace image' : 'Upload image'}
+                <input type="file" accept="image/*" onChange={handleFallbackImagePick} style={{ display: 'none' }} />
+              </label>
+            </div>
+            {settings.fallbackFeaturedImageDataUrl && (
+              <div
+                style={{
+                  marginTop: '10px',
+                  border: '1px solid oklch(88% 0.06 80)',
+                  background: 'oklch(96% 0.03 85)',
+                  borderRadius: '8px',
+                  padding: '8px 10px',
+                  fontSize: '12px',
+                  color: 'oklch(45% 0.06 80)',
+                  lineHeight: 1.5,
+                }}
+              >
+                This image won&apos;t be exported in the JSON when you export site data (taxonomies, mappings, settings) — images can&apos;t be saved in a JSON file. Consider using the link to the image instead.
+              </div>
+            )}
           </div>
         </div>
 

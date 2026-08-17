@@ -252,6 +252,68 @@ describe('runBuild', () => {
     expect(parsed.articles[0].postmeta._thumbnail_id).toBe(String(parsed.attachments[0].postId));
   });
 
+  it('falls back to the settings fallbackFeaturedImageUrl when an article has no featured image, preferring the link over the data URL', async () => {
+    const FALLBACK = 'https://new-site.example/assets/fallback.jpg';
+    const DATA_FALLBACK = 'data:image/png;base64,iVBORw0KGgo=';
+    const articles: BuildArticleInput[] = [{ article: makeArticle(), excluded: false }];
+    const { wxr } = await runBuild({
+      articles,
+      attachments: [],
+      mappings: {},
+      newTables: [],
+      settings: { ...SETTINGS, fallbackFeaturedImageUrl: FALLBACK, fallbackFeaturedImageDataUrl: DATA_FALLBACK },
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+
+    expect(wxr).toContain('_thumbnail_id');
+    expect(wxr).toContain(FALLBACK);
+    expect(wxr).not.toContain(DATA_FALLBACK);
+  });
+
+  it('uses the settings fallbackFeaturedImageDataUrl as the featured image when an article has no featured image and no fallback link', async () => {
+    const DATA_FALLBACK = 'data:image/png;base64,iVBORw0KGgo=';
+    const articles: BuildArticleInput[] = [{ article: makeArticle(), excluded: false }];
+    const { wxr } = await runBuild({
+      articles,
+      attachments: [],
+      mappings: {},
+      newTables: [],
+      settings: { ...SETTINGS, fallbackFeaturedImageDataUrl: DATA_FALLBACK },
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+
+    expect(wxr).toContain('_thumbnail_id');
+    expect(wxr).toContain(DATA_FALLBACK);
+  });
+
+  it("keeps an article's own featured image when a fallback is set, ignoring the fallback", async () => {
+    const FALLBACK = 'https://new-site.example/assets/fallback.jpg';
+    const articles: BuildArticleInput[] = [
+      { article: makeArticle({ postmeta: { _thumbnail_id: '42' } }), excluded: false },
+    ];
+    const { wxr } = await runBuild({
+      articles,
+      attachments: [{ postId: 42, title: 'Featured', attachmentUrl: 'https://old.example/wp-content/uploads/featured.jpg', postParent: 1 }],
+      mappings: {},
+      newTables: [],
+      settings: { ...SETTINGS, fallbackFeaturedImageUrl: FALLBACK },
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+
+    expect(wxr).toContain('_thumbnail_id');
+    expect(wxr).toContain('https://old.example/wp-content/uploads/featured.jpg');
+    expect(wxr).not.toContain(FALLBACK);
+  });
+
   it('exports a review-flagged article as pending by default, and as publish when exportPendingForReview is false', async () => {
     const articles: BuildArticleInput[] = [
       { article: makeArticle({ contentHtml: '<canvas width="10" height="10"></canvas>' }), excluded: false },

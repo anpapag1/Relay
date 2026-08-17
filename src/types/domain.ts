@@ -162,4 +162,9 @@ export interface ConversionSettings {
   buttonRender: ButtonRender;
   headingShift: number;
   linksNewTab: boolean;
+  /** The link value is portable and survives JSON export. An uploaded
+   * fallback image is stored separately as a data URL that is in-session
+   * only and excluded from JSON backups. */
+  fallbackFeaturedImageUrl?: string;
+  fallbackFeaturedImageDataUrl?: string;
 }

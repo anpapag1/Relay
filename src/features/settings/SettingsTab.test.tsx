@@ -1,5 +1,5 @@
 /** @jsxImportSource react */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { AppStateProvider } from '../../state/AppStateContext';
@@ -43,6 +43,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  vi.unstubAllGlobals();
   await act(async () => {
     root.unmount();
   });
@@ -148,5 +149,90 @@ describe('SettingsTab live preview', () => {
 
     expect(container.textContent).toContain('Width (px)');
     expect(container.textContent).toContain('Height (px)');
+  });
+
+  it('renders the fallback featured image section with URL input and upload label when nothing is set', async () => {
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false} initialStateOverride={stateWithImport()}>
+          <SettingsTab />
+        </AppStateProvider>,
+      );
+    });
+
+    expect(container.textContent).toContain('Fallback article featured image');
+    expect(container.textContent).toContain('Articles with no featured image of their own get this one.');
+
+    const urlInput = container.querySelector('input[type="text"]') as HTMLInputElement | null;
+    expect(urlInput).not.toBeNull();
+    expect(urlInput!.placeholder).toBe('https://example.com/fallback.jpg');
+    expect(urlInput!.value).toBe('');
+
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement | null;
+    expect(fileInput).not.toBeNull();
+    expect(fileInput!.accept).toBe('image/*');
+    expect(fileInput!.closest('label')?.textContent).toContain('Upload image');
+
+    expect(container.textContent).not.toContain("won't be exported");
+    expect(container.querySelector('img[alt="Fallback image preview"]')).toBeNull();
+  });
+
+  it('shows the preview and export warning after choosing an uploaded fallback image', async () => {
+    const FakeFileReader = vi.fn().mockImplementation(function (this: any) {
+      this.onload = null;
+      this.readAsDataURL = () => {
+        this.result = 'data:image/png;base64,AAA';
+        if (this.onload) this.onload();
+      };
+    });
+    vi.stubGlobal('FileReader', FakeFileReader);
+
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false} initialStateOverride={stateWithImport()}>
+          <SettingsTab />
+        </AppStateProvider>,
+      );
+    });
+
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement | null;
+    expect(fileInput).not.toBeNull();
+    Object.defineProperty(fileInput!, 'files', { value: [new File(['x'], 'test.png', { type: 'image/png' })] });
+    await act(async () => {
+      fileInput!.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    expect(FakeFileReader).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("won't be exported");
+    expect(container.textContent).toContain("images can't be saved in a JSON file");
+
+    const preview = container.querySelector('img[alt="Fallback image preview"]') as HTMLImageElement | null;
+    expect(preview).not.toBeNull();
+    expect(preview!.getAttribute('src')).toBe('data:image/png;base64,AAA');
+
+    const fileInputAfter = container.querySelector('input[type="file"]') as HTMLInputElement | null;
+    expect(fileInputAfter!.closest('label')?.textContent).toContain('Replace image');
+  });
+
+  it('does not show the export warning when only the URL is set', async () => {
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false} initialStateOverride={stateWithImport()}>
+          <SettingsTab />
+        </AppStateProvider>,
+      );
+    });
+
+    const urlInput = container.querySelector('input[type="text"]') as HTMLInputElement | null;
+    expect(urlInput).not.toBeNull();
+    await act(async () => {
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+      nativeSetter.call(urlInput, 'https://example.com/fallback.jpg');
+      urlInput!.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    expect(urlInput!.value).toBe('https://example.com/fallback.jpg');
+    expect(container.textContent).not.toContain("won't be exported");
+    expect(container.querySelector('img[alt="Fallback image preview"]')).toBeNull();
   });
 });

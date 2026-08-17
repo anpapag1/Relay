@@ -157,7 +157,11 @@ async function resolveOneArticle(
   const featuredImage = article.featuredImageUrl
     ? { outcome: 'matched-live' as const, url: article.featuredImageUrl }
     : await resolveFeaturedImage(article.postmeta, attachmentIndex, article.link || null, options.fetchImpl);
-  const featuredAttachmentUrl = featuredImage?.url ?? null;
+  const featuredAttachmentUrl =
+    featuredImage?.url ??
+    options.settings.fallbackFeaturedImageUrl ??
+    options.settings.fallbackFeaturedImageDataUrl ??
+    null;
   const termWarnings = unmappedTermWarnings(article.terms, options.mappings, options.newTables);
 
   if (input.editedHtml != null) {

@@ -44,6 +44,8 @@ function normalizeMappings(raw: Record<string, unknown>): Record<string, TermMap
 }
 
 export function createSessionBackup(state: AppState): SessionBackup {
+  const settings = { ...state.settings };
+  delete settings.fallbackFeaturedImageDataUrl;
   return {
     version: 1,
     timestamp: new Date().toISOString(),
@@ -52,7 +54,7 @@ export function createSessionBackup(state: AppState): SessionBackup {
     targetTables: state.target.tables,
     oldTables: state.oldTables,
     mappings: state.mappings,
-    settings: state.settings,
+    settings,
     articles: state.articles,
     mediaResolved: state.media.resolved,
   };
@@ -75,7 +77,11 @@ export function restoreSessionBackup(
     if (data.targetTables) restoredState.target = { tables: data.targetTables };
     if (data.oldTables) restoredState.oldTables = data.oldTables;
     if (data.mappings) restoredState.mappings = normalizeMappings(data.mappings as Record<string, unknown>);
-    if (data.settings) restoredState.settings = { ...currentState.settings, ...data.settings };
+    if (data.settings) {
+      const settings = { ...currentState.settings, ...data.settings };
+      delete settings.fallbackFeaturedImageDataUrl;
+      restoredState.settings = settings;
+    }
     if (data.articles) restoredState.articles = data.articles;
     if (data.mediaResolved) {
       restoredState.media = { ...currentState.media, resolved: data.mediaResolved };
@@ -102,11 +108,13 @@ export interface SiteDataBackup {
 }
 
 export function createSiteDataBackup(state: AppState): SiteDataBackup {
+  const settings = { ...state.settings };
+  delete settings.fallbackFeaturedImageDataUrl;
   return {
     targetTables: state.target.tables,
     oldTables: state.oldTables,
     mappings: state.mappings,
-    settings: state.settings,
+    settings,
   };
 }
 
@@ -120,10 +128,13 @@ export function restoreSiteDataBackup(
       return { ok: false, message: "Couldn't parse that JSON — check the file and try again." };
     }
 
+    const settings = { ...currentState.settings, ...data.settings };
+    delete settings.fallbackFeaturedImageDataUrl;
+
     const restoredState: Partial<AppState> = {
       target: { tables: data.targetTables },
       mappings: normalizeMappings(data.mappings as Record<string, unknown>),
-      settings: { ...currentState.settings, ...data.settings },
+      settings,
     };
     if (data.oldTables) restoredState.oldTables = data.oldTables;
 
