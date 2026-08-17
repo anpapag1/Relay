@@ -51,6 +51,7 @@ export async function fetchRestPosts(
     });
 
     if (page === ANONYMOUS_PAGE_CAP) {
+      // Headerless responses can't prove truncation; a known total beyond the cap can.
       truncated = knownTotalPages === null ? batch.length > 0 : knownTotalPages > ANONYMOUS_PAGE_CAP;
       break;
     }

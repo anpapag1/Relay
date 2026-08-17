@@ -33,6 +33,14 @@ describe('fetchRestPosts', () => {
     expect(res.posts.length).toBe(100);
   });
 
+  it('reports truncation at the cap when the total-pages header is absent', async () => {
+    const pages: Record<number, unknown[]> = {};
+    for (let i = 1; i <= 100; i += 1) pages[i] = [{ id: i }];
+    const res = await fetchRestPosts('https://site.example/wp-json/wp/v2', restFetch(pages, ''));
+    expect(res.truncated).toBe(true);
+    expect(res.posts.length).toBe(100);
+  });
+
   it('reports progress via onProgress', async () => {
     const seen: number[] = [];
     const pages = { 1: [{ id: 1 }], 2: [{ id: 2 }] };
