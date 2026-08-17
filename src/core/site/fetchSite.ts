@@ -18,7 +18,9 @@ export type FetchSiteResult =
 
 /** The single entry point the Import tab calls: probe for REST (falling
  * back to RSS), paginate the posts, resolve featured images, and produce
- * a ParseResult the rest of Relay can consume unchanged. Never throws. */
+ * a ParseResult the rest of Relay can consume unchanged. Never throws:
+ * failures past the probe stage are contained here (probeSite already
+ * guards itself) and surface as { ok: false, reason }. */
 export async function fetchSite(
   baseUrl: string,
   fetchImpl: TextFetchLike,
@@ -29,31 +31,39 @@ export async function fetchSite(
   if (!probe.ok) return { ok: false, reason: probe.reason };
 
   if (probe.source === 'rest') {
-    const { posts, truncated } = await fetchRestPosts(probe.apiBase, fetchImpl, (p) =>
-      onProgress?.({ stage: 'posts', fetched: p.fetched, total: p.totalPages != null ? p.totalPages * 100 : null }),
-    );
-    const mediaIds = Array.from(new Set(posts.map((post) => post.featured_media).filter((id) => id > 0)));
-    onProgress?.({ stage: 'media', fetched: 0, total: mediaIds.length });
-    const featuredByMediaId = await fetchFeaturedImageUrls(probe.apiBase, mediaIds, fetchImpl);
-    const articles: SiteArticle[] = posts.map((post) =>
-      restPostToSiteArticle(post, featuredByMediaId.get(post.featured_media)),
-    );
-    return {
-      ok: true,
-      result: mapToParseResult({ source: 'rest', baseUrl: normalizeBaseUrl(baseUrl), articles }),
-      source: 'rest',
-      truncated,
-    };
+    try {
+      const { posts, truncated } = await fetchRestPosts(probe.apiBase, fetchImpl, (p) =>
+        onProgress?.({ stage: 'posts', fetched: p.fetched, total: p.totalPages != null ? p.totalPages * 100 : null }),
+      );
+      const mediaIds = Array.from(new Set(posts.map((post) => post.featured_media).filter((id) => id > 0)));
+      onProgress?.({ stage: 'media', fetched: 0, total: mediaIds.length });
+      const featuredByMediaId = await fetchFeaturedImageUrls(probe.apiBase, mediaIds, fetchImpl);
+      const articles: SiteArticle[] = posts.map((post) =>
+        restPostToSiteArticle(post, featuredByMediaId.get(post.featured_media)),
+      );
+      return {
+        ok: true,
+        result: mapToParseResult({ source: 'rest', baseUrl: normalizeBaseUrl(baseUrl), articles }),
+        source: 'rest',
+        truncated,
+      };
+    } catch (err) {
+      return { ok: false, reason: `Failed to fetch posts: ${err instanceof Error ? err.message : String(err)}` };
+    }
   }
 
-  const { items, truncated } = await fetchFeedPosts(probe.feedUrl, fetchImpl, (fetched) =>
-    onProgress?.({ stage: 'posts', fetched, total: null }),
-  );
-  const articles = items.map(feedItemToSiteArticle);
-  return {
-    ok: true,
-    result: mapToParseResult({ source: 'rss', baseUrl: normalizeBaseUrl(baseUrl), articles }),
-    source: 'rss',
-    truncated,
-  };
+  try {
+    const { items, truncated } = await fetchFeedPosts(probe.feedUrl, fetchImpl, (fetched) =>
+      onProgress?.({ stage: 'posts', fetched, total: null }),
+    );
+    const articles = items.map(feedItemToSiteArticle);
+    return {
+      ok: true,
+      result: mapToParseResult({ source: 'rss', baseUrl: normalizeBaseUrl(baseUrl), articles }),
+      source: 'rss',
+      truncated,
+    };
+  } catch (err) {
+    return { ok: false, reason: `Failed to fetch the feed: ${err instanceof Error ? err.message : String(err)}` };
+  }
 }

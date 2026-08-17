@@ -37,4 +37,48 @@ describe('fetchSite', () => {
     const res = await fetchSite('https://site.example', fetchImpl);
     expect(res.ok).toBe(false);
   });
+
+  it('returns ok:false, not an unhandled rejection, when the posts fetch rejects after a successful probe', async () => {
+    const fetchImpl: TextFetchLike = async (input) => {
+      const url = new URL(input);
+      const isProbe = url.searchParams.get('per_page') === '1' && !url.searchParams.has('page');
+      if (isProbe) {
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => '[{ "id": 1 }]' };
+      }
+      throw new Error('connection reset');
+    };
+    const res = await fetchSite('https://site.example', fetchImpl);
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toContain('connection reset');
+  });
+
+  it('returns ok:false when the posts fetch returns a 200 with a non-JSON body', async () => {
+    const fetchImpl: TextFetchLike = async (input) => {
+      const url = new URL(input);
+      const isProbe = url.searchParams.get('per_page') === '1' && !url.searchParams.has('page');
+      if (isProbe) {
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => '[{ "id": 1 }]' };
+      }
+      return { ok: true, status: 200, headers: { get: () => null }, text: async () => '<html>not json</html>' };
+    };
+    const res = await fetchSite('https://site.example', fetchImpl);
+    expect(res.ok).toBe(false);
+  });
+
+  it('returns ok:false, not an unhandled rejection, when the feed fetch rejects after an RSS probe', async () => {
+    const fetchImpl: TextFetchLike = async (input) => {
+      const url = new URL(input);
+      if (url.pathname.startsWith('/wp-json') || url.pathname.startsWith('/index.php')) {
+        return { ok: false, status: 404, headers: { get: () => null }, text: async () => 'nope' };
+      }
+      if (url.pathname.startsWith('/feed')) {
+        if (url.searchParams.has('paged')) throw new Error('feed page failed');
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => '<rss version="2.0"><channel><item><title>T</title></item></channel></rss>' };
+      }
+      throw new Error('unexpected url');
+    };
+    const res = await fetchSite('https://site.example', fetchImpl);
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toContain('feed page failed');
+  });
 });
