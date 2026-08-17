@@ -1,4 +1,4 @@
-import type { TextFetchLike } from './types';
+import type { SiteFetchFilter, TextFetchLike } from './types';
 
 export interface RestPost {
   id: number;
@@ -29,12 +29,17 @@ export async function fetchRestPosts(
   apiBase: string,
   fetchImpl: TextFetchLike,
   onProgress?: (p: FetchPostsProgress) => void,
+  filter?: SiteFetchFilter,
 ): Promise<FetchPostsResult> {
   const posts: RestPost[] = [];
   let truncated = false;
 
   for (let page = 1; page <= ANONYMOUS_PAGE_CAP + 1; page += 1) {
-    const url = `${apiBase}/posts?per_page=${PER_PAGE}&page=${page}&_fields=id,date,slug,link,title,content,featured_media,status`;
+    let url = `${apiBase}/posts?per_page=${PER_PAGE}&page=${page}&_fields=id,date,slug,link,title,content,featured_media,status`;
+    if (filter) {
+      url += `&after=${filter.startDate}T00:00:00&before=${filter.endDate}T23:59:59`;
+      if (filter.status && filter.status !== 'all') url += `&status=${filter.status}`;
+    }
     const res = await fetchImpl(url);
     if (!res.ok) return { posts, truncated: true };
     const batch = JSON.parse(await res.text()) as RestPost[];
