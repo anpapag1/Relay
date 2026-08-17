@@ -5,10 +5,38 @@ import { createRoot } from 'react-dom/client';
 import { AppStateProvider } from '../../state/AppStateContext';
 import { ImportTab } from './ImportTab';
 import { fetchSite } from '../../core/site/fetchSite';
+import type { ParseResult } from '../../types/domain';
 
 vi.mock('../../core/site/fetchSite', () => ({ fetchSite: vi.fn() }));
 
 const mockFetchSite = vi.mocked(fetchSite);
+
+const SUCCESS_RESULT: ParseResult = {
+  ok: true,
+  siteUrl: 'https://site.example',
+  totalItems: 1,
+  articles: [
+    {
+      postId: 1,
+      postType: 'post',
+      status: 'publish',
+      title: 'Hello',
+      link: 'https://site.example/hello/',
+      postDate: '2026-08-17T09:00:00',
+      postName: 'hello',
+      creator: '',
+      contentHtml: '<p>Hi</p>',
+      excerptHtml: '',
+      terms: [],
+      postmeta: {},
+      featuredImageUrl: 'https://cdn.example/1.jpg',
+    },
+  ],
+  attachments: [],
+  taxonomies: {},
+  authors: [],
+  statusCounts: { publish: 1 },
+};
 
 function renderTab() {
   const container = document.createElement('div');
@@ -37,6 +65,23 @@ function findFetchButton(container: HTMLDivElement): HTMLButtonElement | undefin
   return Array.from(container.querySelectorAll('button')).find((btn) => btn.textContent === 'Fetch posts');
 }
 
+async function fetchSource(container: HTMLDivElement, url: string) {
+  const input = container.querySelector('input[placeholder*="https://old-site.example"]') as HTMLInputElement;
+  expect(input).toBeDefined();
+  const fetchBtn = findFetchButton(container);
+  expect(fetchBtn).toBeDefined();
+
+  await act(async () => {
+    setInputValue(input, url);
+  });
+  await act(async () => {
+    fetchBtn?.click();
+  });
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
 beforeEach(() => mockFetchSite.mockReset());
 
 describe('ImportTab fetch-from-site', () => {
@@ -45,54 +90,61 @@ describe('ImportTab fetch-from-site', () => {
       ok: true,
       source: 'rest',
       truncated: false,
-      result: {
-        ok: true,
-        siteUrl: 'https://site.example',
-        totalItems: 1,
-        articles: [
-          {
-            postId: 1,
-            postType: 'post',
-            status: 'publish',
-            title: 'Hello',
-            link: 'https://site.example/hello/',
-            postDate: '2026-08-17T09:00:00',
-            postName: 'hello',
-            creator: '',
-            contentHtml: '<p>Hi</p>',
-            excerptHtml: '',
-            terms: [],
-            postmeta: {},
-            featuredImageUrl: 'https://cdn.example/1.jpg',
-          },
-        ],
-        attachments: [],
-        taxonomies: {},
-        authors: [],
-        statusCounts: { publish: 1 },
-      },
+      result: SUCCESS_RESULT,
     });
 
     const { container, root } = renderTab();
     await renderImportTab(root);
-
-    const input = container.querySelector('input[placeholder*="https://old-site.example"]') as HTMLInputElement;
-    expect(input).toBeDefined();
-    const fetchBtn = findFetchButton(container);
-    expect(fetchBtn).toBeDefined();
-
-    await act(async () => {
-      setInputValue(input, 'https://site.example');
-    });
-    await act(async () => {
-      fetchBtn?.click();
-    });
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
+    await fetchSource(container, 'https://site.example');
 
     expect(container.textContent).toContain('Import detected');
     expect(container.textContent).toContain('From site.example');
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
+
+  it('shows the may-be-truncated note in the review flow when the fetch was truncated', async () => {
+    mockFetchSite.mockResolvedValue({
+      ok: true,
+      source: 'rest',
+      truncated: true,
+      result: SUCCESS_RESULT,
+    });
+
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+    await fetchSource(container, 'https://site.example');
+
+    expect(container.textContent).toContain('Import detected');
+    expect(container.textContent).toContain('may be truncated at 10,000');
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
+
+  it('clears fetch progress when starting over so stale state does not resurface', async () => {
+    mockFetchSite.mockResolvedValue({
+      ok: true,
+      source: 'rest',
+      truncated: false,
+      result: SUCCESS_RESULT,
+    });
+
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+    await fetchSource(container, 'https://site.example');
+    expect(container.textContent).toContain('Import detected');
+
+    const startOverBtn = Array.from(container.querySelectorAll('button')).find((btn) => btn.textContent === 'Start over');
+    expect(startOverBtn).toBeDefined();
+    await act(async () => {
+      startOverBtn?.click();
+    });
+
+    expect(container.querySelector('input[placeholder*="https://old-site.example"]')).toBeDefined();
+    expect(container.textContent).not.toContain('Fetched 1 posts');
+    expect(container.textContent).not.toContain('may be truncated');
 
     root.unmount();
     document.body.removeChild(container);
@@ -106,19 +158,7 @@ describe('ImportTab fetch-from-site', () => {
 
     const { container, root } = renderTab();
     await renderImportTab(root);
-
-    const input = container.querySelector('input[placeholder*="https://old-site.example"]') as HTMLInputElement;
-    const fetchBtn = findFetchButton(container);
-
-    await act(async () => {
-      setInputValue(input, 'https://nope.example');
-    });
-    await act(async () => {
-      fetchBtn?.click();
-    });
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
+    await fetchSource(container, 'https://nope.example');
 
     expect(container.textContent).toContain("Couldn't find a WordPress REST API");
 

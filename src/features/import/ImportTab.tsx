@@ -131,6 +131,13 @@ export const ImportTab: React.FC = () => {
     }
   };
 
+  const handleStartOver = () => {
+    setFetchUrl('');
+    setFetchProgress(null);
+    setFetchError(null);
+    dispatch({ type: 'CLEAR_SOURCE' });
+  };
+
   const onFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -508,13 +515,16 @@ export const ImportTab: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: '22px', fontWeight: 700 }}>Import detected</div>
+          {fetchProgress && (
+            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>{fetchProgress}</div>
+          )}
           <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
             From {fileName} — review before mapping content
           </div>
         </div>
         <button
           type="button"
-          onClick={() => dispatch({ type: 'CLEAR_SOURCE' })}
+          onClick={handleStartOver}
           className="btn btn-secondary"
         >
           Start over
