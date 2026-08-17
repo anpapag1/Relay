@@ -60,7 +60,7 @@ describe('fetchRestPosts', () => {
 });
 
 describe('fetchRestPosts filters', () => {
-  it('narrows by date range and status when a filter is given', async () => {
+  it('narrows by date range when a filter is given', async () => {
     const urls: string[] = [];
     const fetchImpl: TextFetchLike = async (input) => {
       urls.push(input);
@@ -75,12 +75,10 @@ describe('fetchRestPosts filters', () => {
     const res = await fetchRestPosts('https://site.example/wp-json/wp/v2', fetchImpl, undefined, {
       startDate: '2020-01-01',
       endDate: '2020-02-01',
-      status: 'draft',
     });
     expect(res.posts.map((p) => p.id)).toEqual([1]);
     expect(urls[0]).toContain('after=2020-01-01T00:00:00');
     expect(urls[0]).toContain('before=2020-02-01T23:59:59');
-    expect(urls[0]).toContain('status=draft');
   });
 
   it('omits filter params when no filter is given', async () => {
@@ -97,10 +95,9 @@ describe('fetchRestPosts filters', () => {
     await fetchRestPosts('https://site.example/wp-json/wp/v2', fetchImpl);
     expect(urls[0]).not.toContain('after=');
     expect(urls[0]).not.toContain('before=');
-    expect(urls[0]).not.toContain('status=');
   });
 
-  it('omits the status param when the filter status is all', async () => {
+  it('always fetches published posts (no status param is sent)', async () => {
     const urls: string[] = [];
     const fetchImpl: TextFetchLike = async (input) => {
       urls.push(input);
@@ -114,10 +111,7 @@ describe('fetchRestPosts filters', () => {
     await fetchRestPosts('https://site.example/wp-json/wp/v2', fetchImpl, undefined, {
       startDate: '2020-01-01',
       endDate: '2020-02-01',
-      status: 'all',
     });
-    expect(urls[0]).toContain('after=');
-    expect(urls[0]).toContain('before=');
     expect(urls[0]).not.toContain('status=');
   });
 });

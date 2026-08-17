@@ -10,7 +10,6 @@ import { createSiteDataBackup, restoreSiteDataBackup } from '../../state/session
 import { findMissingOldTerms, mergeMissingIntoOldTables } from '../../core/mappings/reconcileOldTables';
 import { BUILDER_VALIDATION_STATUS, type BuilderId } from '../../core/builders/types';
 import type { TermTable } from '../../types/domain';
-import type { SiteFetchStatus } from '../../core/site/types';
 import { BuilderStatusPill } from '../../ui/Badge';
 
 const BUILDER_OPTIONS: BuilderId[] = ['plainHtml', 'elementor', 'divi', 'wpbakery'];
@@ -65,7 +64,6 @@ export const ImportTab: React.FC = () => {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [fetchStartDate, setFetchStartDate] = useState('');
   const [fetchEndDate, setFetchEndDate] = useState('');
-  const [fetchStatus, setFetchStatus] = useState<SiteFetchStatus>('all');
 
   const fetchDatesValid = Boolean(fetchStartDate && fetchEndDate && fetchStartDate <= fetchEndDate);
 
@@ -120,7 +118,7 @@ export const ImportTab: React.FC = () => {
           else if (stage === 'media') setFetchProgress(`Resolving featured images (${fetched}/${total ?? '…'})`);
           else setFetchProgress(total != null ? `Fetching posts (${fetched}/${total})…` : `Fetched ${fetched} posts…`);
         },
-        { startDate: fetchStartDate, endDate: fetchEndDate, status: fetchStatus },
+        { startDate: fetchStartDate, endDate: fetchEndDate },
       );
       if (!res.ok) {
         setFetchError(res.reason);
@@ -134,7 +132,13 @@ export const ImportTab: React.FC = () => {
         // unparseable input — fall back to showing the raw string
       }
       setFileName(fetchedFrom);
-      setFetchProgress(res.truncated ? `Fetched ${res.result.totalItems} posts (may be truncated at 10,000) — ${res.source === 'rest' ? 'REST API' : 'RSS feed'}` : `Fetched ${res.result.totalItems} posts from ${res.source === 'rest' ? 'REST API' : 'RSS feed'}`);
+      const sourceLabel = res.source === 'rest' ? 'REST API' : 'RSS feed';
+      const truncationNote = res.truncated
+        ? res.source === 'rest'
+          ? `Fetched ${res.result.totalItems} posts (may be truncated at 10,000) — ${sourceLabel}`
+          : `Fetched ${res.result.totalItems} posts (may be truncated at 500 pages) — ${sourceLabel}`
+        : `Fetched ${res.result.totalItems} posts from ${sourceLabel}`;
+      setFetchProgress(truncationNote);
       const ranking = rankBuilders(res.result.articles);
       setBuilderRanking(ranking);
       const [best] = ranking;
@@ -150,7 +154,6 @@ export const ImportTab: React.FC = () => {
     setFetchUrl('');
     setFetchStartDate('');
     setFetchEndDate('');
-    setFetchStatus('all');
     setFetchProgress(null);
     setFetchError(null);
     dispatch({ type: 'CLEAR_SOURCE' });
@@ -477,7 +480,7 @@ export const ImportTab: React.FC = () => {
           <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px' }}>Or fetch the site directly (no WXR file needed)</div>
           <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginBottom: '12px', lineHeight: 1.5 }}>
             For sites where you can&apos;t get a Tools → Export file: Relay reads the public WordPress REST API
-            (or falls back to the RSS feed) to pull posts and featured images.
+            (or falls back to the RSS feed) to pull published posts and their featured images.
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <input
@@ -514,23 +517,6 @@ export const ImportTab: React.FC = () => {
                 disabled={fetchingSite}
                 style={{ padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px' }}
               />
-            </label>
-            <label style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>
-              Status{' '}
-              <select
-                aria-label="Status"
-                value={fetchStatus}
-                onChange={(e) => setFetchStatus(e.target.value as SiteFetchStatus)}
-                disabled={fetchingSite}
-                style={{ padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px' }}
-              >
-                <option value="all">All</option>
-                <option value="publish">Published</option>
-                <option value="draft">Draft</option>
-                <option value="pending">Pending</option>
-                <option value="future">Future</option>
-                <option value="private">Private</option>
-              </select>
             </label>
           </div>
           {fetchProgress && <div style={{ marginTop: '10px', fontSize: '13px', color: 'oklch(50% 0.01 250)' }}>{fetchProgress}</div>}

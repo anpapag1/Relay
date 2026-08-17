@@ -10,6 +10,14 @@ interface RawResponse {
   body: Buffer;
 }
 
+function absolutize(url: string, base: string): string | null {
+  try {
+    return new URL(url, base).toString();
+  } catch {
+    return null;
+  }
+}
+
 function requestOnce(url: URL, timeoutMs: number, maxBytes: number): Promise<RawResponse> {
   return new Promise((resolve, reject) => {
     const client = url.protocol === 'https:' ? https : http;
@@ -41,4 +49,4 @@ function requestOnce(url: URL, timeoutMs: number, maxBytes: number): Promise<Raw
   });
 }
 
-export { requestOnce, TimeoutError, SizeLimitError, type RawResponse };
+export { requestOnce, TimeoutError, SizeLimitError, absolutize, type RawResponse };

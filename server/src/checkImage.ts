@@ -1,6 +1,7 @@
 import http from 'node:http';
 import https from 'node:https';
 import { guardUrl } from './guard';
+import { absolutize } from './rawRequest';
 
 export interface CheckImageResult {
   ok: boolean;
@@ -31,14 +32,6 @@ function headOnce(url: URL, timeoutMs: number): Promise<{ statusCode: number; he
     });
     req.end();
   });
-}
-
-function absolutize(url: string, base: string): string | null {
-  try {
-    return new URL(url, base).toString();
-  } catch {
-    return null;
-  }
 }
 
 /** Checks whether an already-resolved image URL actually loads, via HEAD

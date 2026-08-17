@@ -1,5 +1,5 @@
 import { guardUrl } from './guard';
-import { requestOnce, TimeoutError, type RawResponse } from './rawRequest';
+import { requestOnce, TimeoutError, absolutize, type RawResponse } from './rawRequest';
 
 export interface PageMediaResult {
   ogImage: string | null;
@@ -27,14 +27,6 @@ const OG_IMAGE_RE = /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+
 const IMG_SRC_RE = /<img[^>]+src=["']([^"']+)["']/gi;
 const ANCHOR_HREF_RE = /<a[^>]+href=["']([^"']+)["']/gi;
 const FILE_EXT_RE = /\.(pdf|docx?|xlsx?|pptx?|zip|csv|txt)(\?.*)?$/i;
-
-function absolutize(url: string, base: string): string | null {
-  try {
-    return new URL(url, base).toString();
-  } catch {
-    return null;
-  }
-}
 
 function extractPageMedia(html: string, pageUrl: string): PageMediaResult {
   const ogMatch = OG_IMAGE_RE.exec(html);

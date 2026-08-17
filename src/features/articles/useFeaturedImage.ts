@@ -3,6 +3,7 @@ import type { DerivedArticle } from '../../state/types';
 import type { AttachmentIndex } from '../../core/media/attachmentIndex';
 import { matchAttachment } from '../../core/media/attachmentIndex';
 import { resolveFeaturedImage } from '../../core/media/resolveFeaturedImage';
+import { effectiveFallbackFeaturedImage } from '../../core/media/effectiveFallbackFeaturedImage';
 
 export interface UseFeaturedImageResult {
   featuredImageUrl: string | null;
@@ -18,7 +19,7 @@ export function useFeaturedImage(
   const [featuredImageUrl, setFeaturedImageUrl] = useState<string | null>(null);
   const [featuredImageLoading, setFeaturedImageLoading] = useState(false);
 
-  const fallbackUrl = fallbackFeaturedImageUrl ?? fallbackFeaturedImageDataUrl ?? null;
+  const fallbackUrl = effectiveFallbackFeaturedImage({ fallbackFeaturedImageUrl, fallbackFeaturedImageDataUrl });
 
   // Keyed on article.id rather than the article object itself, since
   // DerivedArticle is recomputed fresh on every render (getDerivedArticles) —

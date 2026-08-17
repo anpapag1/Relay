@@ -49,7 +49,7 @@ export async function fetchSite(
       );
       return {
         ok: true,
-        result: mapToParseResult({ source: 'rest', baseUrl: normalizeBaseUrl(baseUrl), articles }),
+        result: mapToParseResult({ baseUrl: normalizeBaseUrl(baseUrl), articles }),
         source: 'rest',
         truncated,
       };
@@ -68,7 +68,7 @@ export async function fetchSite(
     const articles = items.map(feedItemToSiteArticle);
     return {
       ok: true,
-      result: mapToParseResult({ source: 'rss', baseUrl: normalizeBaseUrl(baseUrl), articles }),
+      result: mapToParseResult({ baseUrl: normalizeBaseUrl(baseUrl), articles }),
       source: 'rss',
       truncated,
     };

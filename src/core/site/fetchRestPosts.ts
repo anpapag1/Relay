@@ -40,7 +40,6 @@ export async function fetchRestPosts(
     let url = `${apiBase}/posts?per_page=${PER_PAGE}&page=${page}&_fields=id,date,slug,link,title,content,featured_media,status,categories,tags`;
     if (filter) {
       url += `&after=${filter.startDate}T00:00:00&before=${filter.endDate}T23:59:59`;
-      if (filter.status && filter.status !== 'all') url += `&status=${filter.status}`;
     }
     const res = await fetchImpl(url);
     if (!res.ok) throw new Error(`the site returned HTTP ${res.status} for the posts URL`);

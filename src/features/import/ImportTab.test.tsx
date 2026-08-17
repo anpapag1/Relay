@@ -230,7 +230,7 @@ describe('ImportTab fetch filters', () => {
     document.body.removeChild(container);
   });
 
-  it('passes the chosen date range and status to fetchSite', async () => {
+  it('passes the chosen date range to fetchSite', async () => {
     mockFetchSite.mockResolvedValue({ ok: true, source: 'rest', truncated: false, result: SUCCESS_RESULT });
 
     const { container, root } = renderTab();
@@ -239,15 +239,10 @@ describe('ImportTab fetch filters', () => {
     const input = container.querySelector('input[placeholder*="https://old-site.example"]') as HTMLInputElement;
     const startInput = container.querySelector('input[aria-label="Start date"]') as HTMLInputElement;
     const endInput = container.querySelector('input[aria-label="End date"]') as HTMLInputElement;
-    const statusSelect = container.querySelector('select[aria-label="Status"]') as HTMLSelectElement;
     await act(async () => {
       setInputValue(input, 'https://site.example');
       setInputValue(startInput, '2020-01-01');
       setInputValue(endInput, '2020-01-31');
-    });
-    await act(async () => {
-      statusSelect.value = 'draft';
-      statusSelect.dispatchEvent(new Event('change', { bubbles: true }));
     });
     await act(async () => {
       findFetchButton(container)?.click();
@@ -260,7 +255,7 @@ describe('ImportTab fetch filters', () => {
       'https://site.example',
       expect.any(Function),
       expect.any(Function),
-      expect.objectContaining({ startDate: '2020-01-01', endDate: '2020-01-31', status: 'draft' }),
+      expect.objectContaining({ startDate: '2020-01-01', endDate: '2020-01-31' }),
     );
 
     root.unmount();

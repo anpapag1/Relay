@@ -99,14 +99,12 @@ describe('fetchSite', () => {
     const res = await fetchSite('https://site.example', fetchImpl, undefined, {
       startDate: '2020-01-01',
       endDate: '2020-02-01',
-      status: 'publish',
     });
     expect(res.ok).toBe(true);
     const postsUrl = urls.find((u) => u.includes('per_page=100'));
     expect(postsUrl).toBeDefined();
     expect(postsUrl).toContain('after=2020-01-01T00:00:00');
     expect(postsUrl).toContain('before=2020-02-01T23:59:59');
-    expect(postsUrl).toContain('status=publish');
   });
 
   it('maps the post status into the ParseResult article', async () => {

@@ -89,7 +89,6 @@ describe('feedItemToSiteArticle', () => {
 describe('mapToParseResult', () => {
   it('builds a ParseResult with empty attachments/taxonomies and publish statuses', () => {
     const result = mapToParseResult({
-      source: 'rss',
       baseUrl: 'https://site.example',
       articles: [feedItemToSiteArticle({ title: 'T', link: 'https://site.example/x/', pubDate: '', creator: 'A', contentHtml: '<p>c</p>', excerptHtml: '', categories: [] })],
     });
@@ -105,7 +104,6 @@ describe('mapToParseResult', () => {
 
   it('aggregates taxonomies from the fetched articles terms, counting usage', () => {
     const result = mapToParseResult({
-      source: 'rest',
       baseUrl: 'https://site.example',
       articles: [
         feedItemToSiteArticle({ title: 'T1', link: 'https://site.example/1/', pubDate: '', creator: '', contentHtml: '', excerptHtml: '', categories: ['Δήμος'] }),
@@ -124,7 +122,6 @@ describe('mapToParseResult', () => {
 describe('mapToParseResult statuses', () => {
   it('reflects the fetched statuses in statusCounts', () => {
     const result = mapToParseResult({
-      source: 'rest',
       baseUrl: 'https://site.example',
       articles: [
         restPostToSiteArticle({ id: 1, date: '2026-08-01T09:00:00', slug: 'a', link: 'https://site.example/a/', title: { rendered: 'A' }, content: { rendered: '' }, featured_media: 0, status: 'publish', categories: [], tags: [] }),

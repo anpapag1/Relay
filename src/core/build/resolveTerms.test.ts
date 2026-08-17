@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveArticleTerms } from './resolveTerms';
+import { resolveArticleTerms, termSourceDomain } from './resolveTerms';
 import type { TermMapping, TermRef, TermTable } from '../../types/domain';
 
 const NEW_TABLES: TermTable[] = [
@@ -67,5 +67,15 @@ describe('resolveArticleTerms', () => {
       'category:news': { oldDomain: 'category', oldNicename: 'news', targetTableId: 'category', targetTermIds: ['c1'], excluded: true, origin: 'user' },
     };
     expect(resolveArticleTerms(terms, mappings, NEW_TABLES)).toEqual([]);
+  });
+});
+
+describe('termSourceDomain', () => {
+  it('reports the source taxonomy domain when present', () => {
+    expect(termSourceDomain({ domain: 'tags', nicename: 'x', name: 'X', sourceDomain: 'post_tag' })).toBe('post_tag');
+  });
+
+  it('falls back to the destination domain for terms without a source', () => {
+    expect(termSourceDomain({ domain: 'category', nicename: 'x', name: 'X' })).toBe('category');
   });
 });

@@ -13,9 +13,13 @@ export interface ResolvedTerm {
 
 export type TaxonomyMaps = Record<string, Map<number, ResolvedTerm>>;
 
-const TAXONOMIES = [
-  { domain: 'category', path: 'categories' },
-  { domain: 'post_tag', path: 'tags' },
+/** The REST endpoint each built-in taxonomy lives under. The single source
+ * of truth for the category/post_tag → categories/tags mapping — consumed
+ * both by fetchRestTaxonomies (paginate the term lists) and by
+ * mapToParseResult (resolve a post's id arrays to term names). */
+export const TAXONOMIES = [
+  { domain: 'category', path: 'categories', field: 'categories' },
+  { domain: 'post_tag', path: 'tags', field: 'tags' },
 ] as const;
 
 async function fetchTaxonomy(

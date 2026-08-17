@@ -2,6 +2,7 @@
 import React from 'react';
 import type { DerivedArticle } from '../../state/types';
 import { Badge } from '../../ui/Badge';
+import { termSourceDomain } from '../../core/build/resolveTerms';
 
 export interface ArticleSidebarProps {
   article: DerivedArticle;
@@ -122,7 +123,7 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
             <br />
             <b>
               {article.destinationTerms
-                .filter((t) => (t.sourceDomain ?? t.domain) === 'category')
+                .filter((t) => termSourceDomain(t) === 'category')
                 .map((t) => t.name)
                 .join(', ') || 'Unmapped'}
             </b>
@@ -132,7 +133,7 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
             <br />
             <b>
               {article.destinationTerms
-                .filter((t) => (t.sourceDomain ?? t.domain) === 'post_tag')
+                .filter((t) => termSourceDomain(t) === 'post_tag')
                 .map((t) => t.name)
                 .join(', ') || 'None'}
             </b>

@@ -25,10 +25,7 @@ export interface SiteArticle {
   featuredImageUrl?: string;
 }
 
-export type SiteFetchStatus = 'publish' | 'draft' | 'pending' | 'future' | 'private' | 'all';
-
 export interface SiteFetchFilter {
   startDate: string; // ISO date, e.g. "2020-01-01"
   endDate: string; // ISO date
-  status?: SiteFetchStatus; // omitted or 'all' => no status filter
 }

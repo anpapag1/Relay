@@ -9,6 +9,7 @@ import { buildAttachmentRegistry, type AttachmentRegistry } from '../media/attac
 import { reviewMessages, type ReaderWarning } from '../builders/types';
 import { resolveMediaRefs } from '../media/resolveMedia';
 import { resolveFeaturedImage } from '../media/resolveFeaturedImage';
+import { effectiveFallbackFeaturedImage } from '../media/effectiveFallbackFeaturedImage';
 import type { FetchLike } from '../media/mediaClient';
 import { termMappingIdOf } from '../mappings/termId';
 import { collectMediaRefs, rewriteMediaRefs } from './collectMediaRefs';
@@ -157,11 +158,7 @@ async function resolveOneArticle(
   const featuredImage = article.featuredImageUrl
     ? { outcome: 'matched-live' as const, url: article.featuredImageUrl }
     : await resolveFeaturedImage(article.postmeta, attachmentIndex, article.link || null, options.fetchImpl);
-  const featuredAttachmentUrl =
-    featuredImage?.url ??
-    options.settings.fallbackFeaturedImageUrl ??
-    options.settings.fallbackFeaturedImageDataUrl ??
-    null;
+  const featuredAttachmentUrl = featuredImage?.url ?? effectiveFallbackFeaturedImage(options.settings);
   const termWarnings = unmappedTermWarnings(article.terms, options.mappings, options.newTables);
 
   if (input.editedHtml != null) {

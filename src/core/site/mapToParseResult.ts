@@ -2,17 +2,15 @@ import type { ParseResult, TaxonomyTermSummary, TermRef } from '../../types/doma
 import type { SiteArticle } from './types';
 import type { RestPost } from './fetchRestPosts';
 import type { FeedItem } from './fetchFeedPosts';
-import type { TaxonomyMaps } from './fetchRestTaxonomies';
+import { TAXONOMIES, type TaxonomyMaps } from './fetchRestTaxonomies';
 import { cleanSiteContent } from './cleanSiteContent';
 
 function resolveRestTerms(post: RestPost, taxonomyMaps: TaxonomyMaps): TermRef[] {
   const terms: TermRef[] = [];
-  for (const [domain, ids] of [
-    ['category', post.categories ?? []],
-    ['post_tag', post.tags ?? []],
-  ] as const) {
+  for (const { domain, field } of TAXONOMIES) {
     const byId = taxonomyMaps[domain];
     if (!byId) continue;
+    const ids = post[field] ?? [];
     for (const id of ids) {
       const resolved = byId.get(id);
       if (!resolved) continue;
@@ -75,7 +73,7 @@ function aggregateTaxonomies(articles: SiteArticle[]): Record<string, TaxonomyTe
   return Object.fromEntries(Array.from(byDomain.entries()).map(([domain, map]) => [domain, Array.from(map.values())]));
 }
 
-export function mapToParseResult(data: { source: 'rest' | 'rss'; baseUrl: string; articles: SiteArticle[] }): ParseResult {
+export function mapToParseResult(data: { baseUrl: string; articles: SiteArticle[] }): ParseResult {
   const authors = Array.from(new Set(data.articles.map((a) => a.creator).filter(Boolean)));
   return {
     ok: true,

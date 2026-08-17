@@ -4,6 +4,7 @@ import { getDerivedArticles } from '../../state/selectors';
 import type { DerivedArticle } from '../../state/types';
 import { Badge } from '../../ui/Badge';
 import { ArticleDrawer } from './ArticleDrawer';
+import { termSourceDomain } from '../../core/build/resolveTerms';
 
 type StatusFilter = 'all' | 'ready' | 'review' | 'edited' | 'excluded';
 type SortField = 'title' | 'date' | 'status';
@@ -213,7 +214,7 @@ export const ArticlesTab: React.FC = () => {
                 {art.title || '(Untitled)'}
               </div>
               <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{art.postDate || '—'}</div>
-              <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{art.destinationTerms.filter(t => (t.sourceDomain ?? t.domain) === 'category').map(t => t.name).join(', ') || '—'}</div>
+              <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{art.destinationTerms.filter(t => termSourceDomain(t) === 'category').map(t => t.name).join(', ') || '—'}</div>
               <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', display: 'flex', alignItems: 'center', gap: '5px' }}>
                 {art.mediaCount}
                 {art.warnings && art.warnings.length > 0 && (

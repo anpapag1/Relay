@@ -1,5 +1,5 @@
 import { guardUrl } from './guard';
-import { requestOnce, TimeoutError } from './rawRequest';
+import { requestOnce, TimeoutError, absolutize } from './rawRequest';
 
 export interface FetchUrlOk {
   status: 200;
@@ -15,10 +15,6 @@ export type FetchUrlResult = FetchUrlOk | { status: 400; reason: string } | { st
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_BYTES = 3 * 1024 * 1024;
 const DEFAULT_MAX_REDIRECTS = 2;
-
-function absolutize(url: string, base: string): string | null {
-  try { return new URL(url, base).toString(); } catch { return null; }
-}
 
 export async function fetchUrl(targetUrl: string, options: { timeoutMs?: number; maxBytes?: number } = {}): Promise<FetchUrlResult> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
