@@ -8,6 +8,7 @@ describe('restPostToSiteArticle', () => {
     const post: RestPost = {
       id: 7, date: '2026-08-17T09:00:00', slug: 'hello', link: 'https://site.example/hello/',
       title: { rendered: 'Hello' }, content: { rendered: '<p>Hi</p>' }, featured_media: 42, status: 'publish',
+      categories: [], tags: [],
     };
     const art = restPostToSiteArticle(post, 'https://cdn.example/42.jpg');
     expect(art).toEqual({
@@ -28,10 +29,36 @@ describe('restPostToSiteArticle', () => {
           '<a class="pdfprnt-button pdfprnt-button-print" href="https://site.example/hello/?print=print">Print</a>' +
           '</div>',
       },
-      featured_media: 0, status: 'publish',
+      featured_media: 0, status: 'publish', categories: [], tags: [],
     };
     const art = restPostToSiteArticle(post);
     expect(art.contentHtml).toBe('<p>Body</p>');
+  });
+
+  it('resolves category and tag IDs into terms using the fetched taxonomy maps', () => {
+    const post: RestPost = {
+      id: 7, date: '2026-08-17T09:00:00', slug: 'hello', link: 'https://site.example/hello/',
+      title: { rendered: 'Hello' }, content: { rendered: '<p>Hi</p>' }, featured_media: 0, status: 'publish',
+      categories: [13, 75], tags: [55],
+    };
+    const art = restPostToSiteArticle(post, undefined, {
+      category: new Map([[13, { nicename: 'athlitismos', name: 'Αθλητισμός' }]]),
+      post_tag: new Map([[55, { nicename: 'anakoinosi', name: 'Ανακοίνωση' }]]),
+    });
+    expect(art.terms).toEqual([
+      { domain: 'category', nicename: 'athlitismos', name: 'Αθλητισμός' },
+      { domain: 'post_tag', nicename: 'anakoinosi', name: 'Ανακοίνωση' },
+    ]);
+  });
+
+  it('drops term IDs that are missing from the taxonomy maps', () => {
+    const post: RestPost = {
+      id: 7, date: '2026-08-17T09:00:00', slug: 'hello', link: 'https://site.example/hello/',
+      title: { rendered: 'Hello' }, content: { rendered: '' }, featured_media: 0, status: 'publish',
+      categories: [13, 999], tags: [],
+    };
+    const art = restPostToSiteArticle(post, undefined, { category: new Map([[13, { nicename: 'a', name: 'A' }]]) });
+    expect(art.terms).toEqual([{ domain: 'category', nicename: 'a', name: 'A' }]);
   });
 });
 
@@ -45,6 +72,17 @@ describe('feedItemToSiteArticle', () => {
     const art = feedItemToSiteArticle(item);
     expect(art.creator).toBe('ΓΡΑΦΕΙΟ ΤΥΠΟΥ');
     expect(art.featuredImageUrl).toBe('https://site.example/i.jpg');
+  });
+
+  it('maps feed categories to category terms (name as nicename, since feeds carry no slug)', () => {
+    const art = feedItemToSiteArticle({
+      title: 'T', link: 'https://site.example/x/', pubDate: '', creator: '',
+      contentHtml: '', excerptHtml: '', categories: ['Δήμος', 'Εκδηλώσεις'],
+    });
+    expect(art.terms).toEqual([
+      { domain: 'category', nicename: 'Δήμος', name: 'Δήμος' },
+      { domain: 'category', nicename: 'Εκδηλώσεις', name: 'Εκδηλώσεις' },
+    ]);
   });
 });
 
@@ -64,6 +102,23 @@ describe('mapToParseResult', () => {
     expect(result.taxonomies).toEqual({});
     expect(result.authors).toEqual(['A']);
   });
+
+  it('aggregates taxonomies from the fetched articles terms, counting usage', () => {
+    const result = mapToParseResult({
+      source: 'rest',
+      baseUrl: 'https://site.example',
+      articles: [
+        feedItemToSiteArticle({ title: 'T1', link: 'https://site.example/1/', pubDate: '', creator: '', contentHtml: '', excerptHtml: '', categories: ['Δήμος'] }),
+        feedItemToSiteArticle({ title: 'T2', link: 'https://site.example/2/', pubDate: '', creator: '', contentHtml: '', excerptHtml: '', categories: ['Δήμος', 'Εκδηλώσεις'] }),
+      ],
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.taxonomies.category).toEqual([
+      { nicename: 'Δήμος', name: 'Δήμος', count: 2 },
+      { nicename: 'Εκδηλώσεις', name: 'Εκδηλώσεις', count: 1 },
+    ]);
+  });
 });
 
 describe('mapToParseResult statuses', () => {
@@ -72,8 +127,8 @@ describe('mapToParseResult statuses', () => {
       source: 'rest',
       baseUrl: 'https://site.example',
       articles: [
-        restPostToSiteArticle({ id: 1, date: '2026-08-01T09:00:00', slug: 'a', link: 'https://site.example/a/', title: { rendered: 'A' }, content: { rendered: '' }, featured_media: 0, status: 'publish' }),
-        restPostToSiteArticle({ id: 2, date: '2026-08-02T09:00:00', slug: 'b', link: 'https://site.example/b/', title: { rendered: 'B' }, content: { rendered: '' }, featured_media: 0, status: 'draft' }),
+        restPostToSiteArticle({ id: 1, date: '2026-08-01T09:00:00', slug: 'a', link: 'https://site.example/a/', title: { rendered: 'A' }, content: { rendered: '' }, featured_media: 0, status: 'publish', categories: [], tags: [] }),
+        restPostToSiteArticle({ id: 2, date: '2026-08-02T09:00:00', slug: 'b', link: 'https://site.example/b/', title: { rendered: 'B' }, content: { rendered: '' }, featured_media: 0, status: 'draft', categories: [], tags: [] }),
       ],
     });
     expect(result.ok).toBe(true);

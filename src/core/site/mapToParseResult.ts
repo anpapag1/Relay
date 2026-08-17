@@ -1,10 +1,28 @@
-import type { ParseResult } from '../../types/domain';
+import type { ParseResult, TaxonomyTermSummary, TermRef } from '../../types/domain';
 import type { SiteArticle } from './types';
 import type { RestPost } from './fetchRestPosts';
 import type { FeedItem } from './fetchFeedPosts';
+import type { TaxonomyMaps } from './fetchRestTaxonomies';
 import { cleanSiteContent } from './cleanSiteContent';
 
-export function restPostToSiteArticle(post: RestPost, featuredUrl?: string): SiteArticle {
+function resolveRestTerms(post: RestPost, taxonomyMaps: TaxonomyMaps): TermRef[] {
+  const terms: TermRef[] = [];
+  for (const [domain, ids] of [
+    ['category', post.categories ?? []],
+    ['post_tag', post.tags ?? []],
+  ] as const) {
+    const byId = taxonomyMaps[domain];
+    if (!byId) continue;
+    for (const id of ids) {
+      const resolved = byId.get(id);
+      if (!resolved) continue;
+      terms.push({ domain, nicename: resolved.nicename, name: resolved.name });
+    }
+  }
+  return terms;
+}
+
+export function restPostToSiteArticle(post: RestPost, featuredUrl?: string, taxonomyMaps?: TaxonomyMaps): SiteArticle {
   return {
     postId: post.id,
     title: post.title.rendered,
@@ -15,7 +33,7 @@ export function restPostToSiteArticle(post: RestPost, featuredUrl?: string): Sit
     status: post.status,
     contentHtml: cleanSiteContent(post.content.rendered),
     excerptHtml: '',
-    terms: [],
+    terms: taxonomyMaps ? resolveRestTerms(post, taxonomyMaps) : [],
     featuredImageUrl: featuredUrl,
   };
 }
@@ -31,9 +49,30 @@ export function feedItemToSiteArticle(item: FeedItem): SiteArticle {
     status: 'publish',
     contentHtml: cleanSiteContent(item.contentHtml),
     excerptHtml: item.excerptHtml,
-    terms: [],
+    terms: item.categories.map((name) => ({ domain: 'category', nicename: name, name })),
     featuredImageUrl: item.featuredImageUrl,
   };
+}
+
+function aggregateTaxonomies(articles: SiteArticle[]): Record<string, TaxonomyTermSummary[]> {
+  const byDomain = new Map<string, Map<string, TaxonomyTermSummary>>();
+  for (const article of articles) {
+    for (const term of article.terms) {
+      if (!term.domain) continue;
+      let byNicename = byDomain.get(term.domain);
+      if (!byNicename) {
+        byNicename = new Map();
+        byDomain.set(term.domain, byNicename);
+      }
+      const existing = byNicename.get(term.nicename);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        byNicename.set(term.nicename, { nicename: term.nicename, name: term.name, count: 1 });
+      }
+    }
+  }
+  return Object.fromEntries(Array.from(byDomain.entries()).map(([domain, map]) => [domain, Array.from(map.values())]));
 }
 
 export function mapToParseResult(data: { source: 'rest' | 'rss'; baseUrl: string; articles: SiteArticle[] }): ParseResult {
@@ -58,7 +97,7 @@ export function mapToParseResult(data: { source: 'rest' | 'rss'; baseUrl: string
       featuredImageUrl: a.featuredImageUrl,
     })),
     attachments: [],
-    taxonomies: {},
+    taxonomies: aggregateTaxonomies(data.articles),
     authors,
     statusCounts: data.articles.reduce<Record<string, number>>((acc, a) => {
       acc[a.status] = (acc[a.status] ?? 0) + 1;

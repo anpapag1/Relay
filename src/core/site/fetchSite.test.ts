@@ -130,4 +130,46 @@ describe('fetchSite', () => {
     expect(res.result.articles[0].status).toBe('draft');
     expect(res.result.statusCounts).toEqual({ draft: 1 });
   });
+
+  it('resolves post category/tag IDs into article terms and aggregates taxonomies', async () => {
+    const fetchImpl: TextFetchLike = async (input) => {
+      const url = new URL(input);
+      if (url.searchParams.get('per_page') === '1' && !url.searchParams.has('page')) {
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => '[{ "id": 1 }]' };
+      }
+      if (url.pathname.endsWith('/categories')) {
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => JSON.stringify([
+          { id: 13, name: 'Αθλητισμός', slug: 'athlitismos' },
+          { id: 75, name: 'Εκδηλώσεις', slug: 'ekdiloseis' },
+        ]) };
+      }
+      if (url.pathname.endsWith('/tags')) {
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => JSON.stringify([
+          { id: 55, name: 'Ανακοίνωση', slug: 'anakoinosi' },
+        ]) };
+      }
+      return {
+        ok: true, status: 200,
+        headers: { get: (name: string) => (name.toLowerCase() === 'x-wp-totalpages' ? '1' : null) },
+        text: async () => JSON.stringify([
+          { id: 7, date: '2026-08-17T09:00:00', slug: 'hello', link: 'https://site.example/hello/', title: { rendered: 'Hello' }, content: { rendered: '<p>Hi</p>' }, featured_media: 0, status: 'publish', categories: [13, 75], tags: [55] },
+          { id: 8, date: '2026-08-17T09:00:00', slug: 'again', link: 'https://site.example/again/', title: { rendered: 'Again' }, content: { rendered: '<p>Hi</p>' }, featured_media: 0, status: 'publish', categories: [13], tags: [] },
+        ]),
+      };
+    };
+    const res = await fetchSite('https://site.example', fetchImpl);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.result.articles[0].terms).toEqual([
+      { domain: 'category', nicename: 'athlitismos', name: 'Αθλητισμός' },
+      { domain: 'category', nicename: 'ekdiloseis', name: 'Εκδηλώσεις' },
+      { domain: 'post_tag', nicename: 'anakoinosi', name: 'Ανακοίνωση' },
+    ]);
+    expect(res.result.articles[1].terms).toEqual([{ domain: 'category', nicename: 'athlitismos', name: 'Αθλητισμός' }]);
+    expect(res.result.taxonomies.category).toEqual([
+      { nicename: 'athlitismos', name: 'Αθλητισμός', count: 2 },
+      { nicename: 'ekdiloseis', name: 'Εκδηλώσεις', count: 1 },
+    ]);
+    expect(res.result.taxonomies.post_tag).toEqual([{ nicename: 'anakoinosi', name: 'Ανακοίνωση', count: 1 }]);
+  });
 });

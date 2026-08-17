@@ -3,6 +3,7 @@ import type { SiteArticle, SiteFetchFilter, TextFetchLike } from './types';
 import { probeSite, normalizeBaseUrl } from './probeSite';
 import { fetchRestPosts } from './fetchRestPosts';
 import { fetchFeaturedImageUrls } from './fetchRestMedia';
+import { fetchRestTaxonomies } from './fetchRestTaxonomies';
 import { fetchFeedPosts } from './fetchFeedPosts';
 import { mapToParseResult, restPostToSiteArticle, feedItemToSiteArticle } from './mapToParseResult';
 
@@ -42,8 +43,9 @@ export async function fetchSite(
       const mediaIds = Array.from(new Set(posts.map((post) => post.featured_media).filter((id) => id > 0)));
       onProgress?.({ stage: 'media', fetched: 0, total: mediaIds.length });
       const featuredByMediaId = await fetchFeaturedImageUrls(probe.apiBase, mediaIds, fetchImpl);
+      const taxonomyMaps = await fetchRestTaxonomies(probe.apiBase, fetchImpl);
       const articles: SiteArticle[] = posts.map((post) =>
-        restPostToSiteArticle(post, featuredByMediaId.get(post.featured_media)),
+        restPostToSiteArticle(post, featuredByMediaId.get(post.featured_media), taxonomyMaps),
       );
       return {
         ok: true,
