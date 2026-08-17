@@ -32,7 +32,7 @@ describe('fetchUrl', () => {
     const upstream = http.createServer((_req, res) => {
       res.writeHead(200, {
         'content-type': 'application/json; charset=UTF-8',
-        'x-wp-total-pages': '12',
+        'x-wp-totalpages': '12',
         'x-wp-total': '1102',
       });
       res.end('[]');
@@ -48,6 +48,30 @@ describe('fetchUrl', () => {
         expect(res.xWpTotal).toBe('1102');
         expect(res.contentType).toMatch(/application\/json/);
         expect(res.body).toBe('[]');
+      }
+    } finally {
+      await new Promise<void>((resolve) => upstream.close(() => resolve()));
+    }
+  });
+
+  it('reads the hyphenated x-wp-total-pages spelling as a fallback', async () => {
+    const upstream = http.createServer((_req, res) => {
+      res.writeHead(200, {
+        'content-type': 'application/json; charset=UTF-8',
+        'x-wp-total-pages': '7',
+        'x-wp-total': '140',
+      });
+      res.end('[]');
+    });
+    await new Promise<void>((resolve) => upstream.listen(0, '127.0.0.1', resolve));
+    const address = upstream.address();
+    const port = typeof address === 'object' && address ? address.port : 0;
+    try {
+      const res = await fetchUrl(`http://127.0.0.1:${port}/posts`);
+      expect(res.status).toBe(200);
+      if (res.status === 200) {
+        expect(res.xWpTotalPages).toBe('7');
+        expect(res.xWpTotal).toBe('140');
       }
     } finally {
       await new Promise<void>((resolve) => upstream.close(() => resolve()));

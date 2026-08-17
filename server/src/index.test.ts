@@ -121,7 +121,7 @@ describe('server routes', () => {
 
     const res = await fetch(`${baseUrl}/api/fetch?url=${encodeURIComponent('https://old.example/wp-json/wp/v2/posts')}`);
     expect(res.status).toBe(200);
-    expect(res.headers.get('x-wp-total-pages')).toBe('12');
+    expect(res.headers.get('x-wp-totalpages')).toBe('12');
     expect(res.headers.get('x-wp-total')).toBe('1102');
     expect(await res.text()).toBe('[]');
   });

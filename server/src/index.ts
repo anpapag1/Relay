@@ -60,7 +60,7 @@ async function handleFetch(target: string, res: http.ServerResponse): Promise<vo
     const headers: Record<string, string> = {
       'content-type': result.contentType || 'text/plain; charset=utf-8',
     };
-    if (result.xWpTotalPages) headers['x-wp-total-pages'] = result.xWpTotalPages;
+    if (result.xWpTotalPages) headers['x-wp-totalpages'] = result.xWpTotalPages;
     if (result.xWpTotal) headers['x-wp-total'] = result.xWpTotal;
     res.writeHead(200, headers);
     res.end(result.body);

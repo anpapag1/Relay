@@ -55,10 +55,15 @@ export async function fetchUrl(targetUrl: string, options: { timeoutMs?: number;
       status: 200,
       body: response.body.toString('utf-8'),
       contentType: response.headers['content-type'] ?? '',
+      // WordPress sends this header as `X-WP-TotalPages` (no hyphen before
+      // "Pages"); Node lowercases it to `x-wp-totalpages`. Some servers or
+      // intermediaries spell it `x-wp-total-pages` — read either spelling.
       xWpTotalPages:
-        typeof response.headers['x-wp-total-pages'] === 'string'
-          ? response.headers['x-wp-total-pages']
-          : undefined,
+        typeof response.headers['x-wp-totalpages'] === 'string'
+          ? response.headers['x-wp-totalpages']
+          : typeof response.headers['x-wp-total-pages'] === 'string'
+            ? response.headers['x-wp-total-pages']
+            : undefined,
       xWpTotal: typeof response.headers['x-wp-total'] === 'string' ? response.headers['x-wp-total'] : undefined,
     };
   }
