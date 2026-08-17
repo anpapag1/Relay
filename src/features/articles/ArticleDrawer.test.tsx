@@ -63,6 +63,35 @@ describe('ArticleDrawer preview pane', () => {
     expect(preview?.textContent).toContain('Hello world');
   });
 
+  it('shows the auto-exclusion reason in the sidebar instead of the generic text', async () => {
+    const article = makeArticle({
+      status: 'excluded_auto',
+      isExcluded: true,
+      statusReason: 'Duplicate slug: "test-article"',
+    });
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false}>
+          <ArticleDrawer article={article} onClose={vi.fn()} onPrev={vi.fn()} onNext={vi.fn()} hasPrev={false} hasNext={false} />
+        </AppStateProvider>,
+      );
+    });
+    expect(container.textContent).toContain('Duplicate slug: "test-article"');
+    expect(container.textContent).not.toContain('Currently excluded from exported file');
+  });
+
+  it('keeps the generic excluded text when no reason is available', async () => {
+    const article = makeArticle({ status: 'excluded_manual', isExcluded: true });
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false}>
+          <ArticleDrawer article={article} onClose={vi.fn()} onPrev={vi.fn()} onNext={vi.fn()} hasPrev={false} hasNext={false} />
+        </AppStateProvider>,
+      );
+    });
+    expect(container.textContent).toContain('Currently excluded from exported file');
+  });
+
   it('shows a placeholder when there is no content to preview', async () => {
     const article = makeArticle({ contentHtml: '' });
     await act(async () => {

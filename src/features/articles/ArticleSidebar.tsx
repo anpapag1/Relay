@@ -204,7 +204,9 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
         <div>
           <div style={{ fontSize: '13px', fontWeight: 600 }}>Include in migration</div>
           <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)' }}>
-            {isExcluded ? 'Currently excluded from exported file' : 'Will be exported into the new site WXR'}
+            {isExcluded
+              ? (article.statusReason ? `Excluded: ${article.statusReason}` : 'Currently excluded from exported file')
+              : 'Will be exported into the new site WXR'}
           </div>
         </div>
         <button
