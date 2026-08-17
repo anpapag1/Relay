@@ -1,6 +1,7 @@
 import http from 'node:http';
 import { fetchPageMedia, type PageMediaResult } from './fetchPageMedia';
 import { checkImage, type CheckImageResult } from './checkImage';
+import { fetchUrl } from './fetchUrl';
 import { getCached, setCached } from './cache';
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -45,7 +46,20 @@ async function handleImageCheck(target: string, res: http.ServerResponse): Promi
   sendJson(res, 200, result);
 }
 
-/** The two routes this proxy exists for (design spec §5.7, and the
+/** Unfiltered passthrough of an old-site URL's body (JSON or XML for the
+ * importers). Unlike /api/page-media this is deliberately not cached: the
+ * client paginates through the site and pages can change between reads. */
+async function handleFetch(target: string, res: http.ServerResponse): Promise<void> {
+  const result = await fetchUrl(target);
+  if (result.status === 200) {
+    res.writeHead(200, { 'content-type': result.contentType || 'text/plain; charset=utf-8' });
+    res.end(result.body);
+    return;
+  }
+  sendJson(res, result.status, { error: result.reason });
+}
+
+/** The three routes this proxy exists for (design spec §5.7, and the
  * broken-image-detection design): fetching an old-site page's media URLs,
  * and checking whether a single resolved image URL actually loads. Never
  * the media bytes themselves. Everything else (parsing, SSRF guarding,
@@ -76,6 +90,15 @@ const server = http.createServer((req, res) => {
         return;
       }
       await handleImageCheck(target, res);
+      return;
+    }
+
+    if (requestUrl.pathname === '/api/fetch') {
+      if (!target) {
+        sendJson(res, 400, { error: 'missing "url" query parameter' });
+        return;
+      }
+      await handleFetch(target, res);
       return;
     }
 

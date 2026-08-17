@@ -86,4 +86,14 @@ describe('server routes', () => {
 
     expect(checkImage).toHaveBeenCalledTimes(2);
   });
+
+  it('responds 400 for /api/fetch with no url param', async () => {
+    const res = await fetch(`${baseUrl}/api/fetch`);
+    expect(res.status).toBe(400);
+  });
+
+  it('responds 400 for /api/fetch on a private URL', async () => {
+    const res = await fetch(`${baseUrl}/api/fetch?url=${encodeURIComponent('http://127.0.0.1:1/x')}`);
+    expect(res.status).toBe(400);
+  });
 });

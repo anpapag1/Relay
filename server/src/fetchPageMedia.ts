@@ -1,6 +1,5 @@
-import http from 'node:http';
-import https from 'node:https';
 import { guardUrl } from './guard';
+import { requestOnce, TimeoutError, type RawResponse } from './rawRequest';
 
 export interface PageMediaResult {
   ogImage: string | null;
@@ -28,46 +27,6 @@ const OG_IMAGE_RE = /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+
 const IMG_SRC_RE = /<img[^>]+src=["']([^"']+)["']/gi;
 const ANCHOR_HREF_RE = /<a[^>]+href=["']([^"']+)["']/gi;
 const FILE_EXT_RE = /\.(pdf|docx?|xlsx?|pptx?|zip|csv|txt)(\?.*)?$/i;
-
-class TimeoutError extends Error {}
-class SizeLimitError extends Error {}
-
-interface RawResponse {
-  statusCode: number;
-  headers: http.IncomingHttpHeaders;
-  body: Buffer;
-}
-
-function requestOnce(url: URL, timeoutMs: number, maxBytes: number): Promise<RawResponse> {
-  return new Promise((resolve, reject) => {
-    const client = url.protocol === 'https:' ? https : http;
-    const req = client.get(url, { headers: { 'User-Agent': 'RelayMediaProxy/1.0' } }, (res) => {
-      const chunks: Buffer[] = [];
-      let total = 0;
-
-      res.on('data', (chunk: Buffer) => {
-        total += chunk.length;
-        if (total > maxBytes) {
-          req.destroy();
-          reject(new SizeLimitError('response exceeded the size cap'));
-          return;
-        }
-        chunks.push(chunk);
-      });
-
-      res.on('end', () => {
-        resolve({ statusCode: res.statusCode ?? 0, headers: res.headers, body: Buffer.concat(chunks) });
-      });
-
-      res.on('error', reject);
-    });
-
-    req.on('error', reject);
-    req.setTimeout(timeoutMs, () => {
-      req.destroy(new TimeoutError('request timed out'));
-    });
-  });
-}
 
 function absolutize(url: string, base: string): string | null {
   try {
