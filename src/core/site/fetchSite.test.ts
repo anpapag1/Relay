@@ -81,4 +81,31 @@ describe('fetchSite', () => {
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.reason).toContain('feed page failed');
   });
+
+  it('passes the filter to the REST posts query', async () => {
+    const urls: string[] = [];
+    const fetchImpl: TextFetchLike = async (input) => {
+      urls.push(input);
+      const url = new URL(input);
+      if (url.searchParams.get('per_page') === '1' && !url.searchParams.has('page')) {
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => '[{ "id": 1 }]' };
+      }
+      return {
+        ok: true, status: 200,
+        headers: { get: (name: string) => (name.toLowerCase() === 'x-wp-totalpages' ? '1' : null) },
+        text: async () => '[]',
+      };
+    };
+    const res = await fetchSite('https://site.example', fetchImpl, undefined, {
+      startDate: '2020-01-01',
+      endDate: '2020-02-01',
+      status: 'publish',
+    });
+    expect(res.ok).toBe(true);
+    const postsUrl = urls.find((u) => u.includes('per_page=100'));
+    expect(postsUrl).toBeDefined();
+    expect(postsUrl).toContain('after=2020-01-01T00:00:00');
+    expect(postsUrl).toContain('before=2020-02-01T23:59:59');
+    expect(postsUrl).toContain('status=publish');
+  });
 });

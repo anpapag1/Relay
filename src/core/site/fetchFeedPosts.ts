@@ -1,4 +1,4 @@
-import type { TextFetchLike } from './types';
+import type { SiteFetchFilter, TextFetchLike } from './types';
 
 export interface FeedItem {
   title: string;
@@ -44,10 +44,17 @@ export function feedPageUrl(feedUrl: string, page: number): string {
   return `${feedUrl}${sep}paged=${page}`;
 }
 
+function inDateRange(item: FeedItem, filter: SiteFetchFilter): boolean {
+  const t = Date.parse(item.pubDate);
+  if (Number.isNaN(t)) return true; // keep items we can't date rather than drop content
+  return t >= Date.parse(`${filter.startDate}T00:00:00`) && t <= Date.parse(`${filter.endDate}T23:59:59`);
+}
+
 export async function fetchFeedPosts(
   feedUrl: string,
   fetchImpl: TextFetchLike,
   onProgress?: (fetched: number) => void,
+  filter?: SiteFetchFilter,
 ): Promise<{ items: FeedItem[]; truncated: boolean }> {
   const items: FeedItem[] = [];
   let truncated = false;
@@ -58,7 +65,17 @@ export async function fetchFeedPosts(
     if (!res.ok) return { items, truncated: true };
     const batch = parseFeedXml(await res.text());
     if (batch.length === 0) break;
-    items.push(...batch);
+    if (filter) {
+      items.push(...batch.filter((item) => inDateRange(item, filter)));
+      const startBoundary = Date.parse(`${filter.startDate}T00:00:00`);
+      const pageIsOlderThanStart = batch.every((item) => {
+        const t = Date.parse(item.pubDate);
+        return !Number.isNaN(t) && t < startBoundary;
+      });
+      if (pageIsOlderThanStart) break;
+    } else {
+      items.push(...batch);
+    }
     onProgress?.(items.length);
   }
 

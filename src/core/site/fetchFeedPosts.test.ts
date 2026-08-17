@@ -63,3 +63,28 @@ describe('fetchFeedPosts', () => {
     expect(res.truncated).toBe(false);
   });
 });
+
+describe('fetchFeedPosts filters', () => {
+  it('keeps only items inside the date range and stops at a page older than the start', async () => {
+    const fetchImpl: TextFetchLike = async (input) => {
+      const hasPaged = /paged=(\d+)/.exec(input);
+      const page = hasPaged ? Number(hasPaged[1]) : 1;
+      let body: string;
+      if (page === 1) {
+        body = FEED; // pubDate Mon, 17 Aug 2026
+      } else if (page === 2) {
+        body = FEED.replace(/<pubDate>[^<]+<\/pubDate>/, '<pubDate>Sat, 01 Aug 2026 10:00:00 +0000</pubDate>');
+      } else {
+        body = FEED.slice(0, FEED.indexOf('<item>'));
+      }
+      return { ok: true, status: 200, headers: { get: () => 'text/xml' }, text: async () => body };
+    };
+    const res = await fetchFeedPosts('https://site.example/feed/', fetchImpl, undefined, {
+      startDate: '2026-08-10',
+      endDate: '2026-08-31',
+    });
+    expect(res.items.length).toBe(1);
+    expect(res.items[0].title).toBe('Ακύρωση συναυλίας');
+    expect(res.truncated).toBe(false);
+  });
+});

@@ -1,5 +1,5 @@
 import type { ParseResult } from '../../types/domain';
-import type { SiteArticle, TextFetchLike } from './types';
+import type { SiteArticle, SiteFetchFilter, TextFetchLike } from './types';
 import { probeSite, normalizeBaseUrl } from './probeSite';
 import { fetchRestPosts } from './fetchRestPosts';
 import { fetchFeaturedImageUrls } from './fetchRestMedia';
@@ -25,6 +25,7 @@ export async function fetchSite(
   baseUrl: string,
   fetchImpl: TextFetchLike,
   onProgress?: (p: FetchSiteProgress) => void,
+  filter?: SiteFetchFilter,
 ): Promise<FetchSiteResult> {
   onProgress?.({ stage: 'probe', fetched: 0, total: null });
   const probe = await probeSite(baseUrl, fetchImpl);
@@ -32,8 +33,11 @@ export async function fetchSite(
 
   if (probe.source === 'rest') {
     try {
-      const { posts, truncated } = await fetchRestPosts(probe.apiBase, fetchImpl, (p) =>
-        onProgress?.({ stage: 'posts', fetched: p.fetched, total: p.totalPages != null ? p.totalPages * 100 : null }),
+      const { posts, truncated } = await fetchRestPosts(
+        probe.apiBase,
+        fetchImpl,
+        (p) => onProgress?.({ stage: 'posts', fetched: p.fetched, total: p.totalPages != null ? p.totalPages * 100 : null }),
+        filter,
       );
       const mediaIds = Array.from(new Set(posts.map((post) => post.featured_media).filter((id) => id > 0)));
       onProgress?.({ stage: 'media', fetched: 0, total: mediaIds.length });
@@ -53,8 +57,11 @@ export async function fetchSite(
   }
 
   try {
-    const { items, truncated } = await fetchFeedPosts(probe.feedUrl, fetchImpl, (fetched) =>
-      onProgress?.({ stage: 'posts', fetched, total: null }),
+    const { items, truncated } = await fetchFeedPosts(
+      probe.feedUrl,
+      fetchImpl,
+      (fetched) => onProgress?.({ stage: 'posts', fetched, total: null }),
+      filter,
     );
     const articles = items.map(feedItemToSiteArticle);
     return {
