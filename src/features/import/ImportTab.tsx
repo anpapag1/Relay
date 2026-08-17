@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import { parseWxr } from '../../core/wxr/parseWxr';
 import { rankBuilders, type BuilderScore } from '../../core/builders/detectBuilder';
+import { fetchSite } from '../../core/site/fetchSite';
+import { browserTextFetch } from '../../core/site/fetchLike';
 import { SAMPLE_WXR } from './sampleWxr';
 import { createSiteDataBackup, restoreSiteDataBackup } from '../../state/session';
 import { findMissingOldTerms, mergeMissingIntoOldTables } from '../../core/mappings/reconcileOldTables';
@@ -55,6 +57,10 @@ export const ImportTab: React.FC = () => {
   const [expandedOldTables, setExpandedOldTables] = useState<Record<string, boolean>>({});
   const [expandedNewTables, setExpandedNewTables] = useState<Record<string, boolean>>({});
   const [builderRanking, setBuilderRanking] = useState<BuilderScore[]>([]);
+  const [fetchUrl, setFetchUrl] = useState('');
+  const [fetchingSite, setFetchingSite] = useState(false);
+  const [fetchProgress, setFetchProgress] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const toggleOldTable = (tableId: string) => {
     setExpandedOldTables((prev) => ({ ...prev, [tableId]: !(prev[tableId] ?? true) }));
@@ -91,6 +97,38 @@ export const ImportTab: React.FC = () => {
         setImporting(false);
       }
     }, 100);
+  };
+
+  const handleFetchSite = async () => {
+    if (!fetchUrl.trim() || fetchingSite) return;
+    setFetchingSite(true);
+    setFetchError(null);
+    setFetchProgress(null);
+    try {
+      const res = await fetchSite(
+        fetchUrl.trim(),
+        browserTextFetch,
+        ({ stage, fetched, total }) => {
+          if (stage === 'probe') setFetchProgress('Detecting REST API or feed…');
+          else if (stage === 'media') setFetchProgress(`Resolving featured images (${fetched}/${total ?? '…'})`);
+          else setFetchProgress(total != null ? `Fetching posts (${fetched}/${total})…` : `Fetched ${fetched} posts…`);
+        },
+      );
+      if (!res.ok) {
+        setFetchError(res.reason);
+        return;
+      }
+      setFileName('site.example');
+      setFetchProgress(res.truncated ? `Fetched ${res.result.totalItems} posts (may be truncated at 10,000) — ${res.source === 'rest' ? 'REST API' : 'RSS feed'}` : `Fetched ${res.result.totalItems} posts from ${res.source === 'rest' ? 'REST API' : 'RSS feed'}`);
+      const ranking = rankBuilders(res.result.articles);
+      setBuilderRanking(ranking);
+      const [best] = ranking;
+      dispatch({ type: 'LOAD_SOURCE', result: res.result, defaultBuilder: best.builderId, confidence: best.score });
+    } catch (err) {
+      setFetchError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setFetchingSite(false);
+    }
   };
 
   const onFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -409,6 +447,28 @@ export const ImportTab: React.FC = () => {
               </div>
             </div>
           )}
+        </div>
+        <div style={{ marginTop: '24px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px' }}>Or fetch the site directly (no WXR file needed)</div>
+          <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginBottom: '12px', lineHeight: 1.5 }}>
+            For sites where you can&apos;t get a Tools → Export file: Relay reads the public WordPress REST API
+            (or falls back to the RSS feed) to pull posts and featured images.
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              value={fetchUrl}
+              onChange={(e) => setFetchUrl(e.target.value)}
+              placeholder="https://old-site.example"
+              disabled={fetchingSite}
+              style={{ flex: 1, minWidth: '240px', padding: '10px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px' }}
+            />
+            <button type="button" onClick={handleFetchSite} disabled={fetchingSite} className="btn btn-primary">
+              {fetchingSite ? 'Fetching…' : 'Fetch posts'}
+            </button>
+          </div>
+          {fetchProgress && <div style={{ marginTop: '10px', fontSize: '13px', color: 'oklch(50% 0.01 250)' }}>{fetchProgress}</div>}
+          {fetchError && <div style={{ marginTop: '10px', fontSize: '13px', color: 'oklch(50% 0.15 20)' }}>{fetchError}</div>}
         </div>
       </div>
     );
