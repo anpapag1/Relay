@@ -33,7 +33,7 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
     <div
       ref={scrollRef}
       style={{
-        width: '640px',
+        width: '60vh',
         maxWidth: '100%',
         height: '100%',
         background: 'white',

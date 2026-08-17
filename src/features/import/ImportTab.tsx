@@ -400,7 +400,7 @@ export const ImportTab: React.FC = () => {
 
   if (!state.source) {
     return (
-      <div style={{ maxWidth: '960px', margin: '60px auto' }}>
+      <div style={{ maxWidth: '960px', margin: '0px auto' }}>
         <div
           onDragOver={onDragOver}
           onDrop={onDrop}
