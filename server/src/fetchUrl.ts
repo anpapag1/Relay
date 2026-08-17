@@ -1,7 +1,15 @@
 import { guardUrl } from './guard';
 import { requestOnce, TimeoutError } from './rawRequest';
 
-export interface FetchUrlOk { status: 200; body: string; contentType: string }
+export interface FetchUrlOk {
+  status: 200;
+  body: string;
+  contentType: string;
+  /** Upstream WordPress pagination headers, forwarded so the same-origin
+   * client can read them off the proxied response (fetchRestPosts.ts). */
+  xWpTotalPages?: string;
+  xWpTotal?: string;
+}
 export type FetchUrlResult = FetchUrlOk | { status: 400; reason: string } | { status: 502; reason: string } | { status: 504; reason: string };
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -47,6 +55,11 @@ export async function fetchUrl(targetUrl: string, options: { timeoutMs?: number;
       status: 200,
       body: response.body.toString('utf-8'),
       contentType: response.headers['content-type'] ?? '',
+      xWpTotalPages:
+        typeof response.headers['x-wp-total-pages'] === 'string'
+          ? response.headers['x-wp-total-pages']
+          : undefined,
+      xWpTotal: typeof response.headers['x-wp-total'] === 'string' ? response.headers['x-wp-total'] : undefined,
     };
   }
 

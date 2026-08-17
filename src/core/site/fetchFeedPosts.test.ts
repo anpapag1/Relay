@@ -62,6 +62,28 @@ describe('fetchFeedPosts', () => {
     expect(calls.some((c) => c.includes('paged=2'))).toBe(true);
     expect(res.truncated).toBe(false);
   });
+
+  it('throws on a non-ok response instead of reporting truncation', async () => {
+    const fetchImpl: TextFetchLike = async () => ({
+      ok: false,
+      status: 403,
+      headers: { get: () => 'text/xml' },
+      text: async () => 'forbidden',
+    });
+    await expect(fetchFeedPosts('https://site.example/feed/', fetchImpl)).rejects.toThrow(/HTTP 403/);
+  });
+
+  it('reports truncation when the MAX_PAGES cap is hit with a non-empty batch', async () => {
+    const fetchImpl: TextFetchLike = async () => ({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'text/xml' },
+      text: async () => FEED,
+    });
+    const res = await fetchFeedPosts('https://site.example/feed/', fetchImpl);
+    expect(res.truncated).toBe(true);
+    expect(res.items.length).toBe(500);
+  });
 });
 
 describe('fetchFeedPosts filters', () => {

@@ -6,6 +6,11 @@ import { getCached, setCached } from './cache';
 
 const PORT = Number(process.env.PORT ?? 8787);
 
+/** A 100-post REST page with rendered content can exceed the 3MB default,
+ * so /api/fetch (unlike /api/page-media and /api/image-check) raises its
+ * own body cap. */
+const FETCH_MAX_BYTES = 16 * 1024 * 1024;
+
 function sendJson(res: http.ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'content-type': 'application/json' });
   res.end(JSON.stringify(body));
@@ -50,21 +55,28 @@ async function handleImageCheck(target: string, res: http.ServerResponse): Promi
  * importers). Unlike /api/page-media this is deliberately not cached: the
  * client paginates through the site and pages can change between reads. */
 async function handleFetch(target: string, res: http.ServerResponse): Promise<void> {
-  const result = await fetchUrl(target);
+  const result = await fetchUrl(target, { maxBytes: FETCH_MAX_BYTES });
   if (result.status === 200) {
-    res.writeHead(200, { 'content-type': result.contentType || 'text/plain; charset=utf-8' });
+    const headers: Record<string, string> = {
+      'content-type': result.contentType || 'text/plain; charset=utf-8',
+    };
+    if (result.xWpTotalPages) headers['x-wp-total-pages'] = result.xWpTotalPages;
+    if (result.xWpTotal) headers['x-wp-total'] = result.xWpTotal;
+    res.writeHead(200, headers);
     res.end(result.body);
     return;
   }
   sendJson(res, result.status, { error: result.reason });
 }
 
-/** The three routes this proxy exists for (design spec §5.7, and the
+/** The four routes this proxy exists for (design spec §5.7, and the
  * broken-image-detection design): fetching an old-site page's media URLs,
- * and checking whether a single resolved image URL actually loads. Never
- * the media bytes themselves. Everything else (parsing, SSRF guarding,
- * timeouts, caching) lives in fetchPageMedia.ts/checkImage.ts/guard.ts/
- * cache.ts; this file is just the HTTP entry point. */
+ * checking whether a single resolved image URL actually loads, and
+ * forwarding an arbitrary old-site URL's body for the site-import
+ * fetchers (/api/fetch). Never the media bytes themselves. Everything else
+ * (parsing, SSRF guarding, timeouts, caching) lives in fetchPageMedia.ts/
+ * checkImage.ts/fetchUrl.ts/guard.ts/cache.ts; this file is just the HTTP
+ * entry point. */
 const server = http.createServer((req, res) => {
   void (async () => {
     if (req.method !== 'GET' || !req.url) {

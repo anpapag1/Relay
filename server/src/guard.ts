@@ -31,14 +31,15 @@ function isPrivateOrLocalIp(ip: string): boolean {
   return true; // not a recognisable IP — refuse defensively
 }
 
-/** The SSRF mitigation for the media proxy (design spec §5.7 / §8): the
- * address a URL's host actually resolves to must not be
+/** The SSRF mitigation for the proxy (design spec §5.7 / §8): the address
+ * a URL's host actually resolves to must not be
  * private/loopback/link-local. Checking the *resolved* address rather
  * than pattern-matching the hostname is what stops `localhost.evil.com`-
  * style names and DNS rebinding — a hostname can look public and still
  * resolve somewhere it shouldn't. There is deliberately no host
- * allowlist: the URLs this proxy fetches always come from the WXR file
- * the user themselves loaded (an article's own permalink), never
+ * allowlist: the URLs this proxy fetches come from the WXR file the user
+ * themselves loaded (an article's own permalink) or from the site-import
+ * fetchers' /api/fetch targets (a user-supplied old-site URL), never
  * arbitrary/attacker-supplied input, so the private-IP check is the one
  * invariant that actually matters here. */
 export async function guardUrl(rawUrl: string): Promise<GuardResult> {

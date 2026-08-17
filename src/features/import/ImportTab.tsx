@@ -4,6 +4,7 @@ import { parseWxr } from '../../core/wxr/parseWxr';
 import { rankBuilders, type BuilderScore } from '../../core/builders/detectBuilder';
 import { fetchSite } from '../../core/site/fetchSite';
 import { browserTextFetch } from '../../core/site/fetchLike';
+import { normalizeBaseUrl } from '../../core/site/probeSite';
 import { SAMPLE_WXR } from './sampleWxr';
 import { createSiteDataBackup, restoreSiteDataBackup } from '../../state/session';
 import { findMissingOldTerms, mergeMissingIntoOldTables } from '../../core/mappings/reconcileOldTables';
@@ -125,7 +126,14 @@ export const ImportTab: React.FC = () => {
         setFetchError(res.reason);
         return;
       }
-      setFileName('site.example');
+      const rawUrl = fetchUrl.trim();
+      let fetchedFrom = rawUrl;
+      try {
+        fetchedFrom = new URL(normalizeBaseUrl(rawUrl)).host;
+      } catch {
+        // unparseable input — fall back to showing the raw string
+      }
+      setFileName(fetchedFrom);
       setFetchProgress(res.truncated ? `Fetched ${res.result.totalItems} posts (may be truncated at 10,000) — ${res.source === 'rest' ? 'REST API' : 'RSS feed'}` : `Fetched ${res.result.totalItems} posts from ${res.source === 'rest' ? 'REST API' : 'RSS feed'}`);
       const ranking = rankBuilders(res.result.articles);
       setBuilderRanking(ranking);

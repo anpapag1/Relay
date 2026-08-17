@@ -42,7 +42,7 @@ export async function probeSite(baseUrl: string, fetchImpl: TextFetchLike): Prom
       const res = await fetchImpl(feedUrl);
       if (res.ok) {
         const text = await res.text();
-        if (/<rss|<feed/i.test(text)) return { ok: true, source: 'rss', feedUrl };
+        if (/<rss/i.test(text)) return { ok: true, source: 'rss', feedUrl };
       }
     } catch {
       // keep probing

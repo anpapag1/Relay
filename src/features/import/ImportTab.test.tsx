@@ -102,10 +102,29 @@ describe('ImportTab fetch-from-site', () => {
 
     const { container, root } = renderTab();
     await renderImportTab(root);
-    await fetchSource(container, 'https://site.example');
+    await fetchSource(container, 'https://news.example.com');
 
     expect(container.textContent).toContain('Import detected');
-    expect(container.textContent).toContain('From site.example');
+    expect(container.textContent).toContain('From news.example.com');
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
+
+  it('falls back to the raw fetch URL when the host cannot be parsed', async () => {
+    mockFetchSite.mockResolvedValue({
+      ok: true,
+      source: 'rest',
+      truncated: false,
+      result: SUCCESS_RESULT,
+    });
+
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+    await fetchSource(container, 'not a url');
+
+    expect(container.textContent).toContain('Import detected');
+    expect(container.textContent).toContain('From not a url');
 
     root.unmount();
     document.body.removeChild(container);

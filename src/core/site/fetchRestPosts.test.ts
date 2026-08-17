@@ -41,6 +41,16 @@ describe('fetchRestPosts', () => {
     expect(res.posts.length).toBe(100);
   });
 
+  it('throws on a non-ok response instead of reporting truncation', async () => {
+    const fetchImpl: TextFetchLike = async () => ({
+      ok: false,
+      status: 403,
+      headers: { get: () => null },
+      text: async () => 'forbidden',
+    });
+    await expect(fetchRestPosts('https://site.example/wp-json/wp/v2', fetchImpl)).rejects.toThrow(/HTTP 403/);
+  });
+
   it('reports progress via onProgress', async () => {
     const seen: number[] = [];
     const pages = { 1: [{ id: 1 }], 2: [{ id: 2 }] };

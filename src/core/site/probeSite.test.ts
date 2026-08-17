@@ -55,6 +55,17 @@ describe('probeSite', () => {
     expect(res).toEqual({ ok: true, source: 'rss', feedUrl: 'https://site.example/feed/' });
   });
 
+  it('does not claim rss for an Atom <feed> the parser cannot read', async () => {
+    const fetchImpl: TextFetchLike = async (input) => {
+      if (input.includes('wp-json') || input.includes('rest_route')) {
+        return jsonFetch(404, { code: 'rest_disabled' })(input);
+      }
+      return xmlFetch('<feed xmlns="http://www.w3.org/2005/Atom"><title>t</title></feed>')(input);
+    };
+    const res = await probeSite('https://site.example', fetchImpl);
+    expect(res.ok).toBe(false);
+  });
+
   it('reports failure when nothing is reachable', async () => {
     const fetchImpl: TextFetchLike = async () => ({ ok: false, status: 404, headers: { get: () => null }, text: async () => 'nope' });
     const res = await probeSite('https://site.example', fetchImpl);

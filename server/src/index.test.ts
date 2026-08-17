@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { clearCache } from './cache';
 import { checkImage } from './checkImage';
+import { fetchUrl } from './fetchUrl';
 
 process.env.PORT = '0';
 
@@ -13,6 +14,17 @@ vi.mock('./checkImage', async (importOriginal) => {
   return {
     ...actual,
     checkImage: vi.fn(actual.checkImage),
+  };
+});
+
+// Same wrapper trick for fetchUrl: the route tests that need real behavior
+// (SSRF guard on 127.0.0.1) keep it, while the header-forwarding and body-cap
+// tests override the single call with a canned 200 result.
+vi.mock('./fetchUrl', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./fetchUrl')>();
+  return {
+    ...actual,
+    fetchUrl: vi.fn(actual.fetchUrl),
   };
 });
 
@@ -42,6 +54,7 @@ describe('server routes', () => {
   beforeEach(() => {
     clearCache();
     vi.mocked(checkImage).mockClear();
+    vi.mocked(fetchUrl).mockClear();
   });
 
   it('responds 404 for an unknown route', async () => {
@@ -95,5 +108,35 @@ describe('server routes', () => {
   it('responds 400 for /api/fetch on a private URL', async () => {
     const res = await fetch(`${baseUrl}/api/fetch?url=${encodeURIComponent('http://127.0.0.1:1/x')}`);
     expect(res.status).toBe(400);
+  });
+
+  it('forwards upstream X-WP-TotalPages / X-WP-Total headers through /api/fetch', async () => {
+    vi.mocked(fetchUrl).mockResolvedValueOnce({
+      status: 200,
+      body: '[]',
+      contentType: 'application/json; charset=UTF-8',
+      xWpTotalPages: '12',
+      xWpTotal: '1102',
+    });
+
+    const res = await fetch(`${baseUrl}/api/fetch?url=${encodeURIComponent('https://old.example/wp-json/wp/v2/posts')}`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('x-wp-total-pages')).toBe('12');
+    expect(res.headers.get('x-wp-total')).toBe('1102');
+    expect(await res.text()).toBe('[]');
+  });
+
+  it('fetches /api/fetch targets with the raised 16MB body cap', async () => {
+    vi.mocked(fetchUrl).mockResolvedValueOnce({
+      status: 200,
+      body: '[]',
+      contentType: 'application/json; charset=UTF-8',
+    });
+
+    await fetch(`${baseUrl}/api/fetch?url=${encodeURIComponent('https://old.example/wp-json/wp/v2/posts')}`);
+
+    expect(vi.mocked(fetchUrl)).toHaveBeenCalledWith('https://old.example/wp-json/wp/v2/posts', {
+      maxBytes: 16 * 1024 * 1024,
+    });
   });
 });

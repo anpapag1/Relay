@@ -41,7 +41,7 @@ export async function fetchRestPosts(
       if (filter.status && filter.status !== 'all') url += `&status=${filter.status}`;
     }
     const res = await fetchImpl(url);
-    if (!res.ok) return { posts, truncated: true };
+    if (!res.ok) throw new Error(`the site returned HTTP ${res.status} for the posts URL`);
     const batch = JSON.parse(await res.text()) as RestPost[];
     if (batch.length === 0) break;
     posts.push(...batch);

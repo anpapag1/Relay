@@ -62,7 +62,7 @@ export async function fetchFeedPosts(
   for (let page = 1; page <= MAX_PAGES; page += 1) {
     const url = page === 1 ? feedUrl : feedPageUrl(feedUrl, page);
     const res = await fetchImpl(url);
-    if (!res.ok) return { items, truncated: true };
+    if (!res.ok) throw new Error(`the site returned HTTP ${res.status} for the feed URL`);
     const batch = parseFeedXml(await res.text());
     if (batch.length === 0) break;
     if (filter) {
@@ -77,6 +77,10 @@ export async function fetchFeedPosts(
       items.push(...batch);
     }
     onProgress?.(items.length);
+    if (page === MAX_PAGES) {
+      truncated = true;
+      break;
+    }
   }
 
   return { items, truncated };
