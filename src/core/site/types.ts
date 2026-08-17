@@ -18,6 +18,7 @@ export interface SiteArticle {
   postDate: string;
   postName: string;
   creator: string;
+  status: string;
   contentHtml: string;
   excerptHtml: string;
   terms: TermRef[];

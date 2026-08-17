@@ -108,4 +108,26 @@ describe('fetchSite', () => {
     expect(postsUrl).toContain('before=2020-02-01T23:59:59');
     expect(postsUrl).toContain('status=publish');
   });
+
+  it('maps the post status into the ParseResult article', async () => {
+    const fetchImpl: TextFetchLike = async (input) => {
+      const url = new URL(input);
+      if (url.searchParams.get('per_page') === '1' && !url.searchParams.has('page')) {
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => '[{ "id": 1 }]' };
+      }
+      return {
+        ok: true, status: 200,
+        headers: { get: (name: string) => (name.toLowerCase() === 'x-wp-totalpages' ? '1' : null) },
+        text: async () => JSON.stringify([{
+          id: 7, date: '2026-08-17T09:00:00', slug: 'hello', link: 'https://site.example/hello/',
+          title: { rendered: 'Hello' }, content: { rendered: '<p>Hi</p>' }, featured_media: 0, status: 'draft',
+        }]),
+      };
+    };
+    const res = await fetchSite('https://site.example', fetchImpl);
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.result.articles[0].status).toBe('draft');
+    expect(res.result.statusCounts).toEqual({ draft: 1 });
+  });
 });

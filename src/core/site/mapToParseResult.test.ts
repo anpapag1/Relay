@@ -12,7 +12,7 @@ describe('restPostToSiteArticle', () => {
     const art = restPostToSiteArticle(post, 'https://cdn.example/42.jpg');
     expect(art).toEqual({
       postId: 7, title: 'Hello', link: 'https://site.example/hello/', postDate: '2026-08-17T09:00:00',
-      postName: 'hello', creator: '', contentHtml: '<p>Hi</p>', excerptHtml: '', terms: [],
+      postName: 'hello', creator: '', status: 'publish', contentHtml: '<p>Hi</p>', excerptHtml: '', terms: [],
       featuredImageUrl: 'https://cdn.example/42.jpg',
     });
   });
@@ -46,5 +46,22 @@ describe('mapToParseResult', () => {
     expect(result.attachments).toEqual([]);
     expect(result.taxonomies).toEqual({});
     expect(result.authors).toEqual(['A']);
+  });
+});
+
+describe('mapToParseResult statuses', () => {
+  it('reflects the fetched statuses in statusCounts', () => {
+    const result = mapToParseResult({
+      source: 'rest',
+      baseUrl: 'https://site.example',
+      articles: [
+        restPostToSiteArticle({ id: 1, date: '2026-08-01T09:00:00', slug: 'a', link: 'https://site.example/a/', title: { rendered: 'A' }, content: { rendered: '' }, featured_media: 0, status: 'publish' }),
+        restPostToSiteArticle({ id: 2, date: '2026-08-02T09:00:00', slug: 'b', link: 'https://site.example/b/', title: { rendered: 'B' }, content: { rendered: '' }, featured_media: 0, status: 'draft' }),
+      ],
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.statusCounts).toEqual({ publish: 1, draft: 1 });
+    expect(result.articles[1].status).toBe('draft');
   });
 });

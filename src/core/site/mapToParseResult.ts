@@ -11,6 +11,7 @@ export function restPostToSiteArticle(post: RestPost, featuredUrl?: string): Sit
     postDate: post.date,
     postName: post.slug,
     creator: '',
+    status: post.status,
     contentHtml: post.content.rendered,
     excerptHtml: '',
     terms: [],
@@ -26,6 +27,7 @@ export function feedItemToSiteArticle(item: FeedItem): SiteArticle {
     postDate: item.pubDate,
     postName: '',
     creator: item.creator,
+    status: 'publish',
     contentHtml: item.contentHtml,
     excerptHtml: item.excerptHtml,
     terms: [],
@@ -42,7 +44,7 @@ export function mapToParseResult(data: { source: 'rest' | 'rss'; baseUrl: string
     articles: data.articles.map((a) => ({
       postId: a.postId,
       postType: 'post',
-      status: 'publish',
+      status: a.status,
       title: a.title,
       link: a.link,
       postDate: a.postDate,
@@ -57,6 +59,9 @@ export function mapToParseResult(data: { source: 'rest' | 'rss'; baseUrl: string
     attachments: [],
     taxonomies: {},
     authors,
-    statusCounts: { publish: data.articles.length },
+    statusCounts: data.articles.reduce<Record<string, number>>((acc, a) => {
+      acc[a.status] = (acc[a.status] ?? 0) + 1;
+      return acc;
+    }, {}),
   };
 }
