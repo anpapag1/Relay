@@ -9,6 +9,7 @@ import { createSiteDataBackup, restoreSiteDataBackup } from '../../state/session
 import { findMissingOldTerms, mergeMissingIntoOldTables } from '../../core/mappings/reconcileOldTables';
 import { BUILDER_VALIDATION_STATUS, type BuilderId } from '../../core/builders/types';
 import type { TermTable } from '../../types/domain';
+import type { SiteFetchStatus } from '../../core/site/types';
 import { BuilderStatusPill } from '../../ui/Badge';
 
 const BUILDER_OPTIONS: BuilderId[] = ['plainHtml', 'elementor', 'divi', 'wpbakery'];
@@ -61,6 +62,11 @@ export const ImportTab: React.FC = () => {
   const [fetchingSite, setFetchingSite] = useState(false);
   const [fetchProgress, setFetchProgress] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [fetchStartDate, setFetchStartDate] = useState('');
+  const [fetchEndDate, setFetchEndDate] = useState('');
+  const [fetchStatus, setFetchStatus] = useState<SiteFetchStatus>('all');
+
+  const fetchDatesValid = Boolean(fetchStartDate && fetchEndDate && fetchStartDate <= fetchEndDate);
 
   const toggleOldTable = (tableId: string) => {
     setExpandedOldTables((prev) => ({ ...prev, [tableId]: !(prev[tableId] ?? true) }));
@@ -113,6 +119,7 @@ export const ImportTab: React.FC = () => {
           else if (stage === 'media') setFetchProgress(`Resolving featured images (${fetched}/${total ?? '…'})`);
           else setFetchProgress(total != null ? `Fetching posts (${fetched}/${total})…` : `Fetched ${fetched} posts…`);
         },
+        { startDate: fetchStartDate, endDate: fetchEndDate, status: fetchStatus },
       );
       if (!res.ok) {
         setFetchError(res.reason);
@@ -133,6 +140,9 @@ export const ImportTab: React.FC = () => {
 
   const handleStartOver = () => {
     setFetchUrl('');
+    setFetchStartDate('');
+    setFetchEndDate('');
+    setFetchStatus('all');
     setFetchProgress(null);
     setFetchError(null);
     dispatch({ type: 'CLEAR_SOURCE' });
@@ -470,9 +480,50 @@ export const ImportTab: React.FC = () => {
               disabled={fetchingSite}
               style={{ flex: 1, minWidth: '240px', padding: '10px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px' }}
             />
-            <button type="button" onClick={handleFetchSite} disabled={fetchingSite} className="btn btn-primary">
+            <button type="button" onClick={handleFetchSite} disabled={fetchingSite || !fetchDatesValid} className="btn btn-primary">
               {fetchingSite ? 'Fetching…' : 'Fetch posts'}
             </button>
+          </div>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', marginTop: '10px' }}>
+            <label style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>
+              Start date{' '}
+              <input
+                type="date"
+                aria-label="Start date"
+                value={fetchStartDate}
+                onChange={(e) => setFetchStartDate(e.target.value)}
+                disabled={fetchingSite}
+                style={{ padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px' }}
+              />
+            </label>
+            <label style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>
+              End date{' '}
+              <input
+                type="date"
+                aria-label="End date"
+                value={fetchEndDate}
+                onChange={(e) => setFetchEndDate(e.target.value)}
+                disabled={fetchingSite}
+                style={{ padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px' }}
+              />
+            </label>
+            <label style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>
+              Status{' '}
+              <select
+                aria-label="Status"
+                value={fetchStatus}
+                onChange={(e) => setFetchStatus(e.target.value as SiteFetchStatus)}
+                disabled={fetchingSite}
+                style={{ padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px' }}
+              >
+                <option value="all">All</option>
+                <option value="publish">Published</option>
+                <option value="draft">Draft</option>
+                <option value="pending">Pending</option>
+                <option value="future">Future</option>
+                <option value="private">Private</option>
+              </select>
+            </label>
           </div>
           {fetchProgress && <div style={{ marginTop: '10px', fontSize: '13px', color: 'oklch(50% 0.01 250)' }}>{fetchProgress}</div>}
           {fetchError && <div style={{ marginTop: '10px', fontSize: '13px', color: 'oklch(50% 0.15 20)' }}>{fetchError}</div>}
