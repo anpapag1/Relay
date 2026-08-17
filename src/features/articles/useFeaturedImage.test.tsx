@@ -64,6 +64,14 @@ afterEach(async () => {
 });
 
 describe('useFeaturedImage', () => {
+  it('uses article.featuredImageUrl directly when present (matches build precedence)', async () => {
+    await act(async () => {
+      root.render(<Harness article={makeArticle({ featuredImageUrl: 'https://cdn.example/f.jpg', postmeta: {} })} />);
+    });
+    expect(lastResult).toEqual({ featuredImageUrl: 'https://cdn.example/f.jpg', featuredImageLoading: false });
+    expect(resolveFeaturedImage).not.toHaveBeenCalled();
+  });
+
   it('returns null immediately when the article has no thumbnail id', async () => {
     await act(async () => {
       root.render(<Harness article={makeArticle({ postmeta: {} })} />);

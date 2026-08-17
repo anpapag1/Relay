@@ -26,6 +26,12 @@ export function useFeaturedImage(
       return;
     }
 
+    if (article.featuredImageUrl) {
+      setFeaturedImageUrl(article.featuredImageUrl);
+      setFeaturedImageLoading(false);
+      return;
+    }
+
     const thumbnailId = article.postmeta?._thumbnail_id;
     if (!thumbnailId) {
       setFeaturedImageUrl(null);

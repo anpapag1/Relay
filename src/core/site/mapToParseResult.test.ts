@@ -16,6 +16,23 @@ describe('restPostToSiteArticle', () => {
       featuredImageUrl: 'https://cdn.example/42.jpg',
     });
   });
+
+  it('strips plugin chrome (pdfprnt print buttons) from rendered content', () => {
+    const post: RestPost = {
+      id: 7, date: '2026-08-17T09:00:00', slug: 'hello', link: 'https://site.example/hello/',
+      title: { rendered: 'Hello' },
+      content: {
+        rendered:
+          '<p>Body</p>' +
+          '<div class="pdfprnt-buttons pdfprnt-buttons-post pdfprnt-bottom-left">' +
+          '<a class="pdfprnt-button pdfprnt-button-print" href="https://site.example/hello/?print=print">Print</a>' +
+          '</div>',
+      },
+      featured_media: 0, status: 'publish',
+    };
+    const art = restPostToSiteArticle(post);
+    expect(art.contentHtml).toBe('<p>Body</p>');
+  });
 });
 
 describe('feedItemToSiteArticle', () => {

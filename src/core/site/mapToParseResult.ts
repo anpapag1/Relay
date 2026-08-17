@@ -2,6 +2,7 @@ import type { ParseResult } from '../../types/domain';
 import type { SiteArticle } from './types';
 import type { RestPost } from './fetchRestPosts';
 import type { FeedItem } from './fetchFeedPosts';
+import { cleanSiteContent } from './cleanSiteContent';
 
 export function restPostToSiteArticle(post: RestPost, featuredUrl?: string): SiteArticle {
   return {
@@ -12,7 +13,7 @@ export function restPostToSiteArticle(post: RestPost, featuredUrl?: string): Sit
     postName: post.slug,
     creator: '',
     status: post.status,
-    contentHtml: post.content.rendered,
+    contentHtml: cleanSiteContent(post.content.rendered),
     excerptHtml: '',
     terms: [],
     featuredImageUrl: featuredUrl,
@@ -28,7 +29,7 @@ export function feedItemToSiteArticle(item: FeedItem): SiteArticle {
     postName: '',
     creator: item.creator,
     status: 'publish',
-    contentHtml: item.contentHtml,
+    contentHtml: cleanSiteContent(item.contentHtml),
     excerptHtml: item.excerptHtml,
     terms: [],
     featuredImageUrl: item.featuredImageUrl,
