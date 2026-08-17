@@ -1,0 +1,59 @@
+import type { ParseResult } from '../../types/domain';
+import type { SiteArticle, TextFetchLike } from './types';
+import { probeSite, normalizeBaseUrl } from './probeSite';
+import { fetchRestPosts } from './fetchRestPosts';
+import { fetchFeaturedImageUrls } from './fetchRestMedia';
+import { fetchFeedPosts } from './fetchFeedPosts';
+import { mapToParseResult, restPostToSiteArticle, feedItemToSiteArticle } from './mapToParseResult';
+
+export interface FetchSiteProgress {
+  stage: 'probe' | 'posts' | 'media';
+  fetched: number;
+  total: number | null;
+}
+
+export type FetchSiteResult =
+  | { ok: true; result: ParseResult; source: 'rest' | 'rss'; truncated: boolean }
+  | { ok: false; reason: string };
+
+/** The single entry point the Import tab calls: probe for REST (falling
+ * back to RSS), paginate the posts, resolve featured images, and produce
+ * a ParseResult the rest of Relay can consume unchanged. Never throws. */
+export async function fetchSite(
+  baseUrl: string,
+  fetchImpl: TextFetchLike,
+  onProgress?: (p: FetchSiteProgress) => void,
+): Promise<FetchSiteResult> {
+  onProgress?.({ stage: 'probe', fetched: 0, total: null });
+  const probe = await probeSite(baseUrl, fetchImpl);
+  if (!probe.ok) return { ok: false, reason: probe.reason };
+
+  if (probe.source === 'rest') {
+    const { posts, truncated } = await fetchRestPosts(probe.apiBase, fetchImpl, (p) =>
+      onProgress?.({ stage: 'posts', fetched: p.fetched, total: p.totalPages != null ? p.totalPages * 100 : null }),
+    );
+    const mediaIds = Array.from(new Set(posts.map((post) => post.featured_media).filter((id) => id > 0)));
+    onProgress?.({ stage: 'media', fetched: 0, total: mediaIds.length });
+    const featuredByMediaId = await fetchFeaturedImageUrls(probe.apiBase, mediaIds, fetchImpl);
+    const articles: SiteArticle[] = posts.map((post) =>
+      restPostToSiteArticle(post, featuredByMediaId.get(post.featured_media)),
+    );
+    return {
+      ok: true,
+      result: mapToParseResult({ source: 'rest', baseUrl: normalizeBaseUrl(baseUrl), articles }),
+      source: 'rest',
+      truncated,
+    };
+  }
+
+  const { items, truncated } = await fetchFeedPosts(probe.feedUrl, fetchImpl, (fetched) =>
+    onProgress?.({ stage: 'posts', fetched, total: null }),
+  );
+  const articles = items.map(feedItemToSiteArticle);
+  return {
+    ok: true,
+    result: mapToParseResult({ source: 'rss', baseUrl: normalizeBaseUrl(baseUrl), articles }),
+    source: 'rss',
+    truncated,
+  };
+}
