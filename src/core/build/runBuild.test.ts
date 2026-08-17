@@ -207,6 +207,27 @@ describe('runBuild', () => {
     expect(parsed.articles[0].terms).toEqual([{ domain: 'category', nicename: 'news', name: 'News' }]);
   });
 
+  it('uses ParsedArticle.featuredImageUrl directly and exports it as _thumbnail_id', async () => {
+    const FEATURED = 'https://old.example/uploads/hero.jpg';
+    const input: BuildArticleInput = {
+      article: makeArticle({ postmeta: {}, featuredImageUrl: FEATURED }),
+      excluded: false,
+    };
+    const { wxr } = await runBuild({
+      articles: [input],
+      attachments: [],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+    expect(wxr).toContain('_thumbnail_id');
+    expect(wxr).toContain(FEATURED);
+  });
+
   it('resolves a featured image already in the export attachments and emits it as _thumbnail_id in the WXR', async () => {
     const articles: BuildArticleInput[] = [
       { article: makeArticle({ postmeta: { _thumbnail_id: '42' } }), excluded: false },

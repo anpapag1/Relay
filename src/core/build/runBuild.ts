@@ -154,7 +154,9 @@ async function resolveOneArticle(
 ): Promise<ResolvedArticle> {
   const { article } = input;
   const terms = resolveArticleTerms(article.terms, options.mappings, options.newTables);
-  const featuredImage = await resolveFeaturedImage(article.postmeta, attachmentIndex, article.link || null, options.fetchImpl);
+  const featuredImage = article.featuredImageUrl
+    ? { outcome: 'matched-live' as const, url: article.featuredImageUrl }
+    : await resolveFeaturedImage(article.postmeta, attachmentIndex, article.link || null, options.fetchImpl);
   const featuredAttachmentUrl = featuredImage?.url ?? null;
   const termWarnings = unmappedTermWarnings(article.terms, options.mappings, options.newTables);
 

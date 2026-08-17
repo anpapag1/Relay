@@ -23,6 +23,11 @@ export interface ParsedArticle {
   excerptHtml: string;
   terms: TermRef[];
   postmeta: PostMeta;
+  /** Present only for posts imported via the live-site fetch path (REST
+   * API / RSS feed), where the featured image is already resolved to its
+   * final URL at import time. The build uses it directly instead of the
+   * `_thumbnail_id` → attachment-index → og:image scrape chain. */
+  featuredImageUrl?: string;
 }
 
 export interface ParsedAttachment {
