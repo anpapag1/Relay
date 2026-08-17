@@ -12,7 +12,20 @@ describe('resolveArticleTerms', () => {
     const mappings: Record<string, TermMapping> = {
       'category:news': { oldDomain: 'category', oldNicename: 'news', targetTableId: 'category', targetTermIds: ['c1'], excluded: false, origin: 'user' },
     };
-    expect(resolveArticleTerms(terms, mappings, NEW_TABLES)).toEqual([{ domain: 'category', nicename: 'news', name: 'News' }]);
+    expect(resolveArticleTerms(terms, mappings, NEW_TABLES)).toEqual([
+      { domain: 'category', nicename: 'news', name: 'News', sourceDomain: 'category' },
+    ]);
+  });
+
+  it('carries the source taxonomy domain through to the destination term', () => {
+    const terms: TermRef[] = [{ domain: 'post_tag', nicename: 'react', name: 'React' }];
+    const mappings: Record<string, TermMapping> = {
+      'post_tag:react': { oldDomain: 'post_tag', oldNicename: 'react', targetTableId: 'tags', targetTermIds: ['t1'], excluded: false, origin: 'user' },
+    };
+    const tables: TermTable[] = [{ id: 'tags', label: 'Tags', terms: [{ id: 't1', name: 'React', slug: 'react' }] }];
+    expect(resolveArticleTerms(terms, mappings, tables)).toEqual([
+      { domain: 'tags', nicename: 'react', name: 'React', sourceDomain: 'post_tag' },
+    ]);
   });
 
   it('resolves a term mapped to multiple destinations into multiple export refs', () => {
@@ -21,8 +34,8 @@ describe('resolveArticleTerms', () => {
       'category:news': { oldDomain: 'category', oldNicename: 'news', targetTableId: 'category', targetTermIds: ['c1', 'c2'], excluded: false, origin: 'user' },
     };
     expect(resolveArticleTerms(terms, mappings, NEW_TABLES)).toEqual([
-      { domain: 'category', nicename: 'news', name: 'News' },
-      { domain: 'category', nicename: 'press', name: 'Press' },
+      { domain: 'category', nicename: 'news', name: 'News', sourceDomain: 'category' },
+      { domain: 'category', nicename: 'press', name: 'Press', sourceDomain: 'category' },
     ]);
   });
 

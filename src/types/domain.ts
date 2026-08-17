@@ -63,6 +63,11 @@ export interface ExportTermRef {
   domain: string;
   nicename: string;
   name: string;
+  /** The old-site taxonomy domain the term came from (e.g. `category`,
+   * `post_tag`), carried through mapping so the UI can tell a mapped
+   * category from a mapped tag regardless of the target table's id. Not
+   * emitted to the WXR — `domain` remains the target table id there. */
+  sourceDomain?: string;
 }
 
 export type ExportPostStatus = 'publish' | 'pending';

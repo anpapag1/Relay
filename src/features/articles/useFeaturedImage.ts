@@ -12,9 +12,13 @@ export interface UseFeaturedImageResult {
 export function useFeaturedImage(
   article: DerivedArticle | null,
   attachmentIndex: AttachmentIndex,
+  fallbackFeaturedImageUrl?: string | null,
+  fallbackFeaturedImageDataUrl?: string | null,
 ): UseFeaturedImageResult {
   const [featuredImageUrl, setFeaturedImageUrl] = useState<string | null>(null);
   const [featuredImageLoading, setFeaturedImageLoading] = useState(false);
+
+  const fallbackUrl = fallbackFeaturedImageUrl ?? fallbackFeaturedImageDataUrl ?? null;
 
   // Keyed on article.id rather than the article object itself, since
   // DerivedArticle is recomputed fresh on every render (getDerivedArticles) —
@@ -34,7 +38,7 @@ export function useFeaturedImage(
 
     const thumbnailId = article.postmeta?._thumbnail_id;
     if (!thumbnailId) {
-      setFeaturedImageUrl(null);
+      setFeaturedImageUrl(fallbackUrl);
       setFeaturedImageLoading(false);
       return;
     }
@@ -47,7 +51,7 @@ export function useFeaturedImage(
     }
 
     if (!article.link) {
-      setFeaturedImageUrl(null);
+      setFeaturedImageUrl(fallbackUrl);
       setFeaturedImageLoading(false);
       return undefined;
     }
@@ -58,7 +62,7 @@ export function useFeaturedImage(
     const fetchImpl = window.fetch ? window.fetch.bind(window) : (async () => new Response()) as any;
     resolveFeaturedImage(article.postmeta, attachmentIndex, article.link, fetchImpl).then((result) => {
       if (ignore) return;
-      setFeaturedImageUrl(result?.url ?? null);
+      setFeaturedImageUrl(result?.url ?? fallbackUrl);
       setFeaturedImageLoading(false);
     });
 
@@ -66,7 +70,7 @@ export function useFeaturedImage(
       ignore = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [article?.id, attachmentIndex]);
+  }, [article?.id, attachmentIndex, fallbackUrl]);
 
   return { featuredImageUrl, featuredImageLoading };
 }

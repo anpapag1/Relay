@@ -122,7 +122,7 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
             <br />
             <b>
               {article.destinationTerms
-                .filter((t) => t.domain === 'category')
+                .filter((t) => (t.sourceDomain ?? t.domain) === 'category')
                 .map((t) => t.name)
                 .join(', ') || 'Unmapped'}
             </b>
@@ -132,7 +132,7 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
             <br />
             <b>
               {article.destinationTerms
-                .filter((t) => t.domain === 'post_tag')
+                .filter((t) => (t.sourceDomain ?? t.domain) === 'post_tag')
                 .map((t) => t.name)
                 .join(', ') || 'None'}
             </b>

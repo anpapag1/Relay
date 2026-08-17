@@ -246,7 +246,7 @@ describe('selectors', () => {
 
     const ready = derived.find((a) => a.id === 101);
     expect(ready?.terms).toEqual([{ domain: 'category', nicename: 'news', name: 'News' }]);
-    expect(ready?.destinationTerms).toEqual([{ domain: 'cats', nicename: 'news', name: 'News' }]);
+    expect(ready?.destinationTerms).toEqual([{ domain: 'cats', nicename: 'news', name: 'News', sourceDomain: 'category' }]);
 
     // Unmapped old term resolves to no destination terms at all.
     const review = derived.find((a) => a.id === 102);

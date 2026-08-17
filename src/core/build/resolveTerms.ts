@@ -23,7 +23,7 @@ export function resolveArticleTerms(
     for (const targetTermId of mapping.targetTermIds) {
       const newTerm = table.terms.find((candidate) => candidate.id === targetTermId);
       if (!newTerm) continue;
-      out.push({ domain: table.id, nicename: newTerm.slug || newTerm.id, name: newTerm.name });
+      out.push({ domain: table.id, nicename: newTerm.slug || newTerm.id, name: newTerm.name, sourceDomain: term.domain });
     }
   }
 

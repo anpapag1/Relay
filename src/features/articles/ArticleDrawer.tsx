@@ -47,7 +47,12 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
     () => buildAttachmentIndex(state.source?.attachments ?? []),
     [state.source],
   );
-  const { featuredImageUrl, featuredImageLoading } = useFeaturedImage(article, attachmentIndex);
+  const { featuredImageUrl, featuredImageLoading } = useFeaturedImage(
+    article,
+    attachmentIndex,
+    state.settings.fallbackFeaturedImageUrl,
+    state.settings.fallbackFeaturedImageDataUrl,
+  );
 
   const { pendingAction, requestClose, requestPrev, requestNext, confirmDiscard, cancelDiscard } =
     useDrawerNavigationGuard({ article, isDirty, hasPrev, hasNext, onClose, onPrev, onNext });

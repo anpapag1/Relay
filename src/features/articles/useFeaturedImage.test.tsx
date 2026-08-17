@@ -42,9 +42,9 @@ let root: Root;
 let lastResult: { featuredImageUrl: string | null; featuredImageLoading: boolean } | null = null;
 let resolveMock: (value: any) => void;
 
-function Harness({ article }: { article: DerivedArticle | null }) {
+function Harness({ article, fallbackUrl, fallbackDataUrl }: { article: DerivedArticle | null; fallbackUrl?: string; fallbackDataUrl?: string }) {
   const attachmentIndex = useMemo(() => buildAttachmentIndex([]), []);
-  lastResult = useFeaturedImage(article, attachmentIndex);
+  lastResult = useFeaturedImage(article, attachmentIndex, fallbackUrl ?? null, fallbackDataUrl ?? null);
   return null;
 }
 
@@ -77,6 +77,47 @@ describe('useFeaturedImage', () => {
       root.render(<Harness article={makeArticle({ postmeta: {} })} />);
     });
     expect(lastResult).toEqual({ featuredImageUrl: null, featuredImageLoading: false });
+    expect(resolveFeaturedImage).not.toHaveBeenCalled();
+  });
+
+  it('uses the fallback link when the article has no featured image at all', async () => {
+    await act(async () => {
+      root.render(<Harness article={makeArticle({ postmeta: {} })} fallbackUrl="https://fallback.example/default.jpg" />);
+    });
+    expect(lastResult).toEqual({ featuredImageUrl: 'https://fallback.example/default.jpg', featuredImageLoading: false });
+    expect(resolveFeaturedImage).not.toHaveBeenCalled();
+  });
+
+  it('prefers the fallback link over the fallback data URL', async () => {
+    await act(async () => {
+      root.render(
+        <Harness
+          article={makeArticle({ postmeta: {} })}
+          fallbackUrl="https://fallback.example/default.jpg"
+          fallbackDataUrl="data:image/png;base64,AAA"
+        />,
+      );
+    });
+    expect(lastResult).toEqual({ featuredImageUrl: 'https://fallback.example/default.jpg', featuredImageLoading: false });
+  });
+
+  it('uses the fallback data URL when no fallback link is set', async () => {
+    await act(async () => {
+      root.render(<Harness article={makeArticle({ postmeta: {} })} fallbackDataUrl="data:image/png;base64,AAA" />);
+    });
+    expect(lastResult).toEqual({ featuredImageUrl: 'data:image/png;base64,AAA', featuredImageLoading: false });
+  });
+
+  it('ignores the fallback when the article has its own featured image', async () => {
+    await act(async () => {
+      root.render(
+        <Harness
+          article={makeArticle({ featuredImageUrl: 'https://cdn.example/f.jpg', postmeta: {} })}
+          fallbackUrl="https://fallback.example/default.jpg"
+        />,
+      );
+    });
+    expect(lastResult).toEqual({ featuredImageUrl: 'https://cdn.example/f.jpg', featuredImageLoading: false });
     expect(resolveFeaturedImage).not.toHaveBeenCalled();
   });
 
