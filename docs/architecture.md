@@ -73,6 +73,7 @@ Relay/
    │  ├─ build/          runBuild · collectMediaRefs · resolveTerms
    │  └─ utils/          concurrencyLimit · decodeHtmlEntities
    ├─ state/            AppStateContext · reducer · actions · selectors · session · siteProfiles
+   │                    unsavedChanges · useUnsavedChangesWarning
    ├─ features/
    │  ├─ import/        ImportTab · useImageHealthCheck · sampleWxr
    │  ├─ mappings/      MappingsTab
@@ -129,6 +130,12 @@ conversion settings — plus a `savedAt` timestamp. When an import for a known
 domain is detected, its profile auto-loads silently; config-slice changes
 auto-save (debounced 500 ms). Article overrides and media resolutions are no
 longer persisted across reloads — they're session-only and rebuild on demand.
+That's why `state/useUnsavedChangesWarning.ts` arms a `beforeunload` handler
+while the session holds manual article work (via the `hasSessionUnsavedWork`
+selector) or the drawer has an unsaved draft (reported through the
+`state/unsavedChanges.ts` pub/sub bridge): reloading discards exactly the
+things that aren't auto-saved. Auto-exclusions are recomputed on load, so
+they never trigger the guard.
 
 ## Data flow
 

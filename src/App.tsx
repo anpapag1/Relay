@@ -6,6 +6,7 @@ import { SettingsTab } from './features/settings';
 import { ArticlesTab } from './features/articles';
 import { BuildTab } from './features/build';
 import { useImageHealthCheck } from './features/import/useImageHealthCheck';
+import { useUnsavedChangesWarning } from './state/useUnsavedChangesWarning';
 import './theme';
 
 function AppContent() {
@@ -18,6 +19,12 @@ function AppContent() {
   // check (or meant it never ran at all on a page reload that restores
   // straight into a different tab).
   useImageHealthCheck();
+
+  // Same reasoning: lives on AppContent so the `beforeunload` guard stays
+  // armed no matter which tab is active — session-only article work (manual
+  // excludes/includes, review flags, saved edits) and an unsaved drawer
+  // draft are both lost on reload.
+  useUnsavedChangesWarning();
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'oklch(98% 0.003 250)', color: 'oklch(20% 0.01 250)' }}>

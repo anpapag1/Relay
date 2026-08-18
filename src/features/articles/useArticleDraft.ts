@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { DerivedArticle } from '../../state/types';
 import type { Action } from '../../state/actions';
+import { reportDraftDirty } from '../../state/unsavedChanges';
 
 export interface UseArticleDraftResult {
   draftHtml: string;
@@ -24,6 +25,11 @@ export function useArticleDraft(
       setIsDirty(false);
     }
   }, [article, previewHtml]);
+
+  useEffect(() => {
+    reportDraftDirty(isDirty);
+    return () => reportDraftDirty(false);
+  }, [isDirty]);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setDraftHtml(e.target.value);

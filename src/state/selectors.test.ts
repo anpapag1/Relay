@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getArticlePreviewHtml, getDerivedArticles, getFilteredArticles, getMappingProgress, getMediaStats, getStatusCounts } from './selectors';
+import { getArticlePreviewHtml, getDerivedArticles, getFilteredArticles, getMappingProgress, getMediaStats, getStatusCounts, hasSessionUnsavedWork } from './selectors';
 import { appReducer, initialState } from './reducer';
 import type { ParseResult, TermTable } from '../types/domain';
 
@@ -462,5 +462,51 @@ describe('selectors', () => {
 
     expect(stats.total).toBe(1);
     expect(stats.unresolved).toBe(1);
+  });
+});
+
+describe('hasSessionUnsavedWork', () => {
+  function loadedState() {
+    return appReducer(initialState, {
+      type: 'LOAD_SOURCE',
+      result: MOCK_PARSE_RESULT,
+      defaultBuilder: 'plainHtml',
+      confidence: 90,
+    });
+  }
+
+  it('is false right after a load, when only auto-exclusions exist', () => {
+    expect(hasSessionUnsavedWork(loadedState())).toBe(false);
+  });
+
+  it('is true after a manual exclusion', () => {
+    let s = loadedState();
+    s = appReducer(s, { type: 'SET_ARTICLE_EXCLUDED', articleId: 101, excluded: true });
+    expect(hasSessionUnsavedWork(s)).toBe(true);
+  });
+
+  it('is true after manually re-including an auto-excluded article', () => {
+    let s = loadedState();
+    s = appReducer(s, { type: 'SET_ARTICLE_EXCLUDED', articleId: 104, excluded: false });
+    expect(hasSessionUnsavedWork(s)).toBe(true);
+  });
+
+  it('is true after flagging an article for manual review', () => {
+    let s = loadedState();
+    s = appReducer(s, { type: 'SET_ARTICLE_MANUAL_REVIEW', articleId: 102, manualReview: true });
+    expect(hasSessionUnsavedWork(s)).toBe(true);
+  });
+
+  it('is true after saving an edit', () => {
+    let s = loadedState();
+    s = appReducer(s, { type: 'SAVE_ARTICLE_EDIT', articleId: 103, editedHtml: '<p>v2</p>' });
+    expect(hasSessionUnsavedWork(s)).toBe(true);
+  });
+
+  it('is false after reverting the only saved edit', () => {
+    let s = loadedState();
+    s = appReducer(s, { type: 'SAVE_ARTICLE_EDIT', articleId: 103, editedHtml: '<p>v2</p>' });
+    s = appReducer(s, { type: 'REVERT_ARTICLE_EDIT', articleId: 103 });
+    expect(hasSessionUnsavedWork(s)).toBe(false);
   });
 });

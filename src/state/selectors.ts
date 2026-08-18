@@ -352,3 +352,18 @@ export function getMediaStats(
 
   return stats;
 }
+
+/** True when the session holds article-level work that would be lost on a
+ * reload: a manual exclude/include, a manual-review flag, or a saved edit.
+ * Auto-exclusions are the only overrides `LOAD_SOURCE` writes with
+ * `auto: true`; every user action (SET_ARTICLE_EXCLUDED, manual review,
+ * save edit) writes one without it. An override emptied back out by
+ * `REVERT_ARTICLE_EDIT` (only `editedHtml` removed) counts for nothing.
+ * Feeds the `beforeunload` guard so the browser asks before discarding
+ * real work. */
+export function hasSessionUnsavedWork(state: AppState): boolean {
+  return Object.values(state.articles).some(
+    (override) =>
+      (override.excluded !== undefined && override.auto !== true) || override.manualReview === true || override.editedHtml !== undefined,
+  );
+}

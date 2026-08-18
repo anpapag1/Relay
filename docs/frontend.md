@@ -32,6 +32,12 @@ store library.
   `ui.sourceDomain`).
 - **`mappingTransitions.ts`** — helpers for moving mappings between states
   (e.g. when new-site tables change).
+- **`unsavedChanges.ts`** — a tiny pub/sub bridge for the "would a reload
+  discard work?" question. Article overrides live in global state (read via
+  the `hasSessionUnsavedWork` selector), but the drawer's unsaved edit draft
+  is component-local `useArticleDraft` state — the drawer reports it here
+  (`reportDraftDirty`) and the guard subscribes (`subscribeDraftDirty`). No
+  context or provider; the signal is transient and has one consumer.
 
 The reducer + selectors are unit-tested directly against the engine's output
 types; components get light smoke tests.
@@ -39,10 +45,11 @@ types; components get light smoke tests.
 ## The shell — `src/App.tsx`
 
 Renders the header and switches between the five tabs by `state.ui.activeTab`.
-It also mounts `useImageHealthCheck` (from `features/import`) at the top level
-deliberately: tabs unmount when you switch away, and the health check must
-survive navigating away from the Import tab (and run on page reloads that
-restore straight into another tab).
+It also mounts `useImageHealthCheck` (from `features/import`) and
+`useUnsavedChangesWarning` (from `state/`) at the top level deliberately:
+tabs unmount when you switch away, and both effects must survive navigating
+between tabs (the health check must keep running after leaving Import; the
+`beforeunload` guard must stay armed on whichever tab is active).
 
 ## The five tabs
 
@@ -142,3 +149,9 @@ domain is detected.
   in state. The per-site profile keeps the decisions (mappings, tables,
   settings) that survive reload; article edits and resolved media are
   session-only and rebuild on demand.
+- **Reload guard.** `useUnsavedChangesWarning` (mounted in `App.tsx`) arms a
+  `beforeunload` handler whenever a reload would discard real work: a manual
+  article override (exclude/include, review flag, saved edit) via the
+  `hasSessionUnsavedWork` selector, or an unsaved drawer draft via the
+  `unsavedChanges` bridge. Auto-exclusions are recomputed on load and never
+  trigger it.

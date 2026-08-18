@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { useArticleDraft, type UseArticleDraftResult } from './useArticleDraft';
+import { isDraftDirty } from '../../state/unsavedChanges';
 import type { DerivedArticle } from '../../state/types';
 import type { Action } from '../../state/actions';
 
@@ -92,5 +93,32 @@ describe('useArticleDraft', () => {
       lastResult!.handleRevert();
     });
     expect(dispatched).toEqual([{ type: 'REVERT_ARTICLE_EDIT', articleId: 1 }]);
+  });
+
+  it('reports draft dirtiness to the unsaved-changes bridge and clears it on unmount', async () => {
+    await act(async () => {
+      root.render(<Harness article={makeArticle()} previewHtml="<p>converted</p>" />);
+    });
+    expect(isDraftDirty()).toBe(false);
+
+    await act(async () => {
+      lastResult!.handleTextChange({ target: { value: '<p>edited</p>' } } as React.ChangeEvent<HTMLTextAreaElement>);
+    });
+    expect(isDraftDirty()).toBe(true);
+
+    await act(async () => {
+      lastResult!.handleSave();
+    });
+    expect(isDraftDirty()).toBe(false);
+
+    await act(async () => {
+      lastResult!.handleTextChange({ target: { value: '<p>edited again</p>' } } as React.ChangeEvent<HTMLTextAreaElement>);
+    });
+    expect(isDraftDirty()).toBe(true);
+
+    await act(async () => {
+      root.unmount();
+    });
+    expect(isDraftDirty()).toBe(false);
   });
 });
