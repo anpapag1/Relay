@@ -2,7 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useReducer, u
 import type { Action } from './actions';
 import { appReducer, initialState } from './reducer';
 import type { AppState, BuildHistoryEntry } from './types';
-import { loadFromLocalStorage, saveToLocalStorage } from './session';
+import { createSiteDataBackup } from './session';
+import { domainForState, loadSiteProfile, saveSiteProfile } from './siteProfiles';
 import { runBuild, type BuildArticleInput } from '../core/build/runBuild';
 
 interface AppStateContextValue {
@@ -40,19 +41,50 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({
   });
   const cancelRef = useRef(false);
 
-  useEffect(() => {
-    if (!enableAutosave) return;
-    const restored = loadFromLocalStorage(initialState);
-    if (restored) {
-      dispatch({ type: 'RESTORE_SESSION', state: restored });
-    }
-  }, [enableAutosave]);
+  const domain = domainForState(state);
+  const lastDomainRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (enableAutosave) {
-      saveToLocalStorage(state);
+    if (!enableAutosave) return;
+    if (domain !== lastDomainRef.current) {
+      lastDomainRef.current = domain;
+      if (domain) {
+        const profile = loadSiteProfile(domain);
+        if (profile) {
+          dispatch({
+            type: 'RESTORE_SESSION',
+            state: {
+              target: { tables: profile.data.targetTables },
+              oldTables: profile.data.oldTables ?? {},
+              mappings: profile.data.mappings,
+              settings: profile.data.settings,
+            },
+          });
+        }
+      }
     }
-  }, [state, enableAutosave]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [domain, enableAutosave]);
+
+  useEffect(() => {
+    if (!enableAutosave) return;
+    if (!domain) return;
+    const timer = setTimeout(() => {
+      saveSiteProfile(domain, createSiteDataBackup(state));
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [domain, state.target.tables, state.oldTables, state.mappings, state.settings, enableAutosave]);
+
+  useEffect(() => {
+    if (!enableAutosave) return;
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    try {
+      window.localStorage.removeItem('relay_session_backup_v1');
+    } catch {
+      // ignore
+    }
+  }, [enableAutosave]);
 
   const startBuild = useCallback(
     async (exportPendingForReview: boolean) => {

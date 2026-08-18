@@ -14,6 +14,7 @@ import { verifyResolvedImages } from './core/media/verifyImages';
 beforeEach(() => {
   vi.mocked(verifyResolvedImages).mockReset();
   vi.mocked(verifyResolvedImages).mockResolvedValue({});
+  window.localStorage.clear();
 });
 
 describe('App UI & Workflow', () => {
