@@ -193,6 +193,34 @@ describe('ImportTab fetch-from-site', () => {
   });
 });
 
+describe('ImportTab source domain', () => {
+  it('lets the user type a domain when the WXR has no URL and persists it via SET_SOURCE_DOMAIN', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false} initialStateOverride={{ source: { ...SUCCESS_RESULT, siteUrl: null } }}>
+          <ImportTab />
+        </AppStateProvider>,
+      );
+    });
+
+    const input = Array.from(container.querySelectorAll('input')).find((el) => el.getAttribute('aria-label') === 'Source domain' || (el as HTMLInputElement).readOnly === false && (el as HTMLInputElement).placeholder === 'e.g. oldsite.com');
+    expect(input).toBeDefined();
+    if (!input) return;
+
+    setInputValue(input as HTMLInputElement, 'my-import.example');
+    await act(async () => {
+      (input as HTMLInputElement).dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    expect((input as HTMLInputElement).value).toBe('my-import.example');
+    root.unmount();
+  });
+});
+
 describe('ImportTab fetch filters', () => {
   it('disables the fetch button until a date range is set', async () => {
     const { container, root } = renderTab();

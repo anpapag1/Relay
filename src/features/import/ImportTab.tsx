@@ -592,9 +592,12 @@ export const ImportTab: React.FC = () => {
           </div>
           <input
             type="text"
-            readOnly
-            value={domain}
-            style={{ width: '100%', padding: '10px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px', background: 'oklch(97% 0.004 250)' }}
+            aria-label="Source domain"
+            readOnly={!!source.siteUrl}
+            value={source.siteUrl ? domain : (state.ui.sourceDomain ?? '')}
+            placeholder={source.siteUrl ? undefined : 'e.g. oldsite.com'}
+            onChange={(e) => dispatch({ type: 'SET_SOURCE_DOMAIN', domain: e.target.value })}
+            style={{ width: '100%', padding: '10px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px', background: source.siteUrl ? 'oklch(97% 0.004 250)' : 'white' }}
           />
         </div>
 
