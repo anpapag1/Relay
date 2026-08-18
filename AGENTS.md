@@ -13,7 +13,7 @@ describes is incomplete.
 
 Docs to keep in sync:
 
-- `README.md` — quick start, commands, doc index
+- `README.md` — friendly overview, quick start, doc index
 - `docs/architecture.md` — code layout, state model, data flow
 - `docs/engine.md` — the conversion engine (`src/core/`)
 - `docs/frontend.md` — the React app (`src/features/`, `src/state/`)
