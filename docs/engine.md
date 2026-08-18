@@ -46,7 +46,9 @@ produces the same `ParseResult`.
 - **`fetchRestPosts.ts`** — paginates `/wp-json/wp/v2/posts` (with
   `before`/`after` date filtering), reading `X-WP-TotalPages` / `X-WP-Total`
   headers. Reports `truncated` when it hits a cap.
-- **`fetchRestMedia.ts`** — resolves featured images by media ID.
+- **`fetchRestMedia.ts`** — resolves featured images by media ID, batching
+  `include=` ids (with `per_page=100`, since WordPress otherwise caps an
+  `include=` batch at its default of 10 and silently drops the rest).
 - **`fetchRestTaxonomies.ts`** — pulls the new site's term vocabularies into
   `oldTables`.
 - **`fetchFeedPosts.ts`** — RSS/Atom parse fallback (same `SiteArticle` shape).

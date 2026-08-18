@@ -21,7 +21,9 @@ export async function fetchFeaturedImageUrls(
   const result = new Map<number, string>();
   const uniqueIds = Array.from(new Set(mediaIds));
   for (const ids of chunk(uniqueIds, CHUNK_SIZE)) {
-    const url = `${apiBase}/media?include=${ids.join(',')}&_fields=id,source_url`;
+    // per_page must be raised above WordPress's default 10, otherwise an
+    // include= batch larger than 10 IDs is silently truncated by the server.
+    const url = `${apiBase}/media?per_page=${CHUNK_SIZE}&include=${ids.join(',')}&_fields=id,source_url`;
     const res = await fetchImpl(url);
     if (!res.ok) continue;
     const items = JSON.parse(await res.text()) as RestMediaItem[];
