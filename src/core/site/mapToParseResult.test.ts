@@ -15,7 +15,18 @@ describe('restPostToSiteArticle', () => {
       postId: 7, title: 'Hello', link: 'https://site.example/hello/', postDate: '2026-08-17T09:00:00',
       postName: 'hello', creator: '', status: 'publish', contentHtml: '<p>Hi</p>', excerptHtml: '', terms: [],
       featuredImageUrl: 'https://cdn.example/42.jpg',
+      thumbnailId: '42',
     });
+  });
+
+  it('keeps thumbnailId undefined when the post has no featured_media', () => {
+    const post: RestPost = {
+      id: 9, date: '2026-08-17T09:00:00', slug: 'plain', link: 'https://site.example/plain/',
+      title: { rendered: 'Plain' }, content: { rendered: '<p>Hi</p>' }, featured_media: 0, status: 'publish',
+      categories: [], tags: [],
+    };
+    const art = restPostToSiteArticle(post);
+    expect(art.thumbnailId).toBeUndefined();
   });
 
   it('decodes HTML entities in the REST rendered title', () => {
@@ -143,5 +154,21 @@ describe('mapToParseResult statuses', () => {
     if (!result.ok) return;
     expect(result.statusCounts).toEqual({ publish: 1, draft: 1 });
     expect(result.articles[1].status).toBe('draft');
+  });
+
+  it('maps a REST article\'s thumbnailId to _thumbnail_id postmeta so og:image fallback can engage', () => {
+    const result = mapToParseResult({
+      baseUrl: 'https://site.example',
+      articles: [
+        restPostToSiteArticle({
+          id: 7, date: '2026-08-17T09:00:00', slug: 'hello', link: 'https://site.example/hello/',
+          title: { rendered: 'Hello' }, content: { rendered: '<p>Hi</p>' }, featured_media: 42, status: 'publish',
+          categories: [], tags: [],
+        }),
+      ],
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.articles[0].postmeta._thumbnail_id).toBe('42');
   });
 });

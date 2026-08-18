@@ -53,7 +53,11 @@ produces the same `ParseResult`.
   `oldTables`.
 - **`fetchFeedPosts.ts`** — RSS/Atom parse fallback (same `SiteArticle` shape).
 - **`mapToParseResult.ts`** — maps `SiteArticle[]` → `ParseResult`. Contains
-  `restPostToSiteArticle` / `feedItemToSiteArticle`.
+  `restPostToSiteArticle` / `feedItemToSiteArticle`. A REST article's
+  `featured_media` id is carried through as `_thumbnail_id` postmeta even
+  when the media endpoint withheld its URL (e.g. a 401-private attachment),
+  so the standard featured-image resolution (stage-1 attachment match, then
+  og:image scrape) still engages.
 - **`cleanSiteContent.ts`** — strips junk from live-fetched content.
 - **`decodeHtmlEntities`** lives in `core/utils/` and is shared by the WXR
   parser, the feed importer, and the REST mapper — some source sites store

@@ -34,6 +34,7 @@ export function restPostToSiteArticle(post: RestPost, featuredUrl?: string, taxo
     excerptHtml: '',
     terms: taxonomyMaps ? resolveRestTerms(post, taxonomyMaps) : [],
     featuredImageUrl: featuredUrl,
+    thumbnailId: post.featured_media > 0 ? String(post.featured_media) : undefined,
   };
 }
 
@@ -92,7 +93,7 @@ export function mapToParseResult(data: { baseUrl: string; articles: SiteArticle[
       contentHtml: a.contentHtml,
       excerptHtml: a.excerptHtml,
       terms: a.terms,
-      postmeta: {},
+      postmeta: a.thumbnailId ? { _thumbnail_id: a.thumbnailId } : ({} as Record<string, never>),
       featuredImageUrl: a.featuredImageUrl,
     })),
     attachments: [],

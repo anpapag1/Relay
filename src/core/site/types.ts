@@ -23,6 +23,11 @@ export interface SiteArticle {
   excerptHtml: string;
   terms: TermRef[];
   featuredImageUrl?: string;
+  /** Old site's `featured_media` id when it's set — mapped to `_thumbnail_id`
+   * postmeta so the standard featured-image resolution (stage-1 attachment
+   * match, then og:image scrape) engages even when the REST media endpoint
+   * withholds the URL (e.g. a 401-private attachment). */
+  thumbnailId?: string;
 }
 
 export interface SiteFetchFilter {
