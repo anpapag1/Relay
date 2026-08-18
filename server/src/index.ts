@@ -1,10 +1,17 @@
 import http from 'node:http';
-import { fetchPageMedia, type PageMediaResult } from './fetchPageMedia';
-import { checkImage, type CheckImageResult } from './checkImage';
-import { fetchUrl } from './fetchUrl';
-import { getCached, setCached } from './cache';
+import path from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { fetchPageMedia, type PageMediaResult } from './fetchPageMedia.js';
+import { checkImage, type CheckImageResult } from './checkImage.js';
+import { fetchUrl } from './fetchUrl.js';
+import { getCached, setCached } from './cache.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
+
+/** Directory that holds the built SPA (Vite `dist`). In the container the
+ * runtime stage copies the frontend build here and the proxy serves both
+ * the API routes and the static app from one process/origin. */
+const STATIC_DIR = process.env.STATIC_DIR ?? 'dist';
 
 /** A 100-post REST page with rendered content can exceed the 3MB default,
  * so /api/fetch (unlike /api/page-media and /api/image-check) raises its
@@ -14,6 +21,76 @@ const FETCH_MAX_BYTES = 16 * 1024 * 1024;
 function sendJson(res: http.ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'content-type': 'application/json' });
   res.end(JSON.stringify(body));
+}
+
+const MIME_TYPES: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.ico': 'image/x-icon',
+  '.txt': 'text/plain; charset=utf-8',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.map': 'application/json',
+};
+
+/** Serves the built SPA from STATIC_DIR so the proxy can also host the
+ * frontend on the same origin (no CORS, one container). Any path outside
+ * /api falls through here; unknown paths get index.html (SPA client
+ * routing), traversal attempts and API misspells get a 404. */
+async function serveStatic(requestUrl: URL, rawPath: string, res: http.ServerResponse): Promise<void> {
+  if (requestUrl.pathname.startsWith('/api/')) {
+    sendJson(res, 404, { error: 'not found' });
+    return;
+  }
+
+  // Reject dot-segment traversal on the raw request target. The WHATWG URL
+  // parser already collapses %2e%2e/../ segments before routing, so check
+  // pre-normalization to keep a clean 404 for attack-shaped paths.
+  if (/(^|\/)\.{1,2}(\/|%2f)/i.test(rawPath) || /%2e%2e/i.test(rawPath)) {
+    sendJson(res, 404, { error: 'not found' });
+    return;
+  }
+
+  const base = path.resolve(STATIC_DIR);
+  let pathname: string;
+  try {
+    pathname = decodeURIComponent(requestUrl.pathname);
+  } catch {
+    sendJson(res, 400, { error: 'bad request' });
+    return;
+  }
+  if (pathname.endsWith('/')) pathname += 'index.html';
+  const filePath = path.resolve(base, '.' + pathname);
+
+  if (filePath !== base && !filePath.startsWith(base + path.sep)) {
+    sendJson(res, 404, { error: 'not found' });
+    return;
+  }
+
+  try {
+    const content = await readFile(filePath);
+    res.writeHead(200, {
+      'content-type': MIME_TYPES[path.extname(filePath).toLowerCase()] ?? 'application/octet-stream',
+    });
+    res.end(content);
+  } catch {
+    try {
+      const index = await readFile(path.join(base, 'index.html'));
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(index);
+    } catch {
+      sendJson(res, 404, { error: 'not found' });
+    }
+  }
 }
 
 async function handlePageMedia(target: string, res: http.ServerResponse): Promise<void> {
@@ -114,7 +191,7 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    sendJson(res, 404, { error: 'not found' });
+    await serveStatic(requestUrl, req.url ?? '', res);
   })();
 });
 

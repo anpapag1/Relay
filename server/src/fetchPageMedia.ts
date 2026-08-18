@@ -1,5 +1,5 @@
-import { guardUrl } from './guard';
-import { requestOnce, TimeoutError, absolutize, type RawResponse } from './rawRequest';
+import { guardUrl } from './guard.js';
+import { requestOnce, TimeoutError, absolutize, type RawResponse } from './rawRequest.js';
 
 export interface PageMediaResult {
   ogImage: string | null;

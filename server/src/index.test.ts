@@ -1,9 +1,21 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import http from 'node:http';
 import { clearCache } from './cache';
 import { checkImage } from './checkImage';
 import { fetchUrl } from './fetchUrl';
 
 process.env.PORT = '0';
+
+// Point static serving at a throwaway SPA fixture (created before the
+// dynamic import of ./index in beforeAll, since index reads STATIC_DIR at
+// module load).
+const staticFixture = mkdtempSync(path.join(tmpdir(), 'relay-static-'));
+writeFileSync(path.join(staticFixture, 'index.html'), '<!doctype html><title>Relay</title>');
+writeFileSync(path.join(staticFixture, 'app.js'), 'console.log("hi");');
+process.env.STATIC_DIR = staticFixture;
 
 // Wrap the real checkImage in a spy (rather than replacing it outright) so
 // the pre-existing "unreachable URL" test below still exercises real
@@ -49,6 +61,7 @@ describe('server routes', () => {
       server.close(() => resolve());
       server.closeAllConnections?.();
     });
+    rmSync(staticFixture, { recursive: true, force: true });
   });
 
   beforeEach(() => {
@@ -138,5 +151,51 @@ describe('server routes', () => {
     expect(vi.mocked(fetchUrl)).toHaveBeenCalledWith('https://old.example/wp-json/wp/v2/posts', {
       maxBytes: 16 * 1024 * 1024,
     });
+  });
+
+  it('serves index.html at the root with the html content type', async () => {
+    const res = await fetch(`${baseUrl}/`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('text/html; charset=utf-8');
+    expect(await res.text()).toContain('<title>Relay</title>');
+  });
+
+  it('serves a static asset with its own content type', async () => {
+    const res = await fetch(`${baseUrl}/app.js`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('text/javascript; charset=utf-8');
+    expect(await res.text()).toBe('console.log("hi");');
+  });
+
+  it('falls back to index.html for unknown SPA client routes', async () => {
+    const res = await fetch(`${baseUrl}/some/client/route`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('text/html; charset=utf-8');
+    expect(await res.text()).toContain('<title>Relay</title>');
+  });
+
+  it('blocks raw path traversal attempts from non-normalizing clients', async () => {
+    const { port } = new URL(baseUrl);
+    const status = await new Promise<number | undefined>((resolve, reject) => {
+      const req = http.request({ host: '127.0.0.1', port, path: '/../../etc/passwd', method: 'GET' }, (res) => {
+        res.resume();
+        resolve(res.statusCode);
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    expect(status).toBe(404);
+  });
+
+  it('defuses percent-encoded traversal: never leaks files outside the static dir', async () => {
+    const res = await fetch(`${baseUrl}/%2e%2e/%2e%2e/etc/passwd`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('<title>Relay</title>');
+  });
+
+  it('keeps unknown /api routes as JSON 404 instead of the SPA fallback', async () => {
+    const res = await fetch(`${baseUrl}/api/does-not-exist`);
+    expect(res.status).toBe(404);
+    expect(res.headers.get('content-type')).toBe('application/json');
   });
 });

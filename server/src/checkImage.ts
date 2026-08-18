@@ -1,7 +1,7 @@
 import http from 'node:http';
 import https from 'node:https';
-import { guardUrl } from './guard';
-import { absolutize } from './rawRequest';
+import { guardUrl } from './guard.js';
+import { absolutize } from './rawRequest.js';
 
 export interface CheckImageResult {
   ok: boolean;

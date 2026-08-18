@@ -1,5 +1,5 @@
-import { guardUrl } from './guard';
-import { requestOnce, TimeoutError, absolutize } from './rawRequest';
+import { guardUrl } from './guard.js';
+import { requestOnce, TimeoutError, absolutize } from './rawRequest.js';
 
 export interface FetchUrlOk {
   status: 200;
