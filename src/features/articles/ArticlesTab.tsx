@@ -127,14 +127,42 @@ export const ArticlesTab: React.FC = () => {
             {countReady} ready, {countReview} need review, {countExcluded} excluded. Click any article to preview or edit its blocks.
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <input
-            type="text"
-            placeholder="Search titles…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ padding: '8px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px', width: '200px' }}
-          />
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              placeholder="Search titles…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ padding: '8px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px', width: '200px', paddingRight: searchQuery ? '28px' : '12px' }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute',
+                  right: '6px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '18px',
+                  height: '18px',
+                  border: 'none',
+                  borderRadius: '50%',
+                  background: 'oklch(80% 0.01 250)',
+                  color: 'oklch(35% 0.01 250)',
+                  fontSize: '12px',
+                  lineHeight: '18px',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  padding: '0',
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
           <button
             type="button"
             onClick={handleExcludeAll}
