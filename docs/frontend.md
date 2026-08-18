@@ -108,6 +108,13 @@ build uses — so what you see is what exports.
   (`useScrollManagement.ts`).
 - **`useArticleDraft.ts`** — edit-buffer handling for the drawer.
 - **`useDrawerNavigationGuard.ts`** — confirm before discarding unsaved edits.
+- **`useDrawerShortcuts.ts`** — drawer keyboard shortcuts on top of the
+  arrow-key navigation the guard already wires: `Ctrl/Cmd+S` save (when
+  dirty), `I` toggle include, `R` toggle review, `Escape` close. Editable
+  fields are skipped so typing in the HTML editor isn't hijacked.
+- **`ArticleSidebar.tsx`** — article metadata, include/flag toggles, and a
+  save/close footer. An "Edit article" button in the metadata panel switches
+  the preview to Edit mode.
 - **`useFeaturedImage.ts`** — featured-image resolution for the drawer.
 - **`DiscardConfirmDialog.tsx`** — the unsaved-changes modal.
 
