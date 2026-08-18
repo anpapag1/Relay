@@ -17,6 +17,7 @@ process on one origin (see `docs/deployment.md`).
 | `GET /api/page-media?url=<old-site URL>` | Scrape one article page: return its `og:image`, inline `<img src>` values (absolutized), and file links (`.pdf`, `.docx`, `.zip`, …). Used by media stage-2 resolution. | `200 { ogImage, images, files }` | `400` invalid/disallowed URL, `502` upstream failed, `504` timed out. Cached per URL. |
 | `GET /api/image-check?url=<image URL>` | Check whether one already-resolved image URL actually loads. Used by the post-import health check. | Always `200` with `{ ok, status?, reason? }` — "image is broken" is a valid answer, not a proxy error. Successes cached. | — |
 | `GET /api/fetch?url=<old-site URL>` | Unfiltered passthrough of an old-site body (JSON or XML for the site-import fetchers). 16 MB cap. Forwards `X-WP-TotalPages` / `X-WP-Total` so the client can paginate. Deliberately **not** cached — pages can change between reads. | `200` with the body + content-type | `4xx`/`5xx` mapped onto the response status. |
+| `GET /health` | Liveness probe for container orchestrators: returns the process's uptime. Never cached, never touches the network. | `200 { status: 'ok', uptime }` | — |
 | everything else | Serves the built SPA from `STATIC_DIR` (see below). | `200` with the file | unknown `/api/*` → JSON 404; SPA client routes → `index.html`. |
 
 `server/src/index.ts` is just the HTTP entry point; each route delegates to its
@@ -31,6 +32,17 @@ module and all parsing, guarding, timeouts, and caching live in the helpers:
   and `fetch` time out at 10 s (`image-check` at 8 s); `page-media` caps
   responses at 5 MB, `fetch` at 3 MB (raised to 16 MB for `/api/fetch`).
 - `cache.ts` — in-memory, TTL'd, keyed per URL
+
+## Logging
+
+Every request is logged as one JSON line to stdout (`{ ts, level, event,
+method, path, status, durationMs }`). Upstream failures add a `proxy_failed`
+warn line carrying `route`, `target`, `status`, and `reason`, so an old site
+that 404s, times out, or redirects into a loop is diagnosable from the logs
+alone. Unexpected handler throws become `handler_error` error lines on stderr
+(after which the client gets a JSON 500). `log.ts` is the whole logger —
+deliberately a plain JSON-lines writer, not a framework, so `docker logs` /
+`kubectl logs` output is greppable with any jq-style tool.
 
 ## The SSRF guard — `server/src/guard.ts`
 

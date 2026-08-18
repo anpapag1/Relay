@@ -12,6 +12,7 @@ static host, and nothing to persist.
 │   ├─ /api/fetch        → fetches old-site RSS/REST feeds (SSRF-guarded)     │
 │   ├─ /api/page-media   → extracts media URLs from old-site HTML             │
 │   ├─ /api/image-check  → health-checks migrated image URLs (cached)         │
+│   ├─ /health           → liveness probe for the container HEALTHCHECK       │
 │   └─ everything else   → serves the built SPA (dist/), SPA-fallback to      │
 │                          index.html for client routes                       │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -75,7 +76,8 @@ Then open http://localhost:8080 — the SPA and `/api/*` come from the same port
 Multi-stage: stage 1 runs `vite build` for the SPA, stage 2 compiles the proxy
 with `tsc`, stage 3 copies both outputs onto `node:20-alpine` (~120 MB) and
 runs one `node` process. The proxy's `tsconfig.json` excludes test files so the
-image ships no test code.
+image ships no test code. A `HEALTHCHECK` polls `/health` every 30 s so
+orchestrators restart a wedged container automatically.
 
 ## Bitbucket Pipelines
 
@@ -138,6 +140,9 @@ backups to worry about.
 
 ## Operational notes
 
+- **Logs**: structured JSON lines on stdout/stderr (see `docs/media-proxy.md`).
+  Proxy failures carry the upstream `status` and `reason`, so diagnosing a
+  broken migration is `docker logs <container> | jq 'select(.event=="proxy_failed")'`.
 - **Egress**: "fetch from site" and image health checks require the server to
   reach external URLs. The SSRF guard (`server/src/guard.ts`) blocks private
   ranges; if you see 400s on otherwise-valid URLs, check the company egress

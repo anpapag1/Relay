@@ -75,6 +75,41 @@ describe('server routes', () => {
     expect(res.status).toBe(404);
   });
 
+  it('responds 200 with a JSON health body for /health', async () => {
+    const res = await fetch(`${baseUrl}/health`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toBe('application/json');
+    const body = (await res.json()) as { status: string; uptime: number };
+    expect(body.status).toBe('ok');
+    expect(typeof body.uptime).toBe('number');
+  });
+
+  it('logs each request as a structured JSON line', async () => {
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    let logLine: unknown;
+
+    try {
+      await fetch(`${baseUrl}/health`);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      logLine = writeSpy.mock.calls.find(([chunk]) => {
+        if (typeof chunk !== 'string') return false;
+        try {
+          return (JSON.parse(chunk) as { event?: string }).event === 'request';
+        } catch {
+          return false;
+        }
+      });
+    } finally {
+      writeSpy.mockRestore();
+    }
+
+    expect(logLine).toBeDefined();
+    const parsed = JSON.parse(logLine![0] as string) as { method: string; path: string; status: number };
+    expect(parsed.method).toBe('GET');
+    expect(parsed.path).toBe('/health');
+    expect(parsed.status).toBe(200);
+  });
+
   it('responds 400 for /api/image-check with no url param', async () => {
     const res = await fetch(`${baseUrl}/api/image-check`);
     expect(res.status).toBe(400);

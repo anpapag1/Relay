@@ -5,6 +5,7 @@ import { fetchPageMedia, type PageMediaResult } from './fetchPageMedia.js';
 import { checkImage, type CheckImageResult } from './checkImage.js';
 import { fetchUrl } from './fetchUrl.js';
 import { getCached, setCached } from './cache.js';
+import { log } from './log.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 
@@ -105,6 +106,7 @@ async function handlePageMedia(target: string, res: http.ServerResponse): Promis
     setCached(target, result.body);
     sendJson(res, 200, result.body);
   } else {
+    log.warn('proxy_failed', { route: '/api/page-media', target, status: result.status, reason: result.reason });
     sendJson(res, result.status, { error: result.reason });
   }
 }
@@ -122,6 +124,9 @@ async function handleImageCheck(target: string, res: http.ServerResponse): Promi
   }
 
   const result = await checkImage(target);
+  if (!result.ok) {
+    log.warn('proxy_failed', { route: '/api/image-check', target, status: result.status, reason: result.reason });
+  }
   if (result.ok) {
     setCached(cacheKey, result);
   }
@@ -143,6 +148,7 @@ async function handleFetch(target: string, res: http.ServerResponse): Promise<vo
     res.end(result.body);
     return;
   }
+  log.warn('proxy_failed', { route: '/api/fetch', target, status: result.status, reason: result.reason });
   sendJson(res, result.status, { error: result.reason });
 }
 
@@ -153,50 +159,75 @@ async function handleFetch(target: string, res: http.ServerResponse): Promise<vo
  * fetchers (/api/fetch). Never the media bytes themselves. Everything else
  * (parsing, SSRF guarding, timeouts, caching) lives in fetchPageMedia.ts/
  * checkImage.ts/fetchUrl.ts/guard.ts/cache.ts; this file is just the HTTP
- * entry point. */
+ * entry point. /health is a liveness probe for container orchestrators. */
 const server = http.createServer((req, res) => {
+  const startedAt = Date.now();
+
   void (async () => {
-    if (req.method !== 'GET' || !req.url) {
-      sendJson(res, 404, { error: 'not found' });
-      return;
-    }
-
-    const requestUrl = new URL(req.url, `http://localhost:${PORT}`);
-    const target = requestUrl.searchParams.get('url');
-
-    if (requestUrl.pathname === '/api/page-media') {
-      if (!target) {
-        sendJson(res, 400, { error: 'missing "url" query parameter' });
+    try {
+      if (req.method !== 'GET' || !req.url) {
+        sendJson(res, 404, { error: 'not found' });
         return;
       }
-      await handlePageMedia(target, res);
-      return;
-    }
 
-    if (requestUrl.pathname === '/api/image-check') {
-      if (!target) {
-        sendJson(res, 400, { error: 'missing "url" query parameter' });
+      const requestUrl = new URL(req.url, `http://localhost:${PORT}`);
+      const target = requestUrl.searchParams.get('url');
+
+      if (requestUrl.pathname === '/health') {
+        sendJson(res, 200, { status: 'ok', uptime: Math.round(process.uptime()) });
         return;
       }
-      await handleImageCheck(target, res);
-      return;
-    }
 
-    if (requestUrl.pathname === '/api/fetch') {
-      if (!target) {
-        sendJson(res, 400, { error: 'missing "url" query parameter' });
+      if (requestUrl.pathname === '/api/page-media') {
+        if (!target) {
+          sendJson(res, 400, { error: 'missing "url" query parameter' });
+          return;
+        }
+        await handlePageMedia(target, res);
         return;
       }
-      await handleFetch(target, res);
-      return;
-    }
 
-    await serveStatic(requestUrl, req.url ?? '', res);
+      if (requestUrl.pathname === '/api/image-check') {
+        if (!target) {
+          sendJson(res, 400, { error: 'missing "url" query parameter' });
+          return;
+        }
+        await handleImageCheck(target, res);
+        return;
+      }
+
+      if (requestUrl.pathname === '/api/fetch') {
+        if (!target) {
+          sendJson(res, 400, { error: 'missing "url" query parameter' });
+          return;
+        }
+        await handleFetch(target, res);
+        return;
+      }
+
+      await serveStatic(requestUrl, req.url ?? '', res);
+    } catch (err) {
+      log.error('handler_error', { path: req.url ?? '', error: err instanceof Error ? err.message : String(err) });
+      if (!res.headersSent) {
+        sendJson(res, 500, { error: 'internal error' });
+      } else {
+        res.end();
+      }
+    }
   })();
+
+  res.on('finish', () => {
+    log.info('request', {
+      method: req.method ?? '',
+      path: req.url ?? '',
+      status: res.statusCode,
+      durationMs: Date.now() - startedAt,
+    });
+  });
 });
 
 server.listen(PORT, () => {
-  console.log(`Relay media proxy listening on http://localhost:${PORT}`);
+  log.info('listening', { port: PORT, staticDir: STATIC_DIR });
 });
 
 export { server };
