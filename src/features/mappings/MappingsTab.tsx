@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type { Action } from '../../state/actions';
 import { useAppState } from '../../state/AppStateContext';
 import { termMappingId } from '../../core/mappings/termId';
-import { createSessionBackup } from '../../state/session';
 import * as mappingTransitions from '../../state/mappingTransitions';
 import type { NewSiteTerm, TaxonomyTermSummary, TermMapping, TermTable } from '../../types/domain';
 
@@ -475,17 +474,6 @@ export const MappingsTab: React.FC = () => {
     );
   }
 
-  const exportFullBackup = () => {
-    const backup = createSessionBackup(state);
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `relay-session-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   if (oldTableList.length === 0) {
     return (
       <div style={{ maxWidth: '960px', margin: '60px auto', textAlign: 'center', padding: '40px', background: 'white', borderRadius: '12px', border: '1px solid oklch(90% 0.005 250)' }}>
@@ -514,9 +502,6 @@ export const MappingsTab: React.FC = () => {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button type="button" onClick={exportFullBackup} className="btn btn-secondary">
-            Export session JSON
-          </button>
           <button
             type="button"
             onClick={() => dispatch({ type: 'OPEN_MODAL', modal: 'autoMatchConfirm' })}
