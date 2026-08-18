@@ -7,6 +7,7 @@ import { buildAttachmentIndex } from '../../core/media/attachmentIndex';
 import { useArticleDraft } from './useArticleDraft';
 import { useFeaturedImage } from './useFeaturedImage';
 import { useDrawerNavigationGuard } from './useDrawerNavigationGuard';
+import { useDrawerShortcuts } from './useDrawerShortcuts';
 import { useScrollManagement } from './useScrollManagement';
 import { ArticlePreviewPane } from './ArticlePreviewPane';
 import { ArticleSidebar } from './ArticleSidebar';
@@ -59,6 +60,22 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
 
   const { mainScrollRef, sidebarScrollRef } = useScrollManagement(article);
 
+  useDrawerShortcuts({
+    enabled: article !== null,
+    isDirty,
+    onSave: handleSave,
+    onToggleInclude: () => {
+      if (!article) return;
+      const isExcluded = article.status.startsWith('excluded');
+      dispatch({ type: 'SET_ARTICLE_EXCLUDED', articleId: article.id, excluded: !isExcluded });
+    },
+    onToggleManualReview: () => {
+      if (!article) return;
+      dispatch({ type: 'SET_ARTICLE_MANUAL_REVIEW', articleId: article.id, manualReview: !article.isManualReview });
+    },
+    onClose: requestClose,
+  });
+
   if (!article) return null;
 
   const handleToggleInclude = () => {
@@ -110,6 +127,7 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
           isDirty={isDirty}
           onSave={handleSave}
           onClose={requestClose}
+          onEdit={() => handleSelectPreviewMode('edit')}
           onToggleInclude={handleToggleInclude}
           onToggleManualReview={handleToggleManualReview}
           scrollRef={sidebarScrollRef}

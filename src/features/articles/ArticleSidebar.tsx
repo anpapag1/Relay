@@ -11,6 +11,7 @@ export interface ArticleSidebarProps {
   isDirty: boolean;
   onSave: () => void;
   onClose: () => void;
+  onEdit: () => void;
   onToggleInclude: () => void;
   onToggleManualReview: () => void;
   scrollRef: React.RefObject<HTMLDivElement>;
@@ -23,6 +24,7 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
   isDirty,
   onSave,
   onClose,
+  onEdit,
   onToggleInclude,
   onToggleManualReview,
   scrollRef,
@@ -82,6 +84,19 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
           border: '1px solid oklch(92% 0.005 250)',
         }}
       >
+        <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em', color: 'oklch(55% 0.01 250)' }}>
+            Article metadata
+          </div>
+          <button
+            type="button"
+            onClick={onEdit}
+            className="btn btn-secondary"
+            style={{ padding: '4px 10px', fontSize: '12px', fontWeight: 600 }}
+          >
+            Edit article
+          </button>
+        </div>
         {featuredImageUrl ? (
           <img
             src={featuredImageUrl}
