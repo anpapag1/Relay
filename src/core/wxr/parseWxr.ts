@@ -8,6 +8,7 @@ import type {
   TermRef,
 } from '../../types/domain';
 import { childText, childrenByTag } from './xml';
+import { decodeHtmlEntities } from '../utils/decodeHtmlEntities';
 
 function parsePostmeta(item: Element): PostMeta {
   const meta: PostMeta = {};
@@ -34,7 +35,7 @@ function parseArticleItem(item: Element, postType: 'post' | 'page'): ParsedArtic
     postId: postId ? Number(postId) : null,
     postType,
     status: childText(item, 'wp:status') ?? 'draft',
-    title: childText(item, 'title') ?? '',
+    title: decodeHtmlEntities(childText(item, 'title') ?? ''),
     link: childText(item, 'link') ?? '',
     postDate: postDate ?? '',
     postName: childText(item, 'wp:post_name') ?? '',
@@ -51,7 +52,7 @@ function parseAttachmentItem(item: Element): ParsedAttachment {
   const postParent = childText(item, 'wp:post_parent');
   return {
     postId: postId ? Number(postId) : null,
-    title: childText(item, 'title') ?? '',
+    title: decodeHtmlEntities(childText(item, 'title') ?? ''),
     attachmentUrl: childText(item, 'wp:attachment_url') ?? '',
     postParent: postParent ? Number(postParent) : null,
   };

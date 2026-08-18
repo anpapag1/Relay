@@ -93,4 +93,15 @@ describe('parseWxr', () => {
     const result = parseWxr(xml);
     expect(result.ok).toBe(true);
   });
+
+  it('decodes double-encoded HTML entities in CDATA titles', () => {
+    const xml = SAMPLE_WXR.replace(
+      '<title><![CDATA[Hello World]]></title>',
+      '<title><![CDATA[Τουρνουά μπάσκετ 3&#215;3 από τον Δήμο Μυτιλήνης]]></title>',
+    );
+    const result = parseWxr(xml);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.articles[0].title).toBe('Τουρνουά μπάσκετ 3×3 από τον Δήμο Μυτιλήνης');
+  });
 });

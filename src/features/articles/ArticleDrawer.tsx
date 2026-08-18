@@ -57,7 +57,7 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
   const { pendingAction, requestClose, requestPrev, requestNext, confirmDiscard, cancelDiscard } =
     useDrawerNavigationGuard({ article, isDirty, hasPrev, hasNext, onClose, onPrev, onNext });
 
-  const { mainScrollRef, sidebarScrollRef, scrollToTop } = useScrollManagement(article);
+  const { mainScrollRef, sidebarScrollRef } = useScrollManagement(article);
 
   if (!article) return null;
 
@@ -99,7 +99,6 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
           hasNext={hasNext}
           onPrev={requestPrev}
           onNext={requestNext}
-          onScrollToTop={() => scrollToTop()}
           scrollRef={mainScrollRef}
           onSelectPreviewMode={handleSelectPreviewMode}
         />

@@ -18,6 +18,17 @@ describe('restPostToSiteArticle', () => {
     });
   });
 
+  it('decodes HTML entities in the REST rendered title', () => {
+    const post: RestPost = {
+      id: 8, date: '2026-08-17T09:00:00', slug: 'basket', link: 'https://site.example/basket/',
+      title: { rendered: 'Τουρνουά μπάσκετ 3&#215;3 από τον Δήμο Μυτιλήνης' },
+      content: { rendered: '<p>Hi</p>' }, featured_media: 0, status: 'publish',
+      categories: [], tags: [],
+    };
+    const art = restPostToSiteArticle(post);
+    expect(art.title).toBe('Τουρνουά μπάσκετ 3×3 από τον Δήμο Μυτιλήνης');
+  });
+
   it('strips plugin chrome (pdfprnt print buttons) from rendered content', () => {
     const post: RestPost = {
       id: 7, date: '2026-08-17T09:00:00', slug: 'hello', link: 'https://site.example/hello/',

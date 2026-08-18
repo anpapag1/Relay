@@ -4,6 +4,7 @@ import type { RestPost } from './fetchRestPosts';
 import type { FeedItem } from './fetchFeedPosts';
 import { TAXONOMIES, type TaxonomyMaps } from './fetchRestTaxonomies';
 import { cleanSiteContent } from './cleanSiteContent';
+import { decodeHtmlEntities } from '../utils/decodeHtmlEntities';
 
 function resolveRestTerms(post: RestPost, taxonomyMaps: TaxonomyMaps): TermRef[] {
   const terms: TermRef[] = [];
@@ -23,7 +24,7 @@ function resolveRestTerms(post: RestPost, taxonomyMaps: TaxonomyMaps): TermRef[]
 export function restPostToSiteArticle(post: RestPost, featuredUrl?: string, taxonomyMaps?: TaxonomyMaps): SiteArticle {
   return {
     postId: post.id,
-    title: post.title.rendered,
+    title: decodeHtmlEntities(post.title.rendered),
     link: post.link,
     postDate: post.date,
     postName: post.slug,

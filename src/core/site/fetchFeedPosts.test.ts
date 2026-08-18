@@ -29,6 +29,15 @@ describe('parseFeedXml', () => {
     expect(item.categories).toEqual(['Δήμος']);
     expect(item.featuredImageUrl).toBe('https://www.mytilene.gr/wp-content/uploads/2026/08/pic.jpg');
   });
+
+  it('decodes double-encoded HTML entities in CDATA titles', () => {
+    const xml = FEED.replace(
+      '<title>Ακύρωση συναυλίας</title>',
+      '<title><![CDATA[Τουρνουά μπάσκετ 3&#215;3 από τον Δήμο Μυτιλήνης]]></title>',
+    );
+    const [item] = parseFeedXml(xml);
+    expect(item.title).toBe('Τουρνουά μπάσκετ 3×3 από τον Δήμο Μυτιλήνης');
+  });
 });
 
 describe('feedPageUrl', () => {

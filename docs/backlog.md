@@ -23,6 +23,8 @@ Living list of candidate work. Items are unordered; pick what you want and move 
 
 ## Articles / UI
 
+- [ ] **Bypass the duplicate-slug constraint** — the reducer auto-excludes articles sharing a slug at load (`reducer.ts` LOAD_SOURCE). The user may manually re-include one, but `generateWxr.ts:81` emits `wp:post_name` verbatim, so two included articles with the same slug would produce an invalid WXR. Fix: dedupe/sanitize `wp:post_name` at export (e.g. WordPress-style `-2`, `-3` suffixing) whenever a manually re-included article collides.
+- [ ] **Edit the preview panel in the rendered Gutenberg view** — replace the raw-HTML `<textarea>` in `ArticlePreviewPane.tsx` (Edit mode, line ~263) with direct contenteditable/block editing on the "After" preview that writes back to the article draft.
 - [ ] **Pagination or windowed list** for the Articles tab when the source has thousands of posts.
 - [ ] **Accessibility pass** on the article drawer + import flow (focus trap, aria labels, focus after open/close).
 - [ ] **Dark mode** theme.

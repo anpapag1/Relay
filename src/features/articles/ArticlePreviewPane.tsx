@@ -12,7 +12,6 @@ export interface ArticlePreviewPaneProps {
   hasNext: boolean;
   onPrev: () => void;
   onNext: () => void;
-  onScrollToTop: () => void;
   scrollRef: React.RefObject<HTMLDivElement>;
   onSelectPreviewMode: (mode: 'before' | 'after' | 'edit') => void;
 }
@@ -27,7 +26,6 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
   hasNext,
   onPrev,
   onNext,
-  onScrollToTop,
   scrollRef,
   onSelectPreviewMode,
 }) => {
@@ -42,9 +40,9 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
         flex: 1,
         minWidth: 0,
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'start',
         justifyContent: 'center',
-        padding: '40px',
+        padding: '30px 40px',
         overflowY: 'auto',
       }}
     >
@@ -52,79 +50,15 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
         onClick={(e) => e.stopPropagation()}
         style={{ width: '900px', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: 'white' }}>Content before / after</div>
-          <div
-            style={{
-              display: 'flex',
-              gap: '4px',
-              background: 'oklch(30% 0.005 250 / 0.6)',
-              borderRadius: '8px',
-              padding: '3px',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => onSelectPreviewMode('before')}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 600,
-                border: 'none',
-                cursor: 'pointer',
-                background: showBefore ? 'white' : 'transparent',
-                color: showBefore ? 'oklch(30% 0.02 250)' : 'white',
-                boxShadow: showBefore ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
-              }}
-            >
-              Before
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectPreviewMode('after')}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 600,
-                border: 'none',
-                cursor: 'pointer',
-                background: !showBefore ? 'white' : 'transparent',
-                color: !showBefore ? 'oklch(30% 0.02 250)' : 'white',
-                boxShadow: !showBefore ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
-              }}
-            >
-              After
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectPreviewMode('edit')}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 600,
-                border: 'none',
-                cursor: 'pointer',
-                background: showEdit ? 'white' : 'transparent',
-                color: showEdit ? 'oklch(30% 0.02 250)' : 'white',
-                boxShadow: showEdit ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
-              }}
-            >
-              Edit
-            </button>
-          </div>
-        </div>
         <div
           className="wp-preview"
           style={{
             background: 'white',
             borderRadius: '14px',
             boxShadow: '0 12px 40px oklch(0% 0 0 / 0.15)',
-            padding: '32px',
+            padding: '30px 48px',
             width: '100%',
-            height: 'min(700px, calc(100vh - 220px))',
+            // height: 'min(700px, calc(100vh - 220px))',
             overflowY: showEdit || showBefore ? 'hidden' : 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -132,12 +66,136 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
         >
           <div
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '20px',
+              flexShrink: 0,
+            }}
+          >
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'oklch(55% 0.01 250)' }}>
+              Content before / after
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '4px',
+                  background: 'oklch(30% 0.005 250 / 0.6)',
+                  borderRadius: '8px',
+                  padding: '3px',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={onPrev}
+                  disabled={!hasPrev}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'white',
+                    cursor: hasPrev ? 'pointer' : 'not-allowed',
+                    opacity: hasPrev ? 1 : 0.4,
+                  }}
+                >
+                  ← Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={onNext}
+                  disabled={!hasNext}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'white',
+                    cursor: hasNext ? 'pointer' : 'not-allowed',
+                    opacity: hasNext ? 1 : 0.4,
+                  }}
+                >
+                  Next →
+                </button>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '4px',
+                  background: 'oklch(30% 0.005 250 / 0.6)',
+                  borderRadius: '8px',
+                  padding: '3px',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => onSelectPreviewMode('before')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: showBefore ? 'white' : 'transparent',
+                    color: showBefore ? 'oklch(30% 0.02 250)' : 'white',
+                    boxShadow: showBefore ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
+                  }}
+                >
+                  Before
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectPreviewMode('after')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: !showBefore ? 'white' : 'transparent',
+                    color: !showBefore ? 'oklch(30% 0.02 250)' : 'white',
+                    boxShadow: !showBefore ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
+                  }}
+                >
+                  After
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectPreviewMode('edit')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: showEdit ? 'white' : 'transparent',
+                    color: showEdit ? 'oklch(30% 0.02 250)' : 'white',
+                    boxShadow: showEdit ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            style={{
               fontSize: '2.2em',
               fontWeight: 600,
               lineHeight: 1.3,
-              marginBottom: '20px',
+              margin: '0 auto 20px',
               color: 'oklch(20% 0.01 250)',
               flexShrink: 0,
+              width: '100%',
+              maxWidth: '68ch',
             }}
           >
             {article.title || '(Untitled)'}
@@ -240,33 +298,10 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
               <div className="wp-preview-empty">Nothing to preview yet</div>
             )
           ) : previewHtml.trim() ? (
-            <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+            <div className="wp-preview-body" dangerouslySetInnerHTML={{ __html: previewHtml }} />
           ) : (
             <div className="wp-preview-empty">Nothing to preview yet</div>
           )}
-        </div>
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-          <button
-            type="button"
-            onClick={onPrev}
-            disabled={!hasPrev}
-            className="btn btn-secondary"
-            style={{ padding: '10px 24px' }}
-          >
-            ← Previous
-          </button>
-          <button
-            type="button"
-            onClick={onNext}
-            disabled={!hasNext}
-            className="btn btn-secondary"
-            style={{ padding: '10px 24px' }}
-          >
-            Next →
-          </button>
-          <button type="button" onClick={onScrollToTop} className="btn btn-secondary" style={{ padding: '10px 24px' }}>
-            ↑ Top
-          </button>
         </div>
       </div>
     </div>

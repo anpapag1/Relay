@@ -1,4 +1,5 @@
 import type { SiteFetchFilter, TextFetchLike } from './types';
+import { decodeHtmlEntities } from '../utils/decodeHtmlEntities';
 
 export interface FeedItem {
   title: string;
@@ -27,7 +28,7 @@ export function parseFeedXml(xmlText: string): FeedItem[] {
     const featuredImage = item.getElementsByTagName('image');
     const featuredImageUrl = featuredImage.length > 0 ? featuredImage[0].textContent?.trim() || undefined : undefined;
     return {
-      title: childText(item, null, 'title'),
+      title: decodeHtmlEntities(childText(item, null, 'title')),
       link: childText(item, null, 'link'),
       pubDate: childText(item, null, 'pubDate'),
       creator: childText(item, DC_NS, 'creator'),
