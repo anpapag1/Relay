@@ -395,3 +395,21 @@ describe('appReducer', () => {
     });
   });
 });
+
+describe('source domain override', () => {
+  it('stores a typed source domain, trimming whitespace, and clears it on start over', () => {
+    let s = appReducer(initialState, { type: 'SET_SOURCE_DOMAIN', domain: '  Old-Site.example  ' });
+    expect(s.ui.sourceDomain).toBe('Old-Site.example');
+
+    s = appReducer(s, { type: 'LOAD_SOURCE', result: MOCK_PARSE_RESULT, defaultBuilder: 'plainHtml', confidence: 90 });
+    expect(s.ui.sourceDomain).toBe('Old-Site.example');
+
+    s = appReducer(s, { type: 'CLEAR_SOURCE' });
+    expect(s.ui.sourceDomain).toBeNull();
+  });
+
+  it('stores null when the typed domain is blank', () => {
+    const s = appReducer(initialState, { type: 'SET_SOURCE_DOMAIN', domain: '   ' });
+    expect(s.ui.sourceDomain).toBeNull();
+  });
+});

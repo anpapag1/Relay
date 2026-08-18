@@ -36,6 +36,7 @@ export interface AppState {
     pickers: {
       destinationTermId: string | null;
     };
+    sourceDomain: string | null;
   };
   source: ParseResult | null;
   target: {

@@ -36,6 +36,7 @@ export const initialState: AppState = {
     pickers: {
       destinationTermId: null,
     },
+    sourceDomain: null,
   },
   source: null,
   target: {
@@ -119,6 +120,8 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
       return { ...state, ui: { ...state.ui, modals: { ...state.ui.modals, [action.modal]: true } } };
     case 'CLOSE_MODAL':
       return { ...state, ui: { ...state.ui, modals: { ...state.ui.modals, [action.modal]: false } } };
+    case 'SET_SOURCE_DOMAIN':
+      return { ...state, ui: { ...state.ui, sourceDomain: action.domain.trim() || null } };
     case 'LOAD_SOURCE': {
       const { result, defaultBuilder, confidence } = action;
 
@@ -168,6 +171,7 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
     case 'CLEAR_SOURCE':
       return {
         ...state,
+        ui: { ...state.ui, sourceDomain: null },
         source: null,
         builderId: null,
         builderConfidence: 0,
