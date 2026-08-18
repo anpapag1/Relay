@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppState } from '../state/AppStateContext';
+import { domainForState } from '../state/siteProfiles';
+import { SitesDrawer } from '../features/sites/SitesDrawer';
 
 type TabId = 'import' | 'mappings' | 'settings' | 'articles' | 'build';
 
@@ -14,100 +16,94 @@ const TABS: { id: TabId; label: string }[] = [
 export const Header: React.FC = () => {
   const { state, dispatch } = useAppState();
   const { activeTab } = state.ui;
-  const hasImport = state.source !== null;
-
-  // Extract domain from link or title if available
-  let domain = 'old-site.com';
-  if (state.source?.siteUrl) {
-    try {
-      domain = new URL(state.source.siteUrl).hostname;
-    } catch {
-      domain = state.source.siteUrl;
-    }
-  }
+  const [sitesOpen, setSitesOpen] = useState(false);
+  const domain = domainForState(state) ?? 'Sites';
 
   return (
-    <div
-      style={{
-        background: 'white',
-        borderBottom: '1px solid oklch(90% 0.005 250)',
-        position: 'sticky',
-        top: 0,
-        zIndex: 20,
-        boxShadow: '0 1px 2px oklch(0% 0 0 / 0.02)',
-      }}
-    >
+    <>
       <div
         style={{
-          maxWidth: '1280px',
-          margin: '0 auto',
-          padding: '0 32px',
-          display: 'flex',
-          flexDirection: 'column',
+          background: 'white',
+          borderBottom: '1px solid oklch(90% 0.005 250)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 20,
+          boxShadow: '0 1px 2px oklch(0% 0 0 / 0.02)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '44px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '18px 0 16px' }}>
-              <div
-                style={{
-                  width: '26px',
-                  height: '26px',
-                  borderRadius: '7px',
-                  background: 'oklch(50% 0.16 265)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <div style={{ width: '11px', height: '11px', borderRadius: '2.5px', background: 'white' }} />
+        <div
+          style={{
+            maxWidth: '1280px',
+            margin: '0 auto',
+            padding: '0 32px',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '44px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '18px 0 16px' }}>
+                <div
+                  style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '7px',
+                    background: 'oklch(50% 0.16 265)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <div style={{ width: '11px', height: '11px', borderRadius: '2.5px', background: 'white' }} />
+                </div>
+                <div style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em' }}>Relay</div>
+                <div
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: 'oklch(50% 0.01 250)',
+                    padding: '3px 8px',
+                    border: '1px solid oklch(88% 0.005 250)',
+                    borderRadius: '5px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  WordPress Migration
+                </div>
               </div>
-              <div style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em' }}>Relay</div>
-              <div
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  color: 'oklch(50% 0.01 250)',
-                  padding: '3px 8px',
-                  border: '1px solid oklch(88% 0.005 250)',
-                  borderRadius: '5px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.04em',
-                }}
-              >
-                WordPress Migration
+
+              <div style={{ display: 'flex', gap: '26px' }}>
+                {TABS.map((tab) => {
+                  const isActive = tab.id === activeTab;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', tab: tab.id as any })}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        padding: '0 0 16px 0',
+                        fontSize: '14px',
+                        fontWeight: isActive ? 600 : 500,
+                        color: isActive ? 'oklch(50% 0.16 265)' : 'oklch(55% 0.01 250)',
+                        cursor: 'pointer',
+                        borderBottom: isActive ? '2px solid oklch(50% 0.16 265)' : '2px solid transparent',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '26px' }}>
-              {TABS.map((tab) => {
-                const isActive = tab.id === activeTab;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => dispatch({ type: 'SET_ACTIVE_TAB', tab: tab.id as any })}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: '0 0 16px 0',
-                      fontSize: '14px',
-                      fontWeight: isActive ? 600 : 500,
-                      color: isActive ? 'oklch(50% 0.16 265)' : 'oklch(55% 0.01 250)',
-                      cursor: 'pointer',
-                      borderBottom: isActive ? '2px solid oklch(50% 0.16 265)' : '2px solid transparent',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {hasImport && (
-            <div
+            <button
+              type="button"
+              onClick={() => setSitesOpen(true)}
+              aria-label="Open saved site preferences"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -122,15 +118,15 @@ export const Header: React.FC = () => {
                 marginBottom: '14px',
                 whiteSpace: 'nowrap',
                 flexShrink: 0,
+                cursor: 'pointer',
               }}
             >
-              <span>{domain}</span>
-              <span style={{ color: 'oklch(65% 0.005 250)' }}>→</span>
-              <span>new site</span>
-            </div>
-          )}
+              {domain}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+      <SitesDrawer open={sitesOpen} onClose={() => setSitesOpen(false)} />
+    </>
   );
 };
