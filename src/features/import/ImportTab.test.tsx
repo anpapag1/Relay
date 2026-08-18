@@ -6,6 +6,7 @@ import { AppStateProvider } from '../../state/AppStateContext';
 import { ImportTab } from './ImportTab';
 import { fetchSite } from '../../core/site/fetchSite';
 import type { ParseResult } from '../../types/domain';
+import { saveSiteProfile } from '../../state/siteProfiles';
 
 vi.mock('../../core/site/fetchSite', () => ({ fetchSite: vi.fn() }));
 
@@ -286,6 +287,127 @@ describe('ImportTab fetch filters', () => {
       expect.any(Function),
       expect.objectContaining({ startDate: '2020-01-01', endDate: '2020-01-31' }),
     );
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
+});
+
+describe('ImportTab saved-site dropdown', () => {
+  beforeEach(() => window.localStorage.clear());
+
+  async function seedProfile(domain: string) {
+    saveSiteProfile(domain, { version: 1 } as any);
+  }
+
+  it('lists saved-site profiles on focus, with a Saved hint', async () => {
+    await seedProfile('saved.example');
+
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+
+    const input = container.querySelector('input[aria-label="Site URL"]') as HTMLInputElement;
+    expect(input).toBeDefined();
+    await act(async () => {
+      input.focus();
+    });
+
+    const options = Array.from(container.querySelectorAll('[role="option"]'));
+    expect(options).toHaveLength(1);
+    expect(options[0].textContent).toContain('saved.example');
+    expect(options[0].textContent).toContain('Saved');
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
+
+  it('filters the dropdown as the user types', async () => {
+    await seedProfile('alpha.example');
+    await seedProfile('beta.example');
+
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+
+    const input = container.querySelector('input[aria-label="Site URL"]') as HTMLInputElement;
+    await act(async () => {
+      input.focus();
+    });
+    await act(async () => {
+      setInputValue(input, 'alpha');
+    });
+
+    const options = Array.from(container.querySelectorAll('[role="option"]'));
+    expect(options.map((o) => o.textContent)).toEqual([expect.stringContaining('alpha.example')]);
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
+
+  it('picks a profile with the arrow keys and Enter, filling the URL', async () => {
+    window.localStorage.setItem(
+      'relay_site_v1_alpha.example',
+      JSON.stringify({ version: 1, domain: 'alpha.example', savedAt: '2026-01-01T00:00:00Z', data: { version: 1 } }),
+    );
+    window.localStorage.setItem(
+      'relay_site_v1_beta.example',
+      JSON.stringify({ version: 1, domain: 'beta.example', savedAt: '2026-01-02T00:00:00Z', data: { version: 1 } }),
+    );
+
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+
+    const input = container.querySelector('input[aria-label="Site URL"]') as HTMLInputElement;
+    await act(async () => {
+      input.focus();
+    });
+    await act(async () => {
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+
+    expect(input.value).toBe('https://beta.example');
+    expect(container.querySelectorAll('[role="option"]').length).toBe(0);
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
+
+  it('picks a profile by clicking it', async () => {
+    await seedProfile('clicked.example');
+
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+
+    const input = container.querySelector('input[aria-label="Site URL"]') as HTMLInputElement;
+    await act(async () => {
+      input.focus();
+    });
+    await act(async () => {
+      (container.querySelector('[role="option"]') as HTMLElement).click();
+    });
+
+    expect(input.value).toBe('https://clicked.example');
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
+
+  it('closes the dropdown with Escape', async () => {
+    await seedProfile('saved.example');
+
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+
+    const input = container.querySelector('input[aria-label="Site URL"]') as HTMLInputElement;
+    await act(async () => {
+      input.focus();
+    });
+    expect(container.querySelectorAll('[role="option"]').length).toBeGreaterThan(0);
+
+    await act(async () => {
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    expect(container.querySelectorAll('[role="option"]').length).toBe(0);
 
     root.unmount();
     document.body.removeChild(container);

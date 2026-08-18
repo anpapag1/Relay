@@ -7,6 +7,7 @@ import { browserTextFetch } from '../../core/site/fetchLike';
 import { normalizeBaseUrl } from '../../core/site/probeSite';
 import { SAMPLE_WXR } from './sampleWxr';
 import { createSiteDataBackup, restoreSiteDataBackup } from '../../state/session';
+import { listSiteProfiles, type SiteProfile } from '../../state/siteProfiles';
 import { findMissingOldTerms, mergeMissingIntoOldTables } from '../../core/mappings/reconcileOldTables';
 import { BUILDER_VALIDATION_STATUS, type BuilderId } from '../../core/builders/types';
 import type { TermTable } from '../../types/domain';
@@ -64,8 +65,65 @@ export const ImportTab: React.FC = () => {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [fetchStartDate, setFetchStartDate] = useState('');
   const [fetchEndDate, setFetchEndDate] = useState('');
+  const [fetchDropdownOpen, setFetchDropdownOpen] = useState(false);
+  const [fetchDropdownIndex, setFetchDropdownIndex] = useState(0);
+  const [savedProfiles, setSavedProfiles] = useState<SiteProfile[]>([]);
 
   const fetchDatesValid = Boolean(fetchStartDate && fetchEndDate && fetchStartDate <= fetchEndDate);
+
+  function formatSavedAt(iso: string): string {
+    const diffMs = Date.now() - new Date(iso).getTime();
+    const mins = Math.max(0, Math.floor(diffMs / 60000));
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  }
+
+  const filteredProfiles = fetchUrl.trim()
+    ? savedProfiles.filter((p) => p.domain.toLowerCase().includes(fetchUrl.trim().toLowerCase()))
+    : savedProfiles;
+
+  const openFetchDropdown = () => {
+    setSavedProfiles(listSiteProfiles());
+    setFetchDropdownIndex(0);
+    setFetchDropdownOpen(true);
+  };
+
+  const pickFetchProfile = (domain: string) => {
+    setFetchUrl(`https://${domain}`);
+    setFetchDropdownOpen(false);
+  };
+
+  const handleFetchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!fetchDropdownOpen) {
+        openFetchDropdown();
+        return;
+      }
+      if (filteredProfiles.length === 0) return;
+      setFetchDropdownIndex((i) => {
+        const n = filteredProfiles.length;
+        return e.key === 'ArrowDown' ? (i + 1) % n : (i - 1 + n) % n;
+      });
+      return;
+    }
+    if (e.key === 'Enter') {
+      if (fetchDropdownOpen && filteredProfiles.length > 0) {
+        const pick = filteredProfiles[fetchDropdownIndex];
+        if (pick) {
+          e.preventDefault();
+          pickFetchProfile(pick.domain);
+        }
+      }
+      return;
+    }
+    if (e.key === 'Escape') {
+      setFetchDropdownOpen(false);
+    }
+  };
 
   const toggleOldTable = (tableId: string) => {
     setExpandedOldTables((prev) => ({ ...prev, [tableId]: !(prev[tableId] ?? true) }));
@@ -483,14 +541,71 @@ export const ImportTab: React.FC = () => {
             (or falls back to the RSS feed) to pull published posts and their featured images.
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <input
-              type="text"
-              value={fetchUrl}
-              onChange={(e) => setFetchUrl(e.target.value)}
-              placeholder="https://old-site.example"
-              disabled={fetchingSite}
-              style={{ flex: 1, minWidth: '240px', padding: '10px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px' }}
-            />
+            <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
+              <input
+                type="text"
+                value={fetchUrl}
+                onChange={(e) => {
+                  setFetchUrl(e.target.value);
+                  setFetchDropdownIndex(0);
+                }}
+                onFocus={openFetchDropdown}
+                onKeyDown={handleFetchKeyDown}
+                placeholder="https://old-site.example"
+                disabled={fetchingSite}
+                aria-label="Site URL"
+                aria-expanded={fetchDropdownOpen}
+                aria-haspopup="listbox"
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px' }}
+              />
+              {fetchDropdownOpen && filteredProfiles.length > 0 && (
+                <div
+                  role="listbox"
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 4px)',
+                    left: 0,
+                    right: 0,
+                    zIndex: 20,
+                    background: 'white',
+                    border: '1px solid oklch(88% 0.005 250)',
+                    borderRadius: '8px',
+                    boxShadow: '0 6px 16px oklch(0% 0 0 / 0.10)',
+                    maxHeight: '240px',
+                    overflow: 'auto',
+                  }}
+                >
+                  {filteredProfiles.map((profile, i) => (
+                    <button
+                      key={profile.domain}
+                      type="button"
+                      role="option"
+                      aria-selected={i === fetchDropdownIndex}
+                      onClick={() => pickFetchProfile(profile.domain)}
+                      onMouseEnter={() => setFetchDropdownIndex(i)}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: '12px',
+                        width: '100%',
+                        padding: '9px 12px',
+                        border: 'none',
+                        background: i === fetchDropdownIndex ? 'oklch(96% 0.02 265)' : 'white',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: '13px',
+                      }}
+                    >
+                      <span style={{ fontWeight: 600 }}>{profile.domain}</span>
+                      <span style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', whiteSpace: 'nowrap' }}>
+                        Saved {formatSavedAt(profile.savedAt)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button type="button" onClick={handleFetchSite} disabled={fetchingSite || !fetchDatesValid} className="btn btn-primary">
               {fetchingSite ? 'Fetching…' : 'Fetch posts'}
             </button>

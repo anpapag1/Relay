@@ -54,7 +54,11 @@ Three ways in:
    `core/wxr/parseWxr.ts` (see `docs/engine.md`).
 2. **Fetch from site** — enter the old site's URL; `core/site/fetchSite.ts`
    probes for WP REST and falls back to RSS, with optional date filtering.
-   Uses the proxy's `/api/fetch` route.
+   Uses the proxy's `/api/fetch` route. The URL input is a combobox: on
+   focus it lists saved-site profiles from `localStorage`
+   (`state/siteProfiles.ts`, most recent first), filtered as you type;
+   arrow keys navigate, Enter or click picks one (filling the URL), Escape
+   closes.
 3. **Sample export** — loads the bundled WPBakery fixture so the whole pipeline
    can be exercised without a real file.
 
