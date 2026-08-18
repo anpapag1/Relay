@@ -8,15 +8,28 @@ store library.
 ## State — `src/state/`
 
 - **`AppStateContext.tsx`** — React context + provider. Components read
-  `state` and dispatch actions; no prop drilling.
+  `state` and dispatch actions; no prop drilling. On mount it sweeps the
+  legacy `relay_session_backup_v1` key, silently auto-loads the profile for
+  the detected domain (via `RESTORE_SESSION`), and auto-saves config-slice
+  changes to the current domain's profile (debounced 500 ms). The old
+  mount-restore of the global session backup is gone.
 - **`reducer.ts`** — pure reducer over the `AppState` shape in `types.ts`
   (documented in `docs/architecture.md`). The only place state mutates.
 - **`actions.ts`** — typed action creators.
 - **`selectors.ts`** — all derived data: article statuses, counts, the
   filtered/sorted visible list, mappings. Derived data is never stored, so a
   mapping change instantly reflows every article status.
-- **`session.ts`** — the session backup format (export/restore as JSON,
-  `version`-tagged) and autosave to `localStorage`.
+- **`session.ts`** — the portable site-data format (`SiteDataBackup`: taxonomy
+  tables, term mappings, conversion settings) with `createSiteDataBackup` /
+  `restoreSiteDataBackup`. Used by the Import tab's Export/Import JSON buttons
+  and by the per-site profile store.
+- **`siteProfiles.ts`** — the per-site auto-save/load store. One record per
+  old-site domain under the `relay_site_v1_<domain>` localStorage key, each a
+  `SiteProfile` = `{ version, domain, savedAt, data }`. Exports
+  `listSiteProfiles`, `loadSiteProfile`, `saveSiteProfile`,
+  `deleteSiteProfile`, `renameSiteProfile`, and `domainForState` (which
+  resolves the effective domain from `source.siteUrl` first, then
+  `ui.sourceDomain`).
 - **`mappingTransitions.ts`** — helpers for moving mappings between states
   (e.g. when new-site tables change).
 
@@ -46,10 +59,13 @@ Three ways in:
    can be exercised without a real file.
 
 Also on this tab: the source-domain field (used by media resolution and the
-health check), the live-fetch checkbox for media resolution, and the session
-backup export/restore. `useImageHealthCheck` (mounted from `App.tsx`) drives
-the post-import image health check through the proxy's `/api/image-check` and
-writes `verified: 'ok' | 'broken'` onto each `MediaResolution`.
+health check; editable when the import carries no `siteUrl`, and it doubles as
+the key the profile store saves under), the live-fetch checkbox for media
+resolution, and the portable site-data Export/Import JSON buttons (taxonomy
+tables, term mappings, conversion settings — reusable across a different WXR
+import). `useImageHealthCheck` (mounted from `App.tsx`) drives the post-import
+image health check through the proxy's `/api/image-check` and writes
+`verified: 'ok' | 'broken'` onto each `MediaResolution`.
 
 ### Mappings — `src/features/mappings/`
 
@@ -91,10 +107,20 @@ Preflight summary, run the build (`core/build/runBuild.ts`), watch progress
 download the generated WXR as a Blob. Build history entries record article
 count + size (real bytes, since the report holds the actual WXR string).
 
+### Saved sites drawer — `src/features/sites/`
+
+Every site's taxonomies, mappings, and settings auto-save by domain. The
+header shows the detected domain (or "Sites" before one is known) as a pill
+that opens `SitesDrawer.tsx`: search through saved profiles, edit a profile's
+domain, export it as JSON, import a saved-site file, or delete a profile.
+There's no Load action — profiles restore silently when an import for their
+domain is detected.
+
 ## Shared UI and theme
 
-- **`src/ui/`** — `Header.tsx` (app header), `Modal.tsx`, `Badge.tsx` (status
-  chips). Small, file-per-component.
+- **`src/ui/`** — `Header.tsx` (app header, including the detected-domain pill
+  that opens the saved-sites drawer), `Modal.tsx`, `Badge.tsx` (status chips).
+  Small, file-per-component.
 - **`src/theme/`** — `tokens.ts` (frozen design values), `index.css` (the
   `.wp-preview` styles that make converted content look like a real WordPress
   post), `index.ts` (import side effects).
@@ -109,5 +135,6 @@ count + size (real bytes, since the report holds the actual WXR string).
   function as a parameter; components pass the real one, tests pass stubs. This
   is what keeps `core/` pure.
 - **Derived, not stored.** Article statuses and counts live in selectors, never
-  in state. The session backup stores decisions (mappings, edits, exclusions,
-  resolved media), not derived values.
+  in state. The per-site profile keeps the decisions (mappings, tables,
+  settings) that survive reload; article edits and resolved media are
+  session-only and rebuild on demand.

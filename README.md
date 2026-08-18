@@ -40,7 +40,7 @@ recovering missing media, and image health checks — need it running.
 
 | Screen | What you'll use it for |
 |---|---|
-| **Import** | Bring the old site in: drop a WXR file onto the dropzone, or paste the site's address and import straight from its REST API (falling back to its RSS feed). You can also load a sample export to see how things work, and save/restore your session. |
+| **Import** | Bring the old site in: drop a WXR file onto the dropzone, or paste the site's address and import straight from its REST API (falling back to its RSS feed). You can also load a sample export to see how things work. Every site's taxonomies, mappings, and settings auto-save by domain; the domain pill in the header opens a drawer to manage them. |
 | **Mappings** | Line the old taxonomy terms up with the new site's categories and tags. Relay suggests matches by name similarity — visible confidence scores, and it never overrides a choice you've made yourself. |
 | **Settings** | Decide how conversion behaves: image sizes and alignment, gallery columns and cropping, how PDFs and buttons render, heading levels, external links, and a fallback featured image. |
 | **Articles** | Review everything before it ships — filter and sort, open any article to see it before and after conversion, hand-edit the generated Gutenberg if you need to, and flag or exclude articles. |

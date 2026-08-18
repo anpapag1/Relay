@@ -4,8 +4,7 @@ Living list of candidate work. Items are unordered; pick what you want and move 
 
 ## Local storage / session
 
-- [ ] **Autosave polish** — prompt/UI to restore the saved session, a way to clear it, and an "autosaved at HH:MM" indicator. (Autosave itself already exists: `src/state/session.ts` `saveToLocalStorage` — debounced 500 ms — plus restore-on-mount in `src/state/AppStateContext.tsx`, covering mappings, tables, settings, article overrides, media resolutions.)
-- [ ] **Scope the localStorage backup to the source** — key by WXR filename / fetch URL + date so loading a different import doesn't resurrect the previous import's stale mappings/tables.
+- [x] **Scope the localStorage backup to the source** — done via per-site profiles: one record per old-site domain (`relay_site_v1_<domain>`), auto-loaded silently and auto-saved (debounced 500 ms). Loading a different import no longer resurrects the previous import's stale mappings/tables.
 - [ ] **Persist UI prefs** — active tab, article sort/filter, panel widths — in localStorage.
 
 ## Editing / safety

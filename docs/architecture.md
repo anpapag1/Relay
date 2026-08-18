@@ -9,7 +9,8 @@ Relay is two pieces that share one origin in production:
 ```
 ┌─ src/   the client ─────────────────────────────────────────────────┐
 │  Vite + React + TypeScript (strict). The UI *and* the conversion     │
-│  engine both run in the browser. Stateless besides localStorage.     │
+│  engine both run in the browser. Stateless besides per-site          │
+│  profiles auto-saved to localStorage.                                │
 └──────────────────────────────────────────────────────────────────────┘
 ┌─ server/   the proxy ────────────────────────────────────────────────┐
 │  A tiny zero-dependency Node HTTP server. Exists for exactly one     │
@@ -71,14 +72,15 @@ Relay/
    │  ├─ mappings/       suggestTerms · similarity · applyMappings · reconcileOldTables
    │  ├─ build/          runBuild · collectMediaRefs · resolveTerms
    │  └─ utils/          concurrencyLimit · decodeHtmlEntities
-   ├─ state/            AppStateContext · reducer · actions · selectors · session
+   ├─ state/            AppStateContext · reducer · actions · selectors · session · siteProfiles
    ├─ features/
    │  ├─ import/        ImportTab · useImageHealthCheck · sampleWxr
    │  ├─ mappings/      MappingsTab
    │  ├─ settings/      SettingsTab
    │  ├─ articles/      ArticlesTab · ArticleDrawer · ArticlePreviewPane
    │  │                 ArticleSidebar · useArticleDraft · useScrollManagement …
-   │  └─ build/         BuildTab
+   │  ├─ build/         BuildTab
+   │  └─ sites/         SitesDrawer (auto-saved per-site configs)
    ├─ ui/               Header · Modal · Badge
    └─ theme/            tokens · index.css
 ```
@@ -92,7 +94,7 @@ The shape is in `src/state/types.ts`:
 
 ```
 AppState
-├─ ui:        activeTab, selectedArticleId, previewMode, modals, pickers
+├─ ui:        activeTab, selectedArticleId, previewMode, modals, pickers, sourceDomain
 ├─ source:    ParseResult | null       // parsed export / live fetch
 ├─ target:    new-site taxonomies (pasted JSON or typed)
 ├─ oldTables: old-site term tables from the source
@@ -120,9 +122,13 @@ Two deliberate choices:
   emitted as-is — that is what makes "Revert" meaningful (re-run conversion,
   discard the edit).
 
-The session backup (`state/session.ts`) stores *decisions* — mappings, manual
-exclusions, edits, resolved media — not derived statuses, which recompute on
-restore. The format carries a `version` field.
+The per-site profile store (`state/siteProfiles.ts`) keeps one record per
+old-site domain under the `relay_site_v1_<domain>` localStorage key. Each
+record holds the portable `SiteDataBackup` — taxonomy tables, term mappings,
+conversion settings — plus a `savedAt` timestamp. When an import for a known
+domain is detected, its profile auto-loads silently; config-slice changes
+auto-save (debounced 500 ms). Article overrides and media resolutions are no
+longer persisted across reloads — they're session-only and rebuild on demand.
 
 ## Data flow
 
@@ -141,7 +147,7 @@ function the build uses — so preview and output cannot disagree.
 
 `media.resolved` memoizes every URL the engine has already accounted for, so a
 rebuild, a settings change, or reopening the drawer never re-fetches the old
-site. It is part of the session backup.
+site. It lives only for the current session.
 
 ## The conversion pipeline
 
