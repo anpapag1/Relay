@@ -31,7 +31,7 @@ npm run test --workspace server -- --run src/index.test.ts   # one server file
 - **Media resolution** is tested with a stubbed fetch; all four outcomes
   (`matched-export`, `matched-live`, `unresolved`, `unreachable`) get a test.
 - **Selectors and reducer** are tested directly (statuses derive correctly, a
-  mapping change reflows statuses, session restore recomputes rather than
+  mapping change reflows statuses, profile restore recomputes rather than
   restoring stale statuses).
 - **Components get light smoke tests** via React Testing Library — render,
   basic interactions, no snapshot-heavy UI tests.

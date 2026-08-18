@@ -35,7 +35,7 @@ beforeEach(() => {
 });
 
 describe('SitesDrawer', () => {
-  it('renders the title and lists saved profiles with an Active badge', async () => {
+  it('renders the title and lists saved profiles without an Active badge', async () => {
     saveSiteProfile('old.example', DATA);
     saveSiteProfile('other.example', DATA);
     const { container, root } = await renderDrawer();

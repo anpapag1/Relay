@@ -9,8 +9,9 @@ import {
   renameSiteProfile,
   saveSiteProfile,
 } from '../../state/siteProfiles';
-import { restoreSiteDataBackup } from '../../state/session';
+import { createSiteDataBackup, restoreSiteDataBackup } from '../../state/session';
 import { Modal } from '../../ui/Modal';
+import type { AppState } from '../../state/types';
 import type { SiteProfile } from '../../state/siteProfiles';
 
 export interface SitesDrawerProps {
@@ -104,7 +105,7 @@ export const SitesDrawer: React.FC<SitesDrawerProps> = ({ open, onClose }) => {
           setError(res.message);
           return;
         }
-        saveSiteProfile(parsed.domain, parsed.data);
+        saveSiteProfile(parsed.domain, createSiteDataBackup({ ...state, ...res.state } as AppState));
         if (activeDomain && normalizeDomain(parsed.domain) === activeDomain) {
           dispatch({ type: 'RESTORE_SESSION', state: res.state });
         }

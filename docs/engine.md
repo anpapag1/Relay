@@ -205,6 +205,6 @@ Two rules keep suggestions from fighting the user (in `applyMappings` /
 | Reader | Unrecognised element → `raw` node + warning on that article. Nothing silently lost. |
 | Transform | A throw in one article is caught, marks it `review` with the message, build continues. |
 | Generate | Escaping and CDATA handled solely in `xml.ts`, verified by the round-trip test. |
-| Session restore | Bad JSON or version mismatch → "Couldn't parse that JSON" message. |
+| Profile restore | Bad JSON or version mismatch → "Couldn't parse that JSON" message. |
 | Proxy down | `mediaClient` catches connection failure and marks affected media `unreachable`. The build always completes; the report lists what could not be checked. The proxy is never on the critical path. |
 | Suggestions | Pure and total — an empty or malformed new-site table yields no suggestions rather than an error. |

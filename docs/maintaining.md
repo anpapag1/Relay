@@ -70,7 +70,7 @@ updating the docs it describes is incomplete. See `AGENTS.md`.
 ### Change settings/state shape
 
 - Update `src/state/types.ts` and the reducer/selectors that read it.
-- The session backup has a `version` field — bump it if the restore shape
+- Each saved site profile has a `version` field — bump it if the restore shape
   changes (a version mismatch surfaces as the existing "couldn't parse" flow).
 - Docs: `docs/architecture.md` (state model) and `docs/frontend.md`.
 

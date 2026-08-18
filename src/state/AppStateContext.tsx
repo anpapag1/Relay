@@ -43,6 +43,8 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({
 
   const domain = domainForState(state);
   const lastDomainRef = useRef<string | null>(null);
+  const configOwnerDomainRef = useRef<string | null>(null);
+  const saveEffectPrevDomainRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!enableAutosave) return;
@@ -68,9 +70,18 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({
 
   useEffect(() => {
     if (!enableAutosave) return;
+    const domainChanged = domain !== saveEffectPrevDomainRef.current;
+    saveEffectPrevDomainRef.current = domain;
+    if (domainChanged) {
+      configOwnerDomainRef.current = null;
+      return;
+    }
     if (!domain) return;
+    configOwnerDomainRef.current = domain;
     const timer = setTimeout(() => {
-      saveSiteProfile(domain, createSiteDataBackup(state));
+      if (configOwnerDomainRef.current === domain) {
+        saveSiteProfile(domain, createSiteDataBackup(state));
+      }
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps

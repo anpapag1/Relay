@@ -67,6 +67,15 @@ describe('siteProfiles storage', () => {
     expect(renameSiteProfile('nope.example', 'x.example')).toBe(false);
   });
 
+  it('does not save or rename onto an empty normalized domain', () => {
+    saveSiteProfile('http://', DATA);
+    expect(loadSiteProfile('http://')).toBeNull();
+    expect(window.localStorage.getItem('relay_site_v1_')).toBeNull();
+    saveSiteProfile('a.example', DATA);
+    expect(renameSiteProfile('a.example', 'http://')).toBe(false);
+    expect(loadSiteProfile('a.example')?.domain).toBe('a.example');
+  });
+
   it('resolves the effective domain from source.siteUrl first, then ui.sourceDomain, then null', () => {
     expect(domainForState(initialState)).toBeNull();
     expect(domainForState({ ...initialState, ui: { ...initialState.ui, sourceDomain: 'typed.example' } })).toBe('typed.example');

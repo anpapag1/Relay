@@ -20,7 +20,7 @@ static host, and nothing to persist.
 All state is ephemeral:
 
 - The proxy caches `image-check` results in memory only (lost on restart, fine).
-- User session data lives in the browser's `localStorage`.
+- Saved site profiles live in the browser's `localStorage`.
 - No database, no volume, no shared filesystem.
 
 Because the app is stateless, updates are a simple image swap and rollback is

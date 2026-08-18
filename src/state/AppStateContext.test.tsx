@@ -52,10 +52,26 @@ function HarnessWithEdit() {
   const { state, dispatch } = useAppState();
   useEffect(() => {
     dispatch({ type: 'LOAD_SOURCE', result: MOCK_RESULT, defaultBuilder: 'plainHtml', confidence: 90 });
-    dispatch({ type: 'UPDATE_SETTINGS', settings: { imageAlign: 'left' } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  return <div data-testid="tables">{Object.keys(state.target.tables).join(',')}</div>;
+  return (
+    <div>
+      <span data-testid="tables">{Object.keys(state.target.tables).join(',')}</span>
+      <span data-testid="settings">{state.settings.imageAlign}</span>
+      <button data-testid="edit" onClick={() => dispatch({ type: 'UPDATE_SETTINGS', settings: { imageAlign: 'left' } })}>
+        edit
+      </button>
+      <button data-testid="load-a" onClick={() => dispatch({ type: 'LOAD_SOURCE', result: MOCK_RESULT, defaultBuilder: 'plainHtml', confidence: 90 })}>
+        load a
+      </button>
+      <button
+        data-testid="load-b"
+        onClick={() => dispatch({ type: 'LOAD_SOURCE', result: { ...MOCK_RESULT, siteUrl: 'https://other.example' }, defaultBuilder: 'plainHtml', confidence: 90 })}
+      >
+        load b
+      </button>
+    </div>
+  );
 }
 
 async function renderHarness(harness: React.ReactElement) {
@@ -69,6 +85,10 @@ async function renderHarness(harness: React.ReactElement) {
 }
 
 const tick = () => act(async () => { await new Promise((r) => setTimeout(r, 550)); });
+
+const clickByTestId = (container: HTMLElement, testId: string) => {
+  container.querySelector<HTMLButtonElement>(`[data-testid="${testId}"]`)?.click();
+};
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -100,10 +120,42 @@ describe('AppStateProvider autosave', () => {
   });
 
   it('persists config-slice edits to the active domain profile', async () => {
-    const { root } = await renderHarness(<HarnessWithEdit />);
+    const { container, root } = await renderHarness(<HarnessWithEdit />);
+    await act(async () => {
+      clickByTestId(container, 'load-a');
+    });
+    await act(async () => {
+      clickByTestId(container, 'edit');
+    });
     await tick();
     const loaded = loadProfile('old.example');
     expect(loaded?.data.settings.imageAlign).toBe('left');
+    root.unmount();
+  });
+
+  it('does not write the previous site config under a new domain until the new site is edited', async () => {
+    const { container, root } = await renderHarness(<HarnessWithEdit />);
+    await act(async () => {
+      clickByTestId(container, 'load-a');
+    });
+    await act(async () => {
+      clickByTestId(container, 'edit');
+    });
+    await tick();
+    expect(loadProfile('old.example')?.data.settings.imageAlign).toBe('left');
+
+    await act(async () => {
+      clickByTestId(container, 'load-b');
+    });
+    await tick();
+    expect(loadProfile('other.example')).toBeNull();
+    expect(loadProfile('old.example')?.data.settings.imageAlign).toBe('left');
+
+    await act(async () => {
+      clickByTestId(container, 'edit');
+    });
+    await tick();
+    expect(loadProfile('other.example')?.data.settings.imageAlign).toBe('left');
     root.unmount();
   });
 
@@ -120,7 +172,6 @@ function initialStateSettings(): ConversionSettings {
 }
 
 function loadProfile(domain: string) {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const raw = window.localStorage.getItem(`relay_site_v1_${domain}`);
   return raw ? JSON.parse(raw) : null;
 }

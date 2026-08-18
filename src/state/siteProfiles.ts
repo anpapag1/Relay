@@ -64,10 +64,12 @@ export function loadSiteProfile(domain: string): SiteProfile | null {
 
 export function saveSiteProfile(domain: string, data: SiteDataBackup): void {
   if (!hasStorage()) return;
+  const normalized = normalizeDomain(domain);
+  if (!normalized) return;
   try {
     const profile: SiteProfile = {
       version: 1,
-      domain: normalizeDomain(domain),
+      domain: normalized,
       savedAt: new Date().toISOString(),
       data,
     };
@@ -89,11 +91,15 @@ export function deleteSiteProfile(domain: string): void {
 export function renameSiteProfile(oldDomain: string, newDomain: string): boolean {
   const profile = loadSiteProfile(oldDomain);
   if (!profile) return false;
-  profile.domain = normalizeDomain(newDomain);
+  const normalized = normalizeDomain(newDomain);
+  if (!normalized) return false;
+  profile.domain = normalized;
   profile.savedAt = new Date().toISOString();
+  const oldKey = siteProfileKey(oldDomain);
+  const newKey = siteProfileKey(newDomain);
   try {
-    window.localStorage.removeItem(siteProfileKey(oldDomain));
-    window.localStorage.setItem(siteProfileKey(newDomain), JSON.stringify(profile));
+    window.localStorage.setItem(newKey, JSON.stringify(profile));
+    if (newKey !== oldKey) window.localStorage.removeItem(oldKey);
     return true;
   } catch {
     return false;

@@ -218,6 +218,7 @@ describe('ImportTab source domain', () => {
 
     expect((input as HTMLInputElement).value).toBe('my-import.example');
     root.unmount();
+    document.body.removeChild(container);
   });
 });
 
