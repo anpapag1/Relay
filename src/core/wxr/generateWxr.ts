@@ -77,8 +77,33 @@ function buildPostmetaXml(article: ExportArticle, registry: AttachmentRegistry):
 		</wp:postmeta>`;
 }
 
-function buildArticleItem(article: ExportArticle, registry: AttachmentRegistry): string {
-  const postName = article.postName || slugFromLink(article.link) || slugify(article.title);
+function resolvePostName(article: ExportArticle): string {
+  return article.postName || slugFromLink(article.link) || slugify(article.title);
+}
+
+/** WordPress importer rejects two posts with the same `wp:post_name`.
+ * Normally the reducer auto-excludes duplicate slugs at load, but a user
+ * can manually re-include one, so the export itself must be collision-free.
+ * Assigns each article a unique slug in document order: the first article
+ * with a given slug keeps it, later collisions get a WordPress-style
+ * `-2`/`-3` suffix, skipping any suffix already taken by a natural slug
+ * (so `foo` + `foo-2` + a re-included `foo` yields `foo`, `foo-2`, `foo-3`). */
+function resolveUniquePostNames(articles: ExportArticle[]): Map<ExportArticle, string> {
+  const used = new Set<string>();
+  const names = new Map<ExportArticle, string>();
+  for (const article of articles) {
+    const base = resolvePostName(article);
+    let candidate = base;
+    for (let suffix = 2; used.has(candidate); suffix += 1) {
+      candidate = `${base}-${suffix}`;
+    }
+    used.add(candidate);
+    names.set(article, candidate);
+  }
+  return names;
+}
+
+function buildArticleItem(article: ExportArticle, postName: string, registry: AttachmentRegistry): string {
   const pubDate = article.postDate ? new Date(article.postDate).toUTCString() : new Date().toUTCString();
 
   return `
@@ -121,7 +146,8 @@ export function generateWxr(articles: ExportArticle[], options: GenerateWxrOptio
   const language = options.language ?? 'en-US';
   const authorItems = buildAuthorItems(articles);
   const registry = precomputedRegistry ?? buildAttachmentRegistry(registryUrlsFor(articles));
-  const articleItems = articles.map((article) => buildArticleItem(article, registry));
+  const uniquePostNames = resolveUniquePostNames(articles);
+  const articleItems = articles.map((article) => buildArticleItem(article, uniquePostNames.get(article) ?? resolvePostName(article), registry));
   const attachmentItems = Array.from(registry.entries()).map(([url, entry]) => {
     const owner = articles.find((a) => a.featuredAttachmentUrl === url || (a.mediaAttachmentUrls ?? []).includes(url));
     return buildAttachmentItem(url, entry, { authorLogin: owner?.authorLogin ?? 'admin', postDate: owner?.postDate ?? '' });

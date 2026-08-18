@@ -67,6 +67,61 @@ describe('generateWxr', () => {
     expect(xml.match(/<wp:comment_status><!\[CDATA\[open\]\]><\/wp:comment_status>/g)?.length).toBe(2);
   });
 
+  describe('duplicate wp:post_name dedupe', () => {
+    it('keeps the first occurrence\'s slug and suffixes a colliding article with -2', () => {
+      const articles: ExportArticle[] = [
+        { ...ARTICLES[0], postName: 'hello-world' },
+        { ...ARTICLES[1], postName: 'hello-world' },
+      ];
+      const xml = generateWxr(articles, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+      const result = parseWxr(xml);
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.articles.map((a) => a.postName)).toEqual(['hello-world', 'hello-world-2']);
+    });
+
+    it('skips a suffix already used by a natural slug, so a third collision becomes -3', () => {
+      const articles: ExportArticle[] = [
+        { ...ARTICLES[0], postName: 'hello-world' },
+        { ...ARTICLES[1], postName: 'hello-world-2' },
+        { ...ARTICLES[0], postName: 'hello-world', postId: 3, link: 'https://old-site.example/hello-world/3/' },
+      ];
+      const xml = generateWxr(articles, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+      const result = parseWxr(xml);
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.articles.map((a) => a.postName)).toEqual(['hello-world', 'hello-world-2', 'hello-world-3']);
+    });
+
+    it('dedupes slugs derived from link or title when postName is not set', () => {
+      const articles: ExportArticle[] = [
+        { ...ARTICLES[0], postName: undefined, link: 'https://old-site.example/same-slug/' },
+        { ...ARTICLES[1], postName: undefined, link: 'https://old-site.example/same-slug/' },
+      ];
+      const xml = generateWxr(articles, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+      const result = parseWxr(xml);
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.articles.map((a) => a.postName)).toEqual(['same-slug', 'same-slug-2']);
+    });
+
+    it('does not suffix unique slugs', () => {
+      const articles: ExportArticle[] = [
+        { ...ARTICLES[0], postName: 'hello-world' },
+        { ...ARTICLES[1], postName: 'second-post' },
+      ];
+      const xml = generateWxr(articles, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+      const result = parseWxr(xml);
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.articles.map((a) => a.postName)).toEqual(['hello-world', 'second-post']);
+    });
+  });
+
   it('round-trips through parseWxr with matching counts and content', () => {
     const xml = generateWxr(ARTICLES, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
     const result = parseWxr(xml);

@@ -30,7 +30,10 @@ ParseResult → detectBuilder → reader → IR tree → writeBlocks → WXR mar
   synthetic `<wp:attachment>` item for every inline media URL it uses
   (`mediaAttachmentUrls`) — Relay never carries the source export's attachment
   items over verbatim, so without these, inline images would import as bare
-  hotlinks to the old (soon-to-be-decommissioned) site.
+  hotlinks to the old (soon-to-be-decommissioned) site. `wp:post_name` is
+  deduped across the included articles (WordPress-style `-2`/`-3` suffixing,
+  skipping suffixes already taken by natural slugs) so a manually re-included
+  article that collides with an included one still produces a valid WXR.
 - **`xml.ts`** — the only place escaping/CDATA is handled. Escape when writing
   element text, wrap content blocks in CDATA. The round-trip test proves it.
 
