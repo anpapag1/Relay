@@ -38,7 +38,8 @@ function stripEditingArtifacts(outerHTML: string): string {
     .split(' class="is-editing"').join('')
     .split(' is-editing').join('')
     .split(' class=""').join('')
-    .split(' contenteditable="true"').join('');
+    .split(' contenteditable="true"').join('')
+    .split(' contenteditable="false"').join('');
   return cleanedTag + rest;
 }
 
@@ -168,7 +169,7 @@ export function useBlockInlineEditor({
 
       session.block = nextEl;
       session.needle = stripEditingArtifacts(nextEl.outerHTML);
-      session.occIndex = singleOccurrenceIndex(container, nextEl);
+      session.occIndex = strippedOccurrenceIndex(container, nextEl, session.needle);
 
       const range = document.createRange();
       range.selectNodeContents(nextEl);
@@ -218,7 +219,7 @@ export function useBlockInlineEditor({
 
       session.block = newEl;
       session.needle = stripEditingArtifacts(newEl.outerHTML);
-      session.occIndex = singleOccurrenceIndex(container, newEl);
+      session.occIndex = strippedOccurrenceIndex(container, newEl, session.needle);
 
       const range = document.createRange();
       if (newEl.firstChild) range.setStart(newEl.firstChild, 0);
