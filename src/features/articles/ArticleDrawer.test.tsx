@@ -166,6 +166,21 @@ describe('ArticleDrawer before/after preview toggle', () => {
     await act(async () => { beforeBtn.click(); });
     expect(container.textContent).toContain('Nothing to preview yet');
   });
+
+  it('marks editable blocks in "After" mode but keeps them read-only until clicked', async () => {
+    const article = makeArticle();
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false}>
+          <ArticleDrawer article={article} onClose={vi.fn()} onPrev={vi.fn()} onNext={vi.fn()} hasPrev={false} hasNext={false} />
+        </AppStateProvider>,
+      );
+    });
+    const paragraph = container.querySelector('.wp-preview-body p');
+    expect(paragraph).not.toBeNull();
+    expect(paragraph?.getAttribute('data-editable')).toBe('true');
+    expect(paragraph?.getAttribute('contenteditable')).toBeNull();
+  });
 });
 
 describe('ArticleDrawer navigation buttons', () => {
