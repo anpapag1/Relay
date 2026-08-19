@@ -4,6 +4,8 @@ import {
   EDITABLE_SELECTOR,
   caretOffsetIn,
   classifyBlock,
+  collapsedAtStart,
+  elementOccurrenceIndex,
   singleOccurrenceIndex,
   replaceNth,
 } from './blockEditing';
@@ -136,6 +138,34 @@ export function useBlockInlineEditor({
       commit();
     };
 
+    // Re-points the session at a different block: moves the editing affordances
+    // across, refreshes needle/occIndex against the container, and leaves the
+    // caret at the end of the new block.
+    const retarget = (nextEl: HTMLElement) => {
+      const session = sessionRef.current;
+      if (!session) return;
+      session.block.contentEditable = 'false';
+      session.block.setAttribute('contenteditable', 'false');
+      session.block.classList.remove('is-editing');
+
+      nextEl.dataset.editable = 'true';
+      nextEl.contentEditable = 'true';
+      nextEl.setAttribute('contenteditable', 'true');
+      nextEl.classList.add('is-editing');
+
+      session.block = nextEl;
+      session.needle = stripEditingArtifacts(nextEl.outerHTML);
+      session.occIndex = singleOccurrenceIndex(container, nextEl);
+
+      const range = document.createRange();
+      range.selectNodeContents(nextEl);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+      nextEl.focus();
+    };
+
     // Enter splits the block at the caret: the first half stays in place and
     // the second half moves into a fresh sibling element chosen by block kind
     // (heading → new paragraph, li → new li in the same ul, quote-p → new p in
@@ -187,6 +217,65 @@ export function useBlockInlineEditor({
       newEl.focus();
     };
 
+    // Backspace at the very start of a block joins it into the previous block
+    // (only in the same list/quote context) or, for an empty block, deletes it —
+    // removing the wrapping ul/blockquote once its last child is gone. jsdom
+    // performs no default deletion, so the DOM and string store are updated here.
+    const handleBackspace = (e: KeyboardEvent) => {
+      const session = sessionRef.current;
+      if (!session) return;
+      const block = session.block;
+      if (!collapsedAtStart(block)) return;
+
+      const blocks = Array.from(container.querySelectorAll<HTMLElement>(EDITABLE_SELECTOR));
+      const prev = blocks[blocks.indexOf(block) - 1];
+      if (!prev) {
+        e.preventDefault();
+        return;
+      }
+
+      if ((block.textContent ?? '').trim() === '') {
+        const kind = classifyBlock(block);
+        const wrapper = block.parentElement;
+        block.remove();
+        session.editHtml = replaceNth(session.editHtml, session.needle, session.occIndex, '');
+
+        if ((kind === 'li' || kind === 'quote-p') && wrapper) {
+          const orphaned =
+            kind === 'li'
+              ? wrapper.tagName.toLowerCase() === 'ul' && !wrapper.querySelector('li')
+              : wrapper.classList.contains('wp-block-quote') && !wrapper.querySelector('p');
+          if (orphaned) {
+            const wrapperOuter = wrapper.outerHTML;
+            const wrapperIndex = elementOccurrenceIndex(container, wrapper);
+            wrapper.remove();
+            session.editHtml = replaceNth(session.editHtml, wrapperOuter, wrapperIndex, '');
+          }
+        }
+
+        if (!container.querySelector(EDITABLE_SELECTOR)) {
+          session.editHtml = '';
+          commit();
+          return;
+        }
+        retarget(prev);
+        return;
+      }
+
+      if (block.parentElement !== prev.parentElement) {
+        e.preventDefault();
+        return;
+      }
+
+      const prevNeedle = stripEditingArtifacts(prev.outerHTML);
+      const prevIndex = singleOccurrenceIndex(container, prev);
+      prev.textContent = (prev.textContent ?? '') + (block.textContent ?? '');
+      block.remove();
+      session.editHtml = replaceNth(session.editHtml, session.needle, session.occIndex, '');
+      session.editHtml = replaceNth(session.editHtml, prevNeedle, prevIndex, stripEditingArtifacts(prev.outerHTML));
+      retarget(prev);
+    };
+
     const handleKeydown = (e: KeyboardEvent) => {
       const session = sessionRef.current;
       if (!session) return;
@@ -198,6 +287,9 @@ export function useBlockInlineEditor({
       if (e.key === 'Enter') {
         e.preventDefault();
         handleEnter();
+      }
+      if (e.key === 'Backspace') {
+        handleBackspace(e);
       }
     };
 

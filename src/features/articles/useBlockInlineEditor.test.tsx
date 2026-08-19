@@ -288,4 +288,94 @@ describe('useBlockInlineEditor', () => {
 
     expect(committed).toBe('<ul class="wp-block-list"><li>item</li><li> one</li><li>item two</li></ul>');
   });
+
+  it('joins the second of two identical paragraphs into the first on Backspace', async () => {
+    await mount('<p>x</p><p>x</p>');
+    const body = getBody();
+    const first = body.querySelectorAll('p')[0]!;
+    const second = body.querySelectorAll('p')[1]!;
+
+    await beginEditing(second);
+    placeCaret(second.firstChild!, 0);
+
+    await act(async () => {
+      second.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
+    });
+
+    const ps = body.querySelectorAll('p');
+    expect(ps).toHaveLength(1);
+    expect(ps[0]).toBe(first);
+    expect(ps[0]!.textContent).toBe('xx');
+
+    await exitEditing(body);
+
+    expect(committed).toBe('<p>xx</p>');
+  });
+
+  it('deletes an empty paragraph between two others on Backspace', async () => {
+    await mount('<p>a</p><p></p><p>b</p>');
+    const body = getBody();
+    const middle = body.querySelectorAll('p')[1]!;
+
+    await beginEditing(middle);
+    placeCaret(middle, 0);
+
+    await act(async () => {
+      middle.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
+    });
+
+    const ps = body.querySelectorAll('p');
+    expect(ps).toHaveLength(2);
+    expect(ps[0]!.textContent).toBe('a');
+    expect(ps[1]!.textContent).toBe('b');
+    expect(middle.isConnected).toBe(false);
+
+    await exitEditing(body);
+
+    expect(committed).toBe('<p>a</p><p>b</p>');
+  });
+
+  it('does nothing on Backspace at the start of the first block', async () => {
+    await mount('<p>first</p><p>second</p>');
+    const body = getBody();
+    const first = body.querySelectorAll('p')[0]!;
+
+    await beginEditing(first);
+    placeCaret(first.firstChild!, 0);
+
+    await act(async () => {
+      first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
+    });
+
+    const ps = body.querySelectorAll('p');
+    expect(ps).toHaveLength(2);
+    expect(ps[0]!.textContent).toBe('first');
+    expect(ps[1]!.textContent).toBe('second');
+
+    await exitEditing(body);
+
+    expect(committed).toBe('<p>first</p><p>second</p>');
+  });
+
+  it('removes the whole list when Backspace deletes its only item', async () => {
+    await mount('<p>keep</p><ul class="wp-block-list"><li></li></ul>');
+    const body = getBody();
+    const li = body.querySelector('li')!;
+
+    await beginEditing(li);
+    placeCaret(li, 0);
+
+    await act(async () => {
+      li.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
+    });
+
+    expect(body.querySelector('ul')).toBeNull();
+    expect(body.querySelector('li')).toBeNull();
+    expect(body.querySelectorAll('p')).toHaveLength(1);
+    expect(body.querySelectorAll('p')[0]!.textContent).toBe('keep');
+
+    await exitEditing(body);
+
+    expect(committed).toBe('<p>keep</p>');
+  });
 });
