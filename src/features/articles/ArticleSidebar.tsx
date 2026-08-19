@@ -58,7 +58,7 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
         width: '60vh',
         maxWidth: '100%',
         height: '100%',
-        background: 'white',
+        background: 'var(--relay-surface)',
         boxShadow: '-8px 0 30px oklch(0% 0 0 / 0.15)',
         overflowY: 'auto',
         padding: '28px',
@@ -84,7 +84,7 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
             border: 'none',
             cursor: 'pointer',
             fontSize: '18px',
-            color: 'oklch(55% 0.01 250)',
+            color: 'var(--relay-text-muted)',
             padding: '4px',
           }}
         >
@@ -98,14 +98,14 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
           gridTemplateColumns: '100px 1fr',
           gap: '14px',
           marginBottom: '18px',
-          background: 'oklch(98% 0.003 250)',
+          background: 'var(--relay-bg)',
           padding: '14px',
           borderRadius: '10px',
-          border: '1px solid oklch(92% 0.005 250)',
+          border: '1px solid var(--relay-border-soft)',
         }}
       >
         <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em', color: 'oklch(55% 0.01 250)' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em', color: 'var(--relay-text-muted)' }}>
             Article metadata
           </div>
           {editing ? (
@@ -151,12 +151,12 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
               height: '70px',
               borderRadius: '8px',
               background:
-                'repeating-linear-gradient(45deg, oklch(93% 0.005 250), oklch(93% 0.005 250) 6px, oklch(96% 0.003 250) 6px, oklch(96% 0.003 250) 12px)',
+                'repeating-linear-gradient(45deg, var(--relay-surface-hover), var(--relay-surface-hover) 6px, var(--relay-surface-subtle) 6px, var(--relay-surface-subtle) 12px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '10px',
-              color: 'oklch(55% 0.01 250)',
+              color: 'var(--relay-text-muted)',
               textAlign: 'center',
             }}
           >
@@ -166,18 +166,18 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
           {editing && (
             <div style={{ gridColumn: '1 / -1' }}>
-              <span style={{ color: 'oklch(55% 0.01 250)' }}>Title</span>
+              <span style={{ color: 'var(--relay-text-muted)' }}>Title</span>
               <br />
               <input
                 type="text"
                 value={draftTitle}
                 onChange={(e) => setDraftTitle(e.target.value)}
-                style={{ width: '100%', marginTop: '4px', padding: '6px 8px', borderRadius: '6px', border: '1px solid oklch(85% 0.005 250)', fontSize: '13px' }}
+                style={{ width: '100%', marginTop: '4px', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--relay-border)', fontSize: '13px' }}
               />
             </div>
           )}
           <div>
-            <span style={{ color: 'oklch(55% 0.01 250)' }}>Published</span>
+            <span style={{ color: 'var(--relay-text-muted)' }}>Published</span>
             <br />
             {editing ? (
               <input
@@ -185,19 +185,19 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
                 value={draftPostDate}
                 onChange={(e) => setDraftPostDate(e.target.value)}
                 placeholder="YYYY-MM-DD HH:MM:SS"
-                style={{ width: '100%', marginTop: '4px', padding: '6px 8px', borderRadius: '6px', border: '1px solid oklch(85% 0.005 250)', fontSize: '12px', fontFamily: 'monospace' }}
+                style={{ width: '100%', marginTop: '4px', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--relay-border)', fontSize: '12px', fontFamily: 'monospace' }}
               />
             ) : (
               <b>{article.postDate || '—'}</b>
             )}
           </div>
           <div>
-            <span style={{ color: 'oklch(55% 0.01 250)' }}>New slug</span>
+            <span style={{ color: 'var(--relay-text-muted)' }}>New slug</span>
             <br />
             <b style={{ fontFamily: 'monospace' }}>{article.postName || '—'}</b>
           </div>
           <div>
-            <span style={{ color: 'oklch(55% 0.01 250)' }}>Category</span>
+            <span style={{ color: 'var(--relay-text-muted)' }}>Category</span>
             <br />
             <b>
               {article.destinationTerms
@@ -207,7 +207,7 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
             </b>
           </div>
           <div>
-            <span style={{ color: 'oklch(55% 0.01 250)' }}>Tags</span>
+            <span style={{ color: 'var(--relay-text-muted)' }}>Tags</span>
             <br />
             <b>
               {article.destinationTerms
@@ -231,15 +231,15 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
             flexDirection: 'column',
             gap: '6px',
             padding: '12px',
-            background: 'oklch(97% 0.04 60)',
-            border: '1px solid oklch(88% 0.1 60)',
+            background: 'var(--relay-warning-bg)',
+            border: '1px solid var(--relay-warning-border)',
             borderRadius: '8px',
             marginBottom: '16px',
           }}
         >
-          <div style={{ color: 'oklch(50% 0.16 60)', fontWeight: 700, fontSize: '13px' }}>⚠ Warnings needing review:</div>
+          <div style={{ color: 'var(--relay-warning)', fontWeight: 700, fontSize: '13px' }}>⚠ Warnings needing review:</div>
           {article.warnings.map((w, idx) => (
-            <div key={idx} style={{ fontSize: '12px', color: 'oklch(40% 0.12 60)' }}>
+            <div key={idx} style={{ fontSize: '12px', color: 'var(--relay-warning)' }}>
               • {w}
             </div>
           ))}
@@ -253,15 +253,15 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
             flexDirection: 'column',
             gap: '6px',
             padding: '12px',
-            background: 'oklch(98% 0.003 250)',
-            border: '1px solid oklch(92% 0.005 250)',
+            background: 'var(--relay-bg)',
+            border: '1px solid var(--relay-border-soft)',
             borderRadius: '8px',
             marginBottom: '16px',
           }}
         >
-          <div style={{ color: 'oklch(55% 0.01 250)', fontWeight: 700, fontSize: '13px' }}>ℹ Automatically handled:</div>
+          <div style={{ color: 'var(--relay-text-muted)', fontWeight: 700, fontSize: '13px' }}>ℹ Automatically handled:</div>
           {article.infoWarnings.map((w, idx) => (
-            <div key={idx} style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>
+            <div key={idx} style={{ fontSize: '12px', color: 'var(--relay-text-muted)' }}>
               • {w}
             </div>
           ))}
@@ -275,14 +275,14 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
           justifyContent: 'space-between',
           marginBottom: '16px',
           padding: '12px 14px',
-          background: 'oklch(98% 0.003 250)',
+          background: 'var(--relay-bg)',
           borderRadius: '8px',
-          border: '1px solid oklch(92% 0.005 250)',
+          border: '1px solid var(--relay-border-soft)',
         }}
       >
         <div>
           <div style={{ fontSize: '13px', fontWeight: 600 }}>Include in migration</div>
-          <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--relay-text-muted)' }}>
             {isExcluded
               ? (article.statusReason ? `Excluded: ${article.statusReason}` : 'Currently excluded from exported file')
               : 'Will be exported into the new site WXR'}
@@ -305,14 +305,14 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
           justifyContent: 'space-between',
           marginBottom: '16px',
           padding: '12px 14px',
-          background: article.isManualReview ? 'oklch(97% 0.04 60)' : 'oklch(98% 0.003 250)',
+          background: article.isManualReview ? 'var(--relay-warning-bg)' : 'var(--relay-bg)',
           borderRadius: '8px',
-          border: article.isManualReview ? '1px solid oklch(88% 0.1 60)' : '1px solid oklch(92% 0.005 250)',
+          border: article.isManualReview ? '1px solid var(--relay-warning-border)' : '1px solid var(--relay-border-soft)',
         }}
       >
         <div>
           <div style={{ fontSize: '13px', fontWeight: 600 }}>Flag for review</div>
-          <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--relay-text-muted)' }}>
             {article.isManualReview ? 'Manually flagged — needs a human look before export' : 'Mark this article for a manual check'}
           </div>
         </div>
@@ -323,8 +323,8 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
           style={{
             padding: '6px 12px',
             fontSize: '12px',
-            color: article.isManualReview ? 'oklch(50% 0.16 60)' : 'oklch(35% 0.01 250)',
-            borderColor: article.isManualReview ? 'oklch(85% 0.1 60)' : 'oklch(88% 0.005 250)',
+            color: article.isManualReview ? 'var(--relay-warning)' : 'var(--relay-text-2)',
+            borderColor: article.isManualReview ? 'var(--relay-warning-border)' : 'var(--relay-border)',
           }}
         >
           {article.isManualReview ? 'Flagged (Click to Unflag)' : 'Flag for Review'}
@@ -339,7 +339,7 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
             style={{
               flex: 1,
               padding: '11px',
-              background: 'oklch(55% 0.15 150)',
+              background: 'var(--relay-success)',
               color: 'white',
               border: 'none',
               borderRadius: '8px',

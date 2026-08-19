@@ -27,7 +27,7 @@ function AppContent() {
   useUnsavedChangesWarning();
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'oklch(98% 0.003 250)', color: 'oklch(20% 0.01 250)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--relay-bg)', color: 'var(--relay-text)' }}>
       <Header />
       <main style={{ flex: 1, padding: '32px 24px' }}>
         {activeTab === 'import' && <ImportTab />}

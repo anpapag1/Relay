@@ -1,5 +1,72 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
+/* Design tokens — single source of truth for every color in the app.
+ * Components reference these via var(--relay-*) instead of hard-coding
+ * oklch() values, and the whole palette flips with one attribute change:
+ * <html data-theme="dark">. Light values mirror the original hard-coded
+ * palette exactly, so the default appearance is unchanged. */
+:root {
+  --relay-bg: oklch(98% 0.003 250);
+  --relay-surface: #ffffff;
+  --relay-surface-subtle: oklch(97% 0.004 250);
+  --relay-surface-hover: oklch(95% 0.01 250);
+  --relay-border: oklch(88% 0.005 250);
+  --relay-border-soft: oklch(90% 0.005 250);
+  --relay-border-strong: oklch(80% 0.01 250);
+  --relay-text: oklch(20% 0.01 250);
+  --relay-text-2: oklch(45% 0.01 250);
+  --relay-text-muted: oklch(55% 0.01 250);
+  --relay-accent: oklch(50% 0.16 265);
+  --relay-accent-hover: oklch(45% 0.18 265);
+  --relay-accent-soft: oklch(96% 0.04 265);
+  --relay-accent-border: oklch(85% 0.05 265);
+  --relay-success: oklch(50% 0.14 150);
+  --relay-success-bg: oklch(96% 0.05 150);
+  --relay-success-border: oklch(88% 0.08 150);
+  --relay-warning: oklch(55% 0.16 60);
+  --relay-warning-bg: oklch(96% 0.06 60);
+  --relay-warning-border: oklch(88% 0.1 60);
+  --relay-danger: oklch(55% 0.2 25);
+  --relay-danger-bg: oklch(96% 0.05 25);
+  --relay-danger-hover: oklch(93% 0.08 25);
+  --relay-danger-border: oklch(88% 0.08 25);
+  --relay-info: oklch(50% 0.16 260);
+  --relay-info-bg: oklch(96% 0.05 260);
+  --relay-info-border: oklch(88% 0.08 260);
+  --relay-overlay: oklch(0% 0 0 / 0.4);
+}
+
+[data-theme='dark'] {
+  --relay-bg: oklch(22% 0.012 260);
+  --relay-surface: oklch(26% 0.015 260);
+  --relay-surface-subtle: oklch(29% 0.015 260);
+  --relay-surface-hover: oklch(33% 0.018 260);
+  --relay-border: oklch(40% 0.02 260);
+  --relay-border-soft: oklch(38% 0.02 260);
+  --relay-border-strong: oklch(48% 0.02 260);
+  --relay-text: oklch(93% 0.005 250);
+  --relay-text-2: oklch(80% 0.008 250);
+  --relay-text-muted: oklch(65% 0.008 250);
+  --relay-accent: oklch(70% 0.16 265);
+  --relay-accent-hover: oklch(76% 0.16 265);
+  --relay-accent-soft: oklch(34% 0.05 265);
+  --relay-accent-border: oklch(50% 0.09 265);
+  --relay-success: oklch(72% 0.14 150);
+  --relay-success-bg: oklch(30% 0.05 150);
+  --relay-success-border: oklch(44% 0.09 150);
+  --relay-warning: oklch(76% 0.15 60);
+  --relay-warning-bg: oklch(30% 0.06 60);
+  --relay-warning-border: oklch(44% 0.1 60);
+  --relay-danger: oklch(72% 0.18 25);
+  --relay-danger-bg: oklch(30% 0.06 25);
+  --relay-danger-hover: oklch(36% 0.07 25);
+  --relay-danger-border: oklch(44% 0.1 25);
+  --relay-info: oklch(72% 0.15 260);
+  --relay-info-bg: oklch(30% 0.05 260);
+  --relay-info-border: oklch(44% 0.09 260);
+  --relay-overlay: oklch(0% 0 0 / 0.6);
+}
+
 html, body {
   margin: 0;
   min-height: 100%;
@@ -7,8 +74,9 @@ html, body {
 
 body {
   font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: oklch(98% 0.003 250);
-  color: oklch(25% 0.01 250);
+  background: var(--relay-bg);
+  color: var(--relay-text);
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 * {
@@ -20,7 +88,7 @@ input, select, textarea, button {
 }
 
 input[type="checkbox"] {
-  accent-color: oklch(50% 0.16 265);
+  accent-color: var(--relay-accent);
   width: 16px;
   height: 16px;
   cursor: pointer;
@@ -33,12 +101,12 @@ input[type="checkbox"] {
 }
 
 a {
-  color: oklch(50% 0.16 265);
+  color: var(--relay-accent);
   text-decoration: none;
 }
 
 a:hover {
-  color: oklch(42% 0.18 265);
+  color: var(--relay-accent-hover);
   text-decoration: underline;
 }
 
@@ -50,16 +118,16 @@ a:hover {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: oklch(88% 0.005 250);
+  background: var(--relay-border);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(80% 0.005 250);
+  background: var(--relay-border-strong);
 }
 
 .relay-scroll {
   scrollbar-width: thin;
-  scrollbar-color: oklch(88% 0.005 250) transparent;
+  scrollbar-color: var(--relay-border) transparent;
   scrollbar-gutter: stable;
 }
 
@@ -76,8 +144,8 @@ a:hover {
 .spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid oklch(90% 0.005 250);
-  border-top-color: oklch(50% 0.16 265);
+  border: 3px solid var(--relay-border);
+  border-top-color: var(--relay-accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin: 0 auto 12px;
@@ -96,33 +164,33 @@ a:hover {
 }
 
 .badge-ready {
-  background: oklch(96% 0.05 150);
-  color: oklch(45% 0.15 150);
-  border: 1px solid oklch(88% 0.08 150);
+  background: var(--relay-success-bg);
+  color: var(--relay-success);
+  border: 1px solid var(--relay-success-border);
 }
 
 .badge-review {
-  background: oklch(96% 0.06 60);
-  color: oklch(55% 0.16 60);
-  border: 1px solid oklch(88% 0.1 60);
+  background: var(--relay-warning-bg);
+  color: var(--relay-warning);
+  border: 1px solid var(--relay-warning-border);
 }
 
 .badge-edited {
-  background: oklch(96% 0.05 260);
-  color: oklch(50% 0.16 260);
-  border: 1px solid oklch(88% 0.08 260);
+  background: var(--relay-info-bg);
+  color: var(--relay-info);
+  border: 1px solid var(--relay-info-border);
 }
 
 .badge-excluded {
-  background: oklch(95% 0.01 250);
-  color: oklch(55% 0.01 250);
-  border: 1px solid oklch(88% 0.005 250);
+  background: var(--relay-surface-hover);
+  color: var(--relay-text-muted);
+  border: 1px solid var(--relay-border);
 }
 
 .badge-beta {
-  background: oklch(96% 0.06 60);
-  color: oklch(55% 0.16 60);
-  border: 1px solid oklch(88% 0.1 60);
+  background: var(--relay-warning-bg);
+  color: var(--relay-warning);
+  border: 1px solid var(--relay-warning-border);
 }
 
 /* Stat tile grid — same status hues as the badges above (green/amber/
@@ -148,7 +216,7 @@ a:hover {
 .stat-card {
   border-radius: 14px;
   padding: 18px 20px;
-  border: 1px solid oklch(90% 0.005 250);
+  border: 1px solid var(--relay-border);
 }
 .stat-card__value {
   font-size: 26px;
@@ -162,29 +230,29 @@ a:hover {
 }
 
 .stat-card--neutral {
-  background: white;
-  color: oklch(20% 0.01 250);
+  background: var(--relay-surface);
+  color: var(--relay-text);
 }
 .stat-card--neutral .stat-card__label {
-  color: oklch(55% 0.01 250);
+  color: var(--relay-text-muted);
 }
 
 .stat-card--good {
-  background: oklch(97% 0.03 150);
-  border-color: oklch(88% 0.08 150);
-  color: oklch(40% 0.15 150);
+  background: var(--relay-success-bg);
+  border-color: var(--relay-success-border);
+  color: var(--relay-success);
 }
 
 .stat-card--warning {
-  background: oklch(97% 0.035 60);
-  border-color: oklch(88% 0.1 60);
-  color: oklch(48% 0.16 60);
+  background: var(--relay-warning-bg);
+  border-color: var(--relay-warning-border);
+  color: var(--relay-warning);
 }
 
 .stat-card--accent {
-  background: oklch(97% 0.03 260);
-  border-color: oklch(88% 0.08 260);
-  color: oklch(45% 0.16 260);
+  background: var(--relay-info-bg);
+  border-color: var(--relay-info-border);
+  color: var(--relay-info);
 }
 
 /* Settings tab's two-column layout — collapses to a single stacked
@@ -217,30 +285,30 @@ a:hover {
 }
 
 .btn-primary {
-  background: oklch(50% 0.16 265);
+  background: var(--relay-accent);
   color: white;
 }
 .btn-primary:hover:not(:disabled) {
-  background: oklch(45% 0.18 265);
+  background: var(--relay-accent-hover);
 }
 
 .btn-secondary {
-  background: white;
-  border-color: oklch(85% 0.01 250);
-  color: oklch(35% 0.01 250);
+  background: var(--relay-surface);
+  border-color: var(--relay-border);
+  color: var(--relay-text-2);
 }
 .btn-secondary:hover:not(:disabled) {
-  background: oklch(97% 0.005 250);
-  border-color: oklch(75% 0.01 250);
+  background: var(--relay-surface-subtle);
+  border-color: var(--relay-border-strong);
 }
 
 .btn-danger {
-  background: oklch(96% 0.05 25);
-  border-color: oklch(88% 0.08 25);
-  color: oklch(55% 0.2 25);
+  background: var(--relay-danger-bg);
+  border-color: var(--relay-danger-border);
+  color: var(--relay-danger);
 }
 .btn-danger:hover:not(:disabled) {
-  background: oklch(93% 0.08 25);
+  background: var(--relay-danger-hover);
 }
 
 .btn:disabled {
@@ -252,7 +320,7 @@ a:hover {
 .wp-preview {
   font-size: 16px;
   line-height: 1.7;
-  color: oklch(25% 0.01 250);
+  color: var(--relay-text);
 }
 
 /* Constrains the rendered article to a readable line length within the
@@ -329,7 +397,7 @@ a:hover {
 }
 .wp-preview .wp-block-image .wp-element-caption {
   font-size: 13px;
-  color: oklch(55% 0.01 250);
+  color: var(--relay-text-muted);
   text-align: center;
   margin-top: 8px;
 }
@@ -349,17 +417,17 @@ a:hover {
 }
 
 .wp-preview .wp-block-quote {
-  border-left: 4px solid oklch(50% 0.16 265);
+  border-left: 4px solid var(--relay-accent);
   padding: 4px 0 4px 20px;
   font-style: italic;
-  color: oklch(35% 0.01 250);
+  color: var(--relay-text-2);
 }
 .wp-preview .wp-block-quote cite {
   display: block;
   margin-top: 8px;
   font-style: normal;
   font-size: 13px;
-  color: oklch(55% 0.01 250);
+  color: var(--relay-text-muted);
 }
 
 .wp-preview .wp-block-list {
@@ -369,7 +437,7 @@ a:hover {
 .wp-preview .wp-block-button__link,
 .wp-preview .wp-element-button {
   display: inline-block;
-  background: oklch(50% 0.16 265);
+  background: var(--relay-accent);
   color: white;
   padding: 10px 20px;
   border-radius: 6px;
@@ -378,13 +446,13 @@ a:hover {
   font-size: 14px;
 }
 .wp-preview .wp-block-button__link:hover {
-  background: oklch(45% 0.18 265);
+  background: var(--relay-accent-hover);
   text-decoration: none;
 }
 
 .wp-preview .wp-block-separator {
   border: none;
-  border-top: 2px solid oklch(88% 0.005 250);
+  border-top: 2px solid var(--relay-border);
   margin: 28px 0;
 }
 
@@ -393,8 +461,8 @@ a:hover {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: oklch(97% 0.003 250);
-  border: 1px solid oklch(90% 0.005 250);
+  background: var(--relay-surface-subtle);
+  border: 1px solid var(--relay-border);
   border-radius: 8px;
   font-size: 14px;
 }
@@ -408,13 +476,13 @@ a:hover {
 }
 .wp-preview .wp-block-file__embed {
   width: 100%;
-  border: 1px solid oklch(88% 0.005 250);
+  border: 1px solid var(--relay-border);
   border-radius: 6px;
-  background: oklch(96% 0.003 250);
+  background: var(--relay-surface-hover);
 }
 .wp-preview .wp-block-file__button {
   padding: 4px 12px;
-  background: oklch(50% 0.16 265);
+  background: var(--relay-accent);
   color: white;
   border-radius: 5px;
   font-size: 12px;
@@ -434,7 +502,7 @@ a:hover {
 }
 .wp-preview .wp-block-table td,
 .wp-preview .wp-block-table th {
-  border: 1px solid oklch(88% 0.005 250);
+  border: 1px solid var(--relay-border);
   padding: 8px 10px;
 }
 
@@ -453,7 +521,7 @@ a:hover {
 }
 
 .wp-preview-empty {
-  color: oklch(55% 0.01 250);
+  color: var(--relay-text-muted);
   font-size: 14px;
   text-align: center;
   padding: 40px 0;

@@ -19,7 +19,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         left: 0,
         right: 0,
         bottom: 0,
-        background: 'oklch(0% 0 0 / 0.4)',
+        background: 'var(--relay-overlay)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -29,7 +29,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     >
       <div
         style={{
-          background: 'white',
+          background: 'var(--relay-surface)',
           borderRadius: '12px',
           width: '100%',
           maxWidth: '480px',
@@ -41,7 +41,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         <div
           style={{
             padding: '16px 20px',
-            borderBottom: '1px solid oklch(90% 0.005 250)',
+            borderBottom: '1px solid var(--relay-border-soft)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -55,7 +55,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
               border: 'none',
               fontSize: '18px',
               cursor: 'pointer',
-              color: 'oklch(55% 0.01 250)',
+              color: 'var(--relay-text-muted)',
             }}
           >
             ×
@@ -66,8 +66,8 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
           <div
             style={{
               padding: '12px 20px',
-              background: 'oklch(97% 0.004 250)',
-              borderTop: '1px solid oklch(90% 0.005 250)',
+              background: 'var(--relay-surface-subtle)',
+              borderTop: '1px solid var(--relay-border-soft)',
               display: 'flex',
               justifyContent: 'flex-end',
               gap: '10px',

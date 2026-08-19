@@ -95,7 +95,11 @@ build uses — so what you see is what exports.
 ### Articles — `src/features/articles/`
 
 - **`ArticlesTab.tsx`** — filter/sort the derived list (status, media count,
-  warnings), open articles, exclude / flag for review.
+  warnings), open articles, exclude / flag for review. The list virtualizes
+  above a 150-row threshold: only the rows near the current scroll position
+  (plus a 10-row overscan buffer) are mounted inside a fixed-height scroll
+  container, matching `MappingsTab`; below the threshold it renders every row
+  directly. Row text truncates with ellipsis at the fixed row height.
 - **`ArticleDrawer.tsx`** — the review drawer. Three preview modes in
   `state.ui.previewMode`: **before** (original content), **after** (converted
   Gutenberg), **edit** (an editable view of the Gutenberg, saved to
@@ -140,11 +144,33 @@ domain is detected.
 ## Shared UI and theme
 
 - **`src/ui/`** — `Header.tsx` (app header, including the detected-domain pill
-  that opens the saved-sites drawer), `Modal.tsx`, `Badge.tsx` (status chips).
-  Small, file-per-component.
+  that opens the saved-sites drawer and the theme toggle), `Modal.tsx`,
+  `Badge.tsx` (status chips). Small, file-per-component.
 - **`src/theme/`** — `tokens.ts` (frozen design values), `index.css` (the
+  design-token `:root` / `[data-theme='dark']` variable block plus the
   `.wp-preview` styles that make converted content look like a real WordPress
-  post), `index.ts` (import side effects).
+  post), `useTheme.tsx` (the `ThemeProvider` + `useTheme` hook), `index.ts`
+  (import side effects).
+
+## Theme / dark mode
+
+- **Design tokens.** Every color in the app is a CSS variable defined in
+  `:root` in `src/theme/index.css` (`--relay-bg`, `--relay-surface`,
+  `--relay-text`, `--relay-accent`, the status hues, etc.). Components
+  reference them via `var(--relay-*)` in inline styles instead of hard-coding
+  `oklch()` values; the `.badge-*`, `.stat-card-*`, `.btn-*` and `.wp-preview`
+  rules do the same. Light-mode values mirror the original hard-coded palette
+  exactly.
+- **Dark palette.** `[data-theme='dark']` re-defines the same variables with
+  darker values. Because everything reads the variables, the whole UI flips
+  with a single attribute change on `<html>` — no per-component logic.
+- **`ThemeProvider`** (mounted in `main.tsx` around `<App />`) owns the
+  preference. It reads `localStorage['relay-theme']` (`'light' | 'dark' |
+  'system'`, defaulting to `'system'`), applies `data-theme` to
+  `document.documentElement`, and — when `system` — follows the OS
+  `prefers-color-scheme` live via a `matchMedia` listener.
+- **Toggle.** The header's theme button (left of the domain pill) cycles
+  Light → Dark → Auto, persisting the choice to localStorage on each click.
 
 ## Cross-cutting patterns
 

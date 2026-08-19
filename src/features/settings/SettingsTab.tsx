@@ -65,9 +65,9 @@ export const SettingsTab: React.FC = () => {
 
   if (!state.source) {
     return (
-      <div style={{ maxWidth: '960px', margin: '60px auto', textAlign: 'center', padding: '40px', background: 'white', borderRadius: '12px', border: '1px solid oklch(90% 0.005 250)' }}>
+      <div style={{ maxWidth: '960px', margin: '60px auto', textAlign: 'center', padding: '40px', background: 'var(--relay-surface)', borderRadius: '12px', border: '1px solid var(--relay-border-soft)' }}>
         <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>No import yet</div>
-        <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginBottom: '20px' }}>
+        <div style={{ fontSize: '14px', color: 'var(--relay-text-muted)', marginBottom: '20px' }}>
           Upload a WordPress export first — conversion settings apply to its content.
         </div>
         <button
@@ -120,7 +120,7 @@ export const SettingsTab: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '960px', width: '100%', margin: '0 auto' }}>
       <div>
         <div style={{ fontSize: '22px', fontWeight: 700 }}>Conversion settings</div>
-        <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
+        <div style={{ fontSize: '14px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>
           Controls how the old builder&apos;s markup becomes clean Gutenberg blocks. The preview updates as you change these.
         </div>
       </div>
@@ -128,8 +128,8 @@ export const SettingsTab: React.FC = () => {
       <div className="settings-grid">
         <div
           style={{
-            background: 'white',
-            border: '1px solid oklch(90% 0.005 250)',
+            background: 'var(--relay-surface)',
+            border: '1px solid var(--relay-border-soft)',
             borderRadius: '14px',
             padding: '22px',
             display: 'flex',
@@ -143,7 +143,7 @@ export const SettingsTab: React.FC = () => {
             <select
               value={settings.imageSize}
               onChange={(e) => updateSetting('imageSize', e.target.value)}
-              style={{ width: '100%', padding: '9px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px' }}
+              style={{ width: '100%', padding: '9px 10px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '13px' }}
             >
               <option value="thumbnail">Thumbnail</option>
               <option value="medium">Medium</option>
@@ -154,31 +154,31 @@ export const SettingsTab: React.FC = () => {
             {settings.imageSize === 'custom' && (
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)', marginBottom: '4px' }}>Width (px)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--relay-text-muted)', marginBottom: '4px' }}>Width (px)</div>
                   <input
                     type="number"
                     min="0"
                     placeholder="auto"
                     value={settings.customWidth ?? ''}
                     onChange={(e) => updateSetting('customWidth', e.target.value ? Number(e.target.value) : undefined)}
-                    style={{ width: '100%', padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px' }}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '13px' }}
                   />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)', marginBottom: '4px' }}>Height (px)</div>
+                  <div style={{ fontSize: '11px', color: 'var(--relay-text-muted)', marginBottom: '4px' }}>Height (px)</div>
                   <input
                     type="number"
                     min="0"
                     placeholder="auto"
                     value={settings.customHeight ?? ''}
                     onChange={(e) => updateSetting('customHeight', e.target.value ? Number(e.target.value) : undefined)}
-                    style={{ width: '100%', padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px' }}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '13px' }}
                   />
                 </div>
               </div>
             )}
             {settings.imageSize === 'custom' && (
-              <div style={{ fontSize: '11px', color: 'oklch(55% 0.01 250)', marginTop: '6px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--relay-text-muted)', marginTop: '6px' }}>
                 Set one — the other scales proportionally, just like in WordPress.
               </div>
             )}
@@ -197,9 +197,9 @@ export const SettingsTab: React.FC = () => {
                     padding: '8px',
                     borderRadius: '7px',
                     border: '1px solid',
-                    borderColor: settings.imageAlign === al.value ? 'oklch(50% 0.16 265)' : 'oklch(88% 0.005 250)',
-                    background: settings.imageAlign === al.value ? 'oklch(96% 0.04 265)' : 'white',
-                    color: settings.imageAlign === al.value ? 'oklch(45% 0.18 265)' : 'oklch(35% 0.01 250)',
+                    borderColor: settings.imageAlign === al.value ? 'var(--relay-accent)' : 'var(--relay-border)',
+                    background: settings.imageAlign === al.value ? 'var(--relay-accent-soft)' : 'var(--relay-surface)',
+                    color: settings.imageAlign === al.value ? 'var(--relay-accent-hover)' : 'var(--relay-text)',
                     fontWeight: settings.imageAlign === al.value ? 600 : 500,
                     fontSize: '12px',
                     cursor: 'pointer',
@@ -214,7 +214,7 @@ export const SettingsTab: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '13px', fontWeight: 600 }}>Auto-space images next to text</div>
-              <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>
                 Adds margin so wrapped text doesn&apos;t hug the image
               </div>
             </div>
@@ -243,7 +243,7 @@ export const SettingsTab: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '13px', fontWeight: 600 }}>Combine consecutive photos into a gallery</div>
-              <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>
                 Two or more images in a row become a single gallery block instead of separate images
               </div>
             </div>
@@ -272,7 +272,7 @@ export const SettingsTab: React.FC = () => {
             <select
               value={settings.galleryAspectRatio}
               onChange={(e) => updateSetting('galleryAspectRatio', e.target.value)}
-              style={{ width: '100%', padding: '9px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px' }}
+              style={{ width: '100%', padding: '9px 10px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '13px' }}
             >
               <option value="none">Original</option>
               <option value="1">Square — 1:1</option>
@@ -298,9 +298,9 @@ export const SettingsTab: React.FC = () => {
                     padding: '8px',
                     borderRadius: '7px',
                     border: '1px solid',
-                    borderColor: settings.pdfRender === p.value ? 'oklch(50% 0.16 265)' : 'oklch(88% 0.005 250)',
-                    background: settings.pdfRender === p.value ? 'oklch(96% 0.04 265)' : 'white',
-                    color: settings.pdfRender === p.value ? 'oklch(45% 0.18 265)' : 'oklch(35% 0.01 250)',
+                    borderColor: settings.pdfRender === p.value ? 'var(--relay-accent)' : 'var(--relay-border)',
+                    background: settings.pdfRender === p.value ? 'var(--relay-accent-soft)' : 'var(--relay-surface)',
+                    color: settings.pdfRender === p.value ? 'var(--relay-accent-hover)' : 'var(--relay-text)',
                     fontWeight: settings.pdfRender === p.value ? 600 : 500,
                     fontSize: '12px',
                     cursor: 'pointer',
@@ -325,9 +325,9 @@ export const SettingsTab: React.FC = () => {
                     padding: '8px',
                     borderRadius: '7px',
                     border: '1px solid',
-                    borderColor: settings.buttonRender === b.value ? 'oklch(50% 0.16 265)' : 'oklch(88% 0.005 250)',
-                    background: settings.buttonRender === b.value ? 'oklch(96% 0.04 265)' : 'white',
-                    color: settings.buttonRender === b.value ? 'oklch(45% 0.18 265)' : 'oklch(35% 0.01 250)',
+                    borderColor: settings.buttonRender === b.value ? 'var(--relay-accent)' : 'var(--relay-border)',
+                    background: settings.buttonRender === b.value ? 'var(--relay-accent-soft)' : 'var(--relay-surface)',
+                    color: settings.buttonRender === b.value ? 'var(--relay-accent-hover)' : 'var(--relay-text)',
                     fontWeight: settings.buttonRender === b.value ? 600 : 500,
                     fontSize: '12px',
                     cursor: 'pointer',
@@ -342,14 +342,14 @@ export const SettingsTab: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '13px', fontWeight: 600 }}>Shift heading levels down</div>
-              <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>
                 Old H1s become H2s, etc., to keep one H1 per page
               </div>
             </div>
             <select
               value={settings.headingShift}
               onChange={(e) => updateSetting('headingShift', Number(e.target.value))}
-              style={{ padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px' }}
+              style={{ padding: '8px 10px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '13px' }}
             >
               <option value="0">None</option>
               <option value="1">Down 1 (H1→H2)</option>
@@ -371,7 +371,7 @@ export const SettingsTab: React.FC = () => {
 
           <div>
             <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>Fallback article featured image</div>
-            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginBottom: '10px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', marginBottom: '10px' }}>
               Articles with no featured image of their own get this one.
             </div>
             <input
@@ -379,7 +379,7 @@ export const SettingsTab: React.FC = () => {
               placeholder="https://example.com/fallback.jpg"
               value={settings.fallbackFeaturedImageUrl ?? ''}
               onChange={(e) => updateSetting('fallbackFeaturedImageUrl', e.target.value)}
-              style={{ width: '100%', padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }}
             />
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
               {settings.fallbackFeaturedImageDataUrl && (
@@ -398,12 +398,12 @@ export const SettingsTab: React.FC = () => {
               <div
                 style={{
                   marginTop: '10px',
-                  border: '1px solid oklch(88% 0.06 80)',
-                  background: 'oklch(96% 0.03 85)',
+                  border: '1px solid var(--relay-warning-border)',
+                  background: 'var(--relay-warning-bg)',
                   borderRadius: '8px',
                   padding: '8px 10px',
                   fontSize: '12px',
-                  color: 'oklch(45% 0.06 80)',
+                  color: 'var(--relay-warning)',
                   lineHeight: 1.5,
                 }}
               >
@@ -414,14 +414,14 @@ export const SettingsTab: React.FC = () => {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: 'oklch(50% 0.01 250)' }}>Live preview — sample article</div>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--relay-text-muted)' }}>Live preview — sample article</div>
 
           <div
             style={{
               flex: 1,
               minHeight: 0,
-              background: 'white',
-              border: '1px solid oklch(90% 0.005 250)',
+              background: 'var(--relay-surface)',
+              border: '1px solid var(--relay-border-soft)',
               borderRadius: '12px',
               padding: '24px',
               overflowY: 'auto',

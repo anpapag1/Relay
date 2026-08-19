@@ -112,13 +112,13 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
         gap: '12px',
         padding: '12px 20px',
         alignItems: 'center',
-        borderTop: '1px solid oklch(95% 0.005 250)',
+        borderTop: '1px solid var(--relay-border-soft)',
       }}
     >
       <div>
         <div style={{ fontSize: '14px', fontWeight: 500 }}>{term.name}</div>
         {mapping?.origin === 'suggested' && chipTerms.length > 0 && (
-          <div style={{ fontSize: '11px', color: 'oklch(50% 0.14 150)', marginTop: '2px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--relay-success)', marginTop: '2px' }}>
             suggested: {chipTerms.map((t) => t.name).join(', ')}
           </div>
         )}
@@ -126,14 +126,14 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
 
       <div style={{ fontSize: '13px' }}>
         {siteMatch ? (
-          <span style={{ color: 'oklch(55% 0.01 250)' }}>{siteMatch.count}</span>
+          <span style={{ color: 'var(--relay-text-muted)' }}>{siteMatch.count}</span>
         ) : (
-          <span style={{ color: 'oklch(60% 0.01 250)', fontStyle: 'italic' }}>not in this import</span>
+          <span style={{ color: 'var(--relay-text-muted)', fontStyle: 'italic' }}>not in this import</span>
         )}
       </div>
 
       {excluded ? (
-        <div style={{ fontSize: '13px', color: 'oklch(60% 0.01 250)', gridColumn: 'span 2' }}>
+        <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', gridColumn: 'span 2' }}>
           Won't be migrated
         </div>
       ) : (
@@ -141,7 +141,7 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
           <select
             value={targetTableId ?? ''}
             onChange={(e) => handleSetAction(e.target.value || null)}
-            style={{ padding: '7px 8px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '13px' }}
+            style={{ padding: '7px 8px', border: '1px solid var(--relay-border)', borderRadius: '7px', fontSize: '13px' }}
           >
             <option value="">-- Choose --</option>
             {targetTables.map((tbl) => (
@@ -153,11 +153,11 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
 
           <div style={{ position: 'relative' }}>
             {selectedTable ? (
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', padding: '4px 6px' }}>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', border: '1px solid var(--relay-border)', borderRadius: '6px', padding: '4px 6px' }}>
                 {chipTerms.map((chip) => (
                   <div
                     key={chip.id}
-                    style={{ display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: 600, background: 'oklch(94% 0.03 265)', color: 'oklch(40% 0.16 265)', padding: '3px 8px', borderRadius: '999px' }}
+                    style={{ display: 'flex', alignItems: 'center', fontSize: '12px', fontWeight: 600, background: 'var(--relay-accent-soft)', color: 'var(--relay-accent-hover)', padding: '3px 8px', borderRadius: '999px' }}
                   >
                     {chip.name}
                     <span
@@ -178,10 +178,10 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
                 />
               </div>
             ) : (
-              <div style={{ fontSize: '12px', color: 'oklch(60% 0.01 250)' }}>Choose an action first</div>
+              <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)' }}>Choose an action first</div>
             )}
             {pickerOpen && selectedTable && (
-              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '2px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', boxShadow: '0 4px 14px oklch(0% 0 0 / .1)', maxHeight: '150px', overflowY: 'auto', zIndex: 5 }}>
+              <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '2px', background: 'var(--relay-surface)', border: '1px solid var(--relay-border)', borderRadius: '8px', boxShadow: '0 4px 14px oklch(0% 0 0 / .1)', maxHeight: '150px', overflowY: 'auto', zIndex: 5 }}>
                 {pickerOptions.map((opt) => (
                   <div
                     key={opt.id}
@@ -192,7 +192,7 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
                   </div>
                 ))}
                 {pickerOptions.length === 0 && (
-                  <div style={{ padding: '8px 10px', fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>No matching terms</div>
+                  <div style={{ padding: '8px 10px', fontSize: '12px', color: 'var(--relay-text-muted)' }}>No matching terms</div>
                 )}
               </div>
             )}
@@ -205,8 +205,8 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
         onClick={handleToggleExcluded}
         style={
           excluded
-            ? { padding: '6px 10px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: 'oklch(45% 0.01 250)' }
-            : { padding: '6px 10px', background: 'white', border: '1px solid oklch(85% 0.1 25)', borderRadius: '7px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: 'oklch(50% 0.18 25)' }
+            ? { padding: '6px 10px', background: 'var(--relay-surface)', border: '1px solid var(--relay-border)', borderRadius: '7px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: 'var(--relay-text-2)' }
+            : { padding: '6px 10px', background: 'var(--relay-surface)', border: '1px solid var(--relay-danger-border)', borderRadius: '7px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: 'var(--relay-danger)' }
         }
       >
         {excluded ? 'Undo' : 'Exclude'}
@@ -352,8 +352,8 @@ const DomainSection: React.FC<DomainSectionProps> = React.memo(function DomainSe
   return (
     <div
       style={{
-        background: 'white',
-        border: '1px solid oklch(90% 0.005 250)',
+        background: 'var(--relay-surface)',
+        border: '1px solid var(--relay-border-soft)',
         borderRadius: '12px',
         overflow: 'hidden',
         boxShadow: '0 1px 3px oklch(0% 0 0 / 0.02)',
@@ -367,24 +367,24 @@ const DomainSection: React.FC<DomainSectionProps> = React.memo(function DomainSe
           justifyContent: 'space-between',
           padding: '16px 20px',
           cursor: 'pointer',
-          background: 'oklch(98% 0.003 250)',
+          background: 'var(--relay-bg)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)' }}>{isExpanded ? '▼' : '►'}</span>
+          <span style={{ fontSize: '12px', color: 'var(--relay-text-muted)' }}>{isExpanded ? '▼' : '►'}</span>
           <div style={{ fontSize: '15px', fontWeight: 700, textTransform: 'capitalize' }}>{domainName === 'post_tag' ? 'Tags' : domainName}</div>
           {isCore && (
-            <div style={{ fontSize: '11px', fontWeight: 600, color: 'oklch(50% 0.01 250)', background: 'oklch(95% 0.005 250)', padding: '2px 7px', borderRadius: '5px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--relay-text-muted)', background: 'var(--relay-surface-hover)', padding: '2px 7px', borderRadius: '5px' }}>
               built-in
             </div>
           )}
         </div>
-        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{table.terms.length} terms</div>
+        <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)' }}>{table.terms.length} terms</div>
       </div>
 
       {isExpanded && (
-        <div style={{ borderTop: '1px solid oklch(93% 0.005 250)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: ROW_GRID_COLUMNS, gap: '12px', padding: '10px 20px', fontSize: '11px', fontWeight: 600, color: 'oklch(55% 0.01 250)', textTransform: 'uppercase', letterSpacing: '0.03em', background: 'oklch(99% 0.002 250)' }}>
+        <div style={{ borderTop: '1px solid var(--relay-border-soft)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: ROW_GRID_COLUMNS, gap: '12px', padding: '10px 20px', fontSize: '11px', fontWeight: 600, color: 'var(--relay-text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em', background: 'var(--relay-surface-subtle)' }}>
             <div>Term</div>
             <div>Count</div>
             <div>Action</div>
@@ -458,9 +458,9 @@ export const MappingsTab: React.FC = () => {
 
   if (!state.source) {
     return (
-      <div style={{ maxWidth: '960px', margin: '60px auto', textAlign: 'center', padding: '40px', background: 'white', borderRadius: '12px', border: '1px solid oklch(90% 0.005 250)' }}>
+      <div style={{ maxWidth: '960px', margin: '60px auto', textAlign: 'center', padding: '40px', background: 'var(--relay-surface)', borderRadius: '12px', border: '1px solid var(--relay-border-soft)' }}>
         <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>No WordPress export loaded</div>
-        <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginBottom: '20px' }}>
+        <div style={{ fontSize: '14px', color: 'var(--relay-text-muted)', marginBottom: '20px' }}>
           Please go to the Import tab and load a WXR file first.
         </div>
         <button
@@ -476,9 +476,9 @@ export const MappingsTab: React.FC = () => {
 
   if (oldTableList.length === 0) {
     return (
-      <div style={{ maxWidth: '960px', margin: '60px auto', textAlign: 'center', padding: '40px', background: 'white', borderRadius: '12px', border: '1px solid oklch(90% 0.005 250)' }}>
+      <div style={{ maxWidth: '960px', margin: '60px auto', textAlign: 'center', padding: '40px', background: 'var(--relay-surface)', borderRadius: '12px', border: '1px solid var(--relay-border-soft)' }}>
         <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>No old-site taxonomies yet</div>
-        <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginBottom: '20px' }}>
+        <div style={{ fontSize: '14px', color: 'var(--relay-text-muted)', marginBottom: '20px' }}>
           Head to the Import tab to add old-site categories, tags, or custom taxonomies before mapping them.
         </div>
         <button
@@ -497,7 +497,7 @@ export const MappingsTab: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: '22px', fontWeight: 700 }}>Map taxonomies</div>
-          <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginTop: '2px', maxWidth: '560px' }}>
+          <div style={{ fontSize: '14px', color: 'var(--relay-text-muted)', marginTop: '2px', maxWidth: '560px' }}>
             Decide where every term from the old site lands: a category, a tag, or nowhere at all.
           </div>
         </div>
@@ -512,7 +512,7 @@ export const MappingsTab: React.FC = () => {
           <button
             type="button"
             onClick={() => dispatch({ type: 'OPEN_MODAL', modal: 'resetConfirm' })}
-            style={{ border: '1px solid oklch(85% 0.1 25)', background: 'white', color: 'oklch(50% 0.18 25)', fontSize: '13px', fontWeight: 600, padding: '9px 14px', borderRadius: '8px', cursor: 'pointer' }}
+            style={{ border: '1px solid var(--relay-danger-border)', background: 'var(--relay-surface)', color: 'var(--relay-danger)', fontSize: '13px', fontWeight: 600, padding: '9px 14px', borderRadius: '8px', cursor: 'pointer' }}
           >
             Clear everything
           </button>
@@ -564,17 +564,17 @@ export const MappingsTab: React.FC = () => {
       </div>
 
       {state.ui.modals.resetConfirm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'oklch(20% 0 0 / 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
-          <div style={{ background: 'white', borderRadius: '14px', padding: '26px', width: '400px' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--relay-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
+          <div style={{ background: 'var(--relay-surface)', borderRadius: '14px', padding: '26px', width: '400px' }}>
             <div style={{ fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>Clear all mappings?</div>
-            <div style={{ fontSize: '14px', color: 'oklch(45% 0.01 250)', lineHeight: 1.5, marginBottom: '20px' }}>
+            <div style={{ fontSize: '14px', color: 'var(--relay-text-2)', lineHeight: 1.5, marginBottom: '20px' }}>
               This resets every taxonomy mapping back to unmapped. Your import and articles stay intact. This can't be undone — export a JSON backup first if you're not sure.
             </div>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
               <button
                 type="button"
                 onClick={() => dispatch({ type: 'CLOSE_MODAL', modal: 'resetConfirm' })}
-                style={{ padding: '9px 16px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ padding: '9px 16px', background: 'var(--relay-surface)', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
               >
                 Cancel
               </button>
@@ -585,7 +585,7 @@ export const MappingsTab: React.FC = () => {
                   setResetGeneration((g) => g + 1);
                   dispatch({ type: 'CLOSE_MODAL', modal: 'resetConfirm' });
                 }}
-                style={{ padding: '9px 16px', background: 'oklch(50% 0.18 25)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ padding: '9px 16px', background: 'var(--relay-danger)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
               >
                 Clear everything
               </button>
@@ -595,17 +595,17 @@ export const MappingsTab: React.FC = () => {
       )}
 
       {state.ui.modals.autoMatchConfirm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'oklch(20% 0 0 / 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
-          <div style={{ background: 'white', borderRadius: '14px', padding: '26px', width: '420px' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--relay-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60 }}>
+          <div style={{ background: 'var(--relay-surface)', borderRadius: '14px', padding: '26px', width: '420px' }}>
             <div style={{ fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>Auto-match all taxonomies?</div>
-            <div style={{ fontSize: '14px', color: 'oklch(45% 0.01 250)', lineHeight: 1.5, marginBottom: '20px' }}>
+            <div style={{ fontSize: '14px', color: 'var(--relay-text-2)', lineHeight: 1.5, marginBottom: '20px' }}>
               This replaces every current taxonomy mapping — including any exclusions or manual choices you've made — with fresh automatic matches. Anything without a good match gets excluded rather than left for review. This can't be undone — export a JSON backup first if you're not sure.
             </div>
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
               <button
                 type="button"
                 onClick={() => dispatch({ type: 'CLOSE_MODAL', modal: 'autoMatchConfirm' })}
-                style={{ padding: '9px 16px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ padding: '9px 16px', background: 'var(--relay-surface)', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
               >
                 Cancel
               </button>
@@ -616,7 +616,7 @@ export const MappingsTab: React.FC = () => {
                   setResetGeneration((g) => g + 1);
                   dispatch({ type: 'CLOSE_MODAL', modal: 'autoMatchConfirm' });
                 }}
-                style={{ padding: '9px 16px', background: 'oklch(50% 0.16 265)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                style={{ padding: '9px 16px', background: 'var(--relay-accent)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
               >
                 Auto-match all
               </button>

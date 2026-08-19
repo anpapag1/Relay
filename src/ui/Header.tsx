@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAppState } from '../state/AppStateContext';
 import { domainForState } from '../state/siteProfiles';
 import { SitesDrawer } from '../features/sites/SitesDrawer';
+import { useTheme } from '../theme';
 
 type TabId = 'import' | 'mappings' | 'settings' | 'articles' | 'build';
 
@@ -13,18 +14,31 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'build', label: 'Build & Export' },
 ];
 
+const THEME_LABELS: Record<string, string> = {
+  light: 'Light',
+  dark: 'Dark',
+  system: 'Auto',
+};
+
 export const Header: React.FC = () => {
   const { state, dispatch } = useAppState();
   const { activeTab } = state.ui;
   const [sitesOpen, setSitesOpen] = useState(false);
   const domain = domainForState(state) ?? 'Sites';
+  const { preference, setTheme } = useTheme();
+
+  const cycleTheme = () => {
+    const order: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
+    const next = order[(order.indexOf(preference) + 1) % order.length];
+    setTheme(next);
+  };
 
   return (
     <>
       <div
         style={{
-          background: 'white',
-          borderBottom: '1px solid oklch(90% 0.005 250)',
+          background: 'var(--relay-surface)',
+          borderBottom: '1px solid var(--relay-border)',
           position: 'sticky',
           top: 0,
           zIndex: 20,
@@ -48,7 +62,7 @@ export const Header: React.FC = () => {
                     width: '26px',
                     height: '26px',
                     borderRadius: '7px',
-                    background: 'oklch(50% 0.16 265)',
+                    background: 'var(--relay-accent)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -61,9 +75,9 @@ export const Header: React.FC = () => {
                   style={{
                     fontSize: '11px',
                     fontWeight: 600,
-                    color: 'oklch(50% 0.01 250)',
+                    color: 'var(--relay-text-muted)',
                     padding: '3px 8px',
-                    border: '1px solid oklch(88% 0.005 250)',
+                    border: '1px solid var(--relay-border)',
                     borderRadius: '5px',
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
@@ -87,9 +101,9 @@ export const Header: React.FC = () => {
                         padding: '0 0 16px 0',
                         fontSize: '14px',
                         fontWeight: isActive ? 600 : 500,
-                        color: isActive ? 'oklch(50% 0.16 265)' : 'oklch(55% 0.01 250)',
+                        color: isActive ? 'var(--relay-accent)' : 'var(--relay-text-muted)',
                         cursor: 'pointer',
-                        borderBottom: isActive ? '2px solid oklch(50% 0.16 265)' : '2px solid transparent',
+                        borderBottom: isActive ? '2px solid var(--relay-accent)' : '2px solid transparent',
                         transition: 'all 0.15s ease',
                       }}
                     >
@@ -100,29 +114,55 @@ export const Header: React.FC = () => {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setSitesOpen(true)}
-              aria-label="Open saved site preferences"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: 'oklch(45% 0.01 250)',
-                background: 'oklch(97% 0.004 250)',
-                border: '1px solid oklch(90% 0.005 250)',
-                borderRadius: '6px',
-                padding: '6px 10px',
-                marginBottom: '14px',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-                cursor: 'pointer',
-              }}
-            >
-              {domain}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={cycleTheme}
+                aria-label={`Theme: ${THEME_LABELS[preference]} (click to cycle light, dark, auto)`}
+                title={`Theme: ${THEME_LABELS[preference]} — click to cycle`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: 'var(--relay-text-2)',
+                  background: 'var(--relay-surface-subtle)',
+                  border: '1px solid var(--relay-border)',
+                  borderRadius: '6px',
+                  padding: '6px 10px',
+                  marginBottom: '14px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  cursor: 'pointer',
+                }}
+              >
+                {THEME_LABELS[preference]}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSitesOpen(true)}
+                aria-label="Open saved site preferences"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: 'var(--relay-text-2)',
+                  background: 'var(--relay-surface-subtle)',
+                  border: '1px solid var(--relay-border)',
+                  borderRadius: '6px',
+                  padding: '6px 10px',
+                  marginBottom: '14px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  cursor: 'pointer',
+                }}
+              >
+                {domain}
+              </button>
+            </div>
           </div>
         </div>
       </div>

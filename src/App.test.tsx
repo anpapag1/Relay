@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
+import { ThemeProvider } from './theme';
 
 // Mocked so no test in this file makes a real network call for the image
 // health check; each test controls its own resolved value.
@@ -24,7 +25,11 @@ describe('App UI & Workflow', () => {
     const root = createRoot(container);
 
     await act(async () => {
-      root.render(<App />);
+      root.render(
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>,
+      );
     });
 
     expect(container.textContent).toContain('Relay');
@@ -141,7 +146,11 @@ describe('App UI & Workflow', () => {
     const root = createRoot(container);
 
     await act(async () => {
-      root.render(<App />);
+      root.render(
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>,
+      );
     });
 
     const sampleBtn = Array.from(container.querySelectorAll('button')).find(
@@ -184,5 +193,60 @@ describe('App UI & Workflow', () => {
 
     root.unmount();
     document.body.removeChild(container);
+  });
+
+  it('cycles the theme preference via the header toggle and persists it', async () => {
+    window.localStorage.setItem('relay-theme', 'light');
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>,
+      );
+    });
+
+    const themeBtn = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.getAttribute('aria-label')?.startsWith('Theme:'),
+    );
+    expect(themeBtn).toBeDefined();
+
+    // Cycles light -> dark -> system.
+    await act(async () => {
+      themeBtn?.click();
+    });
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(window.localStorage.getItem('relay-theme')).toBe('dark');
+
+    await act(async () => {
+      themeBtn?.click();
+    });
+    expect(window.localStorage.getItem('relay-theme')).toBe('system');
+
+    await act(async () => {
+      themeBtn?.click();
+    });
+    expect(window.localStorage.getItem('relay-theme')).toBe('light');
+
+    // An explicit dark choice survives a fresh render.
+    window.localStorage.setItem('relay-theme', 'dark');
+    root.unmount();
+    const container2 = document.createElement('div');
+    document.body.appendChild(container2);
+    const root2 = createRoot(container2);
+    await act(async () => {
+      root2.render(
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>,
+      );
+    });
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    root2.unmount();
+    document.body.removeChild(container);
+    document.body.removeChild(container2);
   });
 });

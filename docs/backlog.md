@@ -7,7 +7,7 @@
 ## Editing / safety
 
 - [x] **`beforeunload` "unsaved changes" warning** when the drawer/session has dirty edits. Done: `useUnsavedChangesWarning` (mounted in `App.tsx`) arms a `beforeunload` handler while the session holds manual article work (`hasSessionUnsavedWork` selector — excludes/includes, review flags, saved edits) or the drawer has an unsaved draft (reported via the `unsavedChanges.ts` pub/sub bridge). Auto-exclusions recompute on load and don't trigger it.
-- [ ] **Batch article actions** — exclude/include selected, mark all reviewed, reset auto-exclusions.
+- [x] ~~**Batch article actions** — exclude/include selected, mark all reviewed, reset auto-exclusions.~~ Skipped by decision — selection checkboxes + a batch toolbar would add UI clutter for a workflow the per-row Exclude/Include/Flag buttons already cover; value unclear.
 - [x] **Keyboard shortcuts** — save, toggle include, toggle reviewed, next/prev article, etc. Done: arrow-key prev/next already existed (drawer guard); added `Ctrl/Cmd+S` save (when dirty), `I` toggle include, `R` toggle review, `Escape` close via `useDrawerShortcuts`, skipping editable fields so typing in the HTML editor is untouched.
 
 ## Articles / UI
@@ -15,9 +15,9 @@
 - [x] **Bypass the duplicate-slug constraint** — the reducer auto-excludes articles sharing a slug at load (`reducer.ts` LOAD_SOURCE). The user may manually re-include one, but `generateWxr.ts:81` emits `wp:post_name` verbatim, so two included articles with the same slug would produce an invalid WXR. Done: `generateWxr` now dedupes `wp:post_name` at export — first article keeps the slug, later collisions get WordPress-style `-2`/`-3` suffixes, skipping suffixes already taken by a natural slug.
 - [ ] **Edit the preview panel in the rendered Gutenberg view** — simple direct editing of the "After" preview, with changes written back to the article draft. This would include simple inline editing of headings, paragraphs, lists, and deleting empty paragraphs besides the existing 'Edit' mode textarea. The current implementation uses a raw `<textarea>` for the "After" preview, which is not ideal for user experience. The goal is to allow users to edit the content directly in the rendered view, making it more intuitive and efficient.
 - [x] **Add edit button on article metadata** — done: an "Edit metadata" button in the metadata panel of the article sidebar turns the title and published-date fields into inline inputs; saving stores `title`/`postDate` overrides used by the build and derived articles. (Scope decision: author stays fixed at `migration` in exports.)
-- [ ] **Pagination or windowed list** for the Articles tab when the source has thousands of posts.
+- [x] **Pagination or windowed list** for the Articles tab when the source has thousands of posts. Done: the list virtualizes above a 150-row threshold — only rows near the current scroll position (plus a 10-row overscan buffer) are mounted in a fixed-height scroll container, matching the MappingsTab pattern; below the threshold it renders every row directly.
 - [x] **Clear text input button** — add a clear button to the search input in the Articles tab. Done: an inline `×` button appears inside the search field when it has text; clicking it empties the query.
-- [ ] **Dark mode** theme.
+- [x] **Dark mode** theme. Done: every color moved into CSS design tokens (`--relay-*` in `src/theme/index.css`), with a `[data-theme='dark']` palette; a `ThemeProvider`/`useTheme` hook (mounted in `main.tsx`) applies `data-theme` to `<html>`, defaulting to the OS preference and persisting the choice to `localStorage['relay-theme']`; the header button cycles Light → Dark → Auto.
 
 ## Server
 

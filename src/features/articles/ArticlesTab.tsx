@@ -31,9 +31,9 @@ export const ArticlesTab: React.FC = () => {
 
   if (!state.source) {
     return (
-      <div style={{ maxWidth: '960px', margin: '60px auto', textAlign: 'center', padding: '40px', background: 'white', borderRadius: '12px', border: '1px solid oklch(90% 0.005 250)' }}>
+      <div style={{ maxWidth: '960px', margin: '60px auto', textAlign: 'center', padding: '40px', background: 'var(--relay-surface)', borderRadius: '12px', border: '1px solid var(--relay-border-soft)' }}>
         <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>No import yet</div>
-        <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginBottom: '20px' }}>
+        <div style={{ fontSize: '14px', color: 'var(--relay-text-muted)', marginBottom: '20px' }}>
           Upload a WordPress export first — this table lists its articles.
         </div>
         <button
@@ -142,20 +142,20 @@ export const ArticlesTab: React.FC = () => {
           padding: '0 20px',
           boxSizing: 'border-box',
           alignItems: 'center',
-          borderTop: '1px solid oklch(95% 0.005 250)',
+          borderTop: '1px solid var(--relay-border-soft)',
           cursor: 'pointer',
-          background: selectedArticleId === art.id ? 'oklch(97% 0.02 265)' : 'white',
+          background: selectedArticleId === art.id ? 'var(--relay-accent-soft)' : 'var(--relay-surface)',
         }}
       >
         <div style={{ fontSize: '14px', fontWeight: 500, opacity: isExc ? 0.6 : 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '12px' }}>
           {art.title || '(Untitled)'}
         </div>
-        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '12px' }}>{art.postDate || '—'}</div>
-        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '12px' }}>{art.destinationTerms.filter(t => termSourceDomain(t) === 'category').map(t => t.name).join(', ') || '—'}</div>
-        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '12px' }}>{art.postDate || '—'}</div>
+        <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '12px' }}>{art.destinationTerms.filter(t => termSourceDomain(t) === 'category').map(t => t.name).join(', ') || '—'}</div>
+        <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', display: 'flex', alignItems: 'center', gap: '5px' }}>
           {art.mediaCount}
           {art.warnings && art.warnings.length > 0 && (
-            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'oklch(65% 0.15 60)', color: 'white', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'var(--relay-warning)', color: 'white', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               !
             </div>
           )}
@@ -177,8 +177,8 @@ export const ArticlesTab: React.FC = () => {
             style={{
               padding: '5px 10px',
               fontSize: '12px',
-              color: isExc ? 'oklch(50% 0.16 265)' : 'oklch(50% 0.18 25)',
-              borderColor: isExc ? 'oklch(85% 0.05 265)' : 'oklch(85% 0.1 25)',
+              color: isExc ? 'var(--relay-accent)' : 'var(--relay-danger)',
+              borderColor: isExc ? 'var(--relay-accent-border)' : 'var(--relay-danger-border)',
             }}
           >
             {isExc ? 'Include' : 'Exclude'}
@@ -197,8 +197,8 @@ export const ArticlesTab: React.FC = () => {
             style={{
               padding: '5px 10px',
               fontSize: '12px',
-              color: art.isManualReview ? 'oklch(50% 0.16 60)' : 'oklch(35% 0.01 250)',
-              borderColor: art.isManualReview ? 'oklch(85% 0.1 60)' : 'oklch(88% 0.005 250)',
+              color: art.isManualReview ? 'var(--relay-warning)' : 'var(--relay-text-2)',
+              borderColor: art.isManualReview ? 'var(--relay-warning-border)' : 'var(--relay-border)',
             }}
           >
             {art.isManualReview ? 'Unflag' : 'Flag'}
@@ -219,7 +219,7 @@ export const ArticlesTab: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: '22px', fontWeight: 700 }}>Articles</div>
-          <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
+          <div style={{ fontSize: '14px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>
             {countReady} ready, {countReview} need review, {countExcluded} excluded. Click any article to preview or edit its blocks.
           </div>
         </div>
@@ -230,7 +230,7 @@ export const ArticlesTab: React.FC = () => {
               placeholder="Search titles…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ padding: '8px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px', width: '200px', paddingRight: searchQuery ? '28px' : '12px' }}
+              style={{ padding: '8px 12px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '13px', width: '200px', paddingRight: searchQuery ? '28px' : '12px' }}
             />
             {searchQuery && (
               <button
@@ -246,8 +246,8 @@ export const ArticlesTab: React.FC = () => {
                   height: '18px',
                   border: 'none',
                   borderRadius: '50%',
-                  background: 'oklch(80% 0.01 250)',
-                  color: 'oklch(35% 0.01 250)',
+                  background: 'var(--relay-border-strong)',
+                  color: 'var(--relay-text-2)',
                   fontSize: '12px',
                   lineHeight: '18px',
                   textAlign: 'center',
@@ -271,7 +271,7 @@ export const ArticlesTab: React.FC = () => {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '12px', fontWeight: 600, color: 'oklch(55% 0.01 250)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--relay-text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
           Showing:
         </span>
         {filterChips.map((chip) => {
@@ -283,9 +283,9 @@ export const ArticlesTab: React.FC = () => {
               onClick={() => setStatusFilter(chip.id)}
               style={{
                 border: '1px solid',
-                borderColor: isActive ? 'oklch(50% 0.16 265)' : 'oklch(88% 0.005 250)',
-                background: isActive ? 'oklch(96% 0.04 265)' : 'white',
-                color: isActive ? 'oklch(45% 0.18 265)' : 'oklch(35% 0.01 250)',
+                borderColor: isActive ? 'var(--relay-accent)' : 'var(--relay-border)',
+                background: isActive ? 'var(--relay-accent-soft)' : 'var(--relay-surface)',
+                color: isActive ? 'var(--relay-accent-hover)' : 'var(--relay-text-2)',
                 padding: '5px 12px',
                 borderRadius: '20px',
                 fontSize: '12px',
@@ -302,8 +302,8 @@ export const ArticlesTab: React.FC = () => {
         })}
       </div>
 
-      <div style={{ background: 'white', border: '1px solid oklch(90% 0.005 250)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px oklch(0% 0 0 / 0.02)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 0.85fr 0.85fr 0.6fr 0.9fr 1.3fr', padding: '12px 20px', fontSize: '11px', fontWeight: 600, color: 'oklch(55% 0.01 250)', textTransform: 'uppercase', letterSpacing: '0.03em', background: 'oklch(97% 0.003 250)' }}>
+      <div style={{ background: 'var(--relay-surface)', border: '1px solid var(--relay-border-soft)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px oklch(0% 0 0 / 0.02)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 0.85fr 0.85fr 0.6fr 0.9fr 1.3fr', padding: '12px 20px', fontSize: '11px', fontWeight: 600, color: 'var(--relay-text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em', background: 'var(--relay-surface-subtle)' }}>
           <div onClick={() => toggleSort('title')} style={{ cursor: 'pointer' }}>
             Title{getSortArrow('title')}
           </div>
@@ -334,7 +334,7 @@ export const ArticlesTab: React.FC = () => {
         )}
 
         {sorted.length === 0 && (
-          <div style={{ padding: '40px', textAlign: 'center', fontSize: '14px', color: 'oklch(55% 0.01 250)' }}>
+          <div style={{ padding: '40px', textAlign: 'center', fontSize: '14px', color: 'var(--relay-text-muted)' }}>
             No articles match this filter.
           </div>
         )}

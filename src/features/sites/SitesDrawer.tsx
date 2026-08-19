@@ -20,8 +20,8 @@ export interface SitesDrawerProps {
 }
 
 const smallBtn: React.CSSProperties = {
-  background: 'white',
-  border: '1px solid oklch(88% 0.005 250)',
+  background: 'var(--relay-surface)',
+  border: '1px solid var(--relay-border)',
   borderRadius: '8px',
   padding: '6px 10px',
   fontSize: '12px',
@@ -30,7 +30,7 @@ const smallBtn: React.CSSProperties = {
 };
 
 const primaryBtn: React.CSSProperties = {
-  background: 'oklch(50% 0.16 265)',
+  background: 'var(--relay-accent)',
   color: 'white',
   border: 'none',
   borderRadius: '8px',
@@ -151,7 +151,7 @@ export const SitesDrawer: React.FC<SitesDrawerProps> = ({ open, onClose }) => {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'oklch(0% 0 0 / 0.3)',
+          background: 'var(--relay-overlay)',
           zIndex: 50,
           display: 'flex',
           justifyContent: 'flex-end',
@@ -160,7 +160,7 @@ export const SitesDrawer: React.FC<SitesDrawerProps> = ({ open, onClose }) => {
       >
         <div
           style={{
-            background: 'white',
+            background: 'var(--relay-surface)',
             width: '380px',
             maxWidth: '100%',
             height: '100%',
@@ -173,14 +173,14 @@ export const SitesDrawer: React.FC<SitesDrawerProps> = ({ open, onClose }) => {
           <div
             style={{
               padding: '16px 20px',
-              borderBottom: '1px solid oklch(90% 0.005 250)',
+              borderBottom: '1px solid var(--relay-border-soft)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}
           >
             <div style={{ fontSize: '16px', fontWeight: 700 }}>Auto saved site preferences</div>
-            <button onClick={onClose} style={{ background: 'transparent', border: 'none', fontSize: '18px', cursor: 'pointer', color: 'oklch(55% 0.01 250)' }} aria-label="Close sites drawer">
+            <button onClick={onClose} style={{ background: 'transparent', border: 'none', fontSize: '18px', cursor: 'pointer', color: 'var(--relay-text-muted)' }} aria-label="Close sites drawer">
               ×
             </button>
           </div>
@@ -190,7 +190,7 @@ export const SitesDrawer: React.FC<SitesDrawerProps> = ({ open, onClose }) => {
               padding: '12px 20px',
               display: 'flex',
               gap: '8px',
-              borderBottom: '1px solid oklch(90% 0.005 250)',
+              borderBottom: '1px solid var(--relay-border-soft)',
             }}
           >
             <input ref={fileInputRef} type="file" accept="application/json" style={{ display: 'none' }} onChange={handleImportFile} />
@@ -206,25 +206,25 @@ export const SitesDrawer: React.FC<SitesDrawerProps> = ({ open, onClose }) => {
               style={{
                 flex: 1,
                 padding: '8px 12px',
-                border: '1px solid oklch(88% 0.005 250)',
+                border: '1px solid var(--relay-border)',
                 borderRadius: '8px',
                 fontSize: '13px',
               }}
             />
           </div>
 
-          {error && <div style={{ padding: '8px 20px', fontSize: '13px', color: 'oklch(50% 0.15 20)' }}>{error}</div>}
+          {error && <div style={{ padding: '8px 20px', fontSize: '13px', color: 'var(--relay-danger)' }}>{error}</div>}
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {filtered.length === 0 && (
-              <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', textAlign: 'center', marginTop: '40px' }}>
+              <div style={{ fontSize: '14px', color: 'var(--relay-text-muted)', textAlign: 'center', marginTop: '40px' }}>
                 {profiles.length === 0
                   ? 'No saved sites yet. Configs auto-save when you import a site.'
                   : 'No sites match your search.'}
               </div>
             )}
             {filtered.map((p) => (
-              <div key={p.domain} style={{ border: '1px solid oklch(90% 0.005 250)', borderRadius: '10px', padding: '12px 14px' }}>
+              <div key={p.domain} style={{ border: '1px solid var(--relay-border-soft)', borderRadius: '10px', padding: '12px 14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ fontWeight: 600, fontSize: '14px', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.domain}</div>
                   {p.domain === activeDomain && (
@@ -232,9 +232,9 @@ export const SitesDrawer: React.FC<SitesDrawerProps> = ({ open, onClose }) => {
                       style={{
                         fontSize: '11px',
                         fontWeight: 700,
-                        color: 'oklch(50% 0.16 265)',
-                        background: 'oklch(97% 0.004 250)',
-                        border: '1px solid oklch(88% 0.005 250)',
+                        color: 'var(--relay-accent)',
+                        background: 'var(--relay-surface-subtle)',
+                        border: '1px solid var(--relay-border)',
                         borderRadius: '5px',
                         padding: '2px 7px',
                         textTransform: 'uppercase',
@@ -245,7 +245,7 @@ export const SitesDrawer: React.FC<SitesDrawerProps> = ({ open, onClose }) => {
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', margin: '2px 0 8px' }}>Saved {formatSavedAt(p.savedAt)}</div>
+                <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', margin: '2px 0 8px' }}>Saved {formatSavedAt(p.savedAt)}</div>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <button type="button" onClick={() => { setRenameTarget(p); setRenameDraft(p.domain); }} style={smallBtn}>
                     Edit domain
@@ -253,7 +253,7 @@ export const SitesDrawer: React.FC<SitesDrawerProps> = ({ open, onClose }) => {
                   <button type="button" onClick={() => handleExport(p)} style={smallBtn}>
                     Export
                   </button>
-                  <button type="button" onClick={() => setDeleteTarget(p)} style={{ ...smallBtn, color: 'oklch(50% 0.18 25)' }}>
+                  <button type="button" onClick={() => setDeleteTarget(p)} style={{ ...smallBtn, color: 'var(--relay-danger)' }}>
                     Delete
                   </button>
                 </div>
@@ -264,14 +264,14 @@ export const SitesDrawer: React.FC<SitesDrawerProps> = ({ open, onClose }) => {
       </div>
 
       <Modal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete saved site?">
-        <div style={{ fontSize: '14px', color: 'oklch(45% 0.01 250)' }}>
+        <div style={{ fontSize: '14px', color: 'var(--relay-text)' }}>
           This removes the auto-saved config for <strong>{deleteTarget?.domain}</strong>. This can't be undone.
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
           <button type="button" onClick={() => setDeleteTarget(null)} style={smallBtn}>
             Cancel
           </button>
-          <button type="button" onClick={confirmDelete} style={{ ...smallBtn, color: 'oklch(50% 0.18 25)' }}>
+          <button type="button" onClick={confirmDelete} style={{ ...smallBtn, color: 'var(--relay-danger)' }}>
             Delete
           </button>
         </div>
@@ -284,7 +284,7 @@ export const SitesDrawer: React.FC<SitesDrawerProps> = ({ open, onClose }) => {
           aria-label="New domain"
           value={renameDraft}
           onChange={(e) => setRenameDraft(e.target.value)}
-          style={{ width: '100%', padding: '8px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '13px' }}
+          style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '13px' }}
         />
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
           <button type="button" onClick={() => setRenameTarget(null)} style={smallBtn}>

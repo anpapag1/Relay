@@ -53,7 +53,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
         <div
           className="wp-preview"
           style={{
-            background: 'white',
+            background: 'var(--relay-surface)',
             borderRadius: '14px',
             boxShadow: '0 12px 40px oklch(0% 0 0 / 0.15)',
             padding: '30px 48px',
@@ -73,7 +73,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
               flexShrink: 0,
             }}
           >
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'oklch(55% 0.01 250)' }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--relay-text-muted)' }}>
               Content before / after
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -142,8 +142,8 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                     fontWeight: 600,
                     border: 'none',
                     cursor: 'pointer',
-                    background: showBefore ? 'white' : 'transparent',
-                    color: showBefore ? 'oklch(30% 0.02 250)' : 'white',
+                    background: showBefore ? 'var(--relay-surface)' : 'transparent',
+                    color: showBefore ? 'var(--relay-text)' : 'white',
                     boxShadow: showBefore ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
                   }}
                 >
@@ -159,8 +159,8 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                     fontWeight: 600,
                     border: 'none',
                     cursor: 'pointer',
-                    background: !showBefore ? 'white' : 'transparent',
-                    color: !showBefore ? 'oklch(30% 0.02 250)' : 'white',
+                    background: !showBefore ? 'var(--relay-surface)' : 'transparent',
+                    color: !showBefore ? 'var(--relay-text)' : 'white',
                     boxShadow: !showBefore ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
                   }}
                 >
@@ -176,8 +176,8 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                     fontWeight: 600,
                     border: 'none',
                     cursor: 'pointer',
-                    background: showEdit ? 'white' : 'transparent',
-                    color: showEdit ? 'oklch(30% 0.02 250)' : 'white',
+                    background: showEdit ? 'var(--relay-surface)' : 'transparent',
+                    color: showEdit ? 'var(--relay-text)' : 'white',
                     boxShadow: showEdit ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
                   }}
                 >
@@ -192,7 +192,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
               fontWeight: 600,
               lineHeight: 1.3,
               margin: '0 auto 20px',
-              color: 'oklch(20% 0.01 250)',
+              color: 'var(--relay-text)',
               flexShrink: 0,
               width: '100%',
               maxWidth: '68ch',
@@ -218,7 +218,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    color: 'oklch(30% 0.02 250)',
+                    color: 'var(--relay-text)',
                   }}
                 >
                   Edit converted HTML
@@ -231,8 +231,8 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                         letterSpacing: '0.03em',
                         padding: '2px 6px',
                         borderRadius: '5px',
-                        background: 'oklch(93% 0.05 265)',
-                        color: 'oklch(40% 0.18 265)',
+                        background: 'var(--relay-accent-soft)',
+                        color: 'var(--relay-accent-hover)',
                       }}
                     >
                       Manual override
@@ -245,8 +245,8 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                     onClick={onRevert}
                     style={{
                       padding: '5px 10px',
-                      background: 'white',
-                      border: '1px solid oklch(88% 0.005 250)',
+                      background: 'var(--relay-surface)',
+                      border: '1px solid var(--relay-border)',
                       borderRadius: '6px',
                       fontSize: '12px',
                       fontWeight: 600,
@@ -257,7 +257,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                   </button>
                 )}
               </div>
-              <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginBottom: '8px', flexShrink: 0 }}>
+              <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', marginBottom: '8px', flexShrink: 0 }}>
                 Saving replaces the automatic conversion for this article entirely.
               </div>
               <textarea
@@ -267,7 +267,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                   width: '100%',
                   flex: 1,
                   minHeight: 0,
-                  border: '1px solid oklch(88% 0.005 250)',
+                  border: '1px solid var(--relay-border)',
                   borderRadius: '8px',
                   padding: '10px',
                   fontSize: '12px',
@@ -289,7 +289,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                   wordBreak: 'break-word',
                   fontSize: '12px',
                   fontFamily: 'monospace',
-                  color: 'oklch(30% 0.02 250)',
+                  color: 'var(--relay-text)',
                 }}
               >
                 {article.contentHtml}

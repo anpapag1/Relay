@@ -83,7 +83,7 @@ Relay/
    │  ├─ build/         BuildTab
    │  └─ sites/         SitesDrawer (auto-saved per-site configs)
    ├─ ui/               Header · Modal · Badge
-   └─ theme/            tokens · index.css
+   └─ theme/            tokens · useTheme (ThemeProvider + dark-mode palette) · index.css
 ```
 
 Tests sit beside their source as `*.test.ts(x)`. See `docs/testing.md`.

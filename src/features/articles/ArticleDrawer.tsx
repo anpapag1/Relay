@@ -100,7 +100,7 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'oklch(0% 0 0 / 0.3)',
+          background: 'var(--relay-overlay)',
           zIndex: 50,
           display: 'flex',
         }}

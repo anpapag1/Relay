@@ -21,9 +21,9 @@ export const BuildTab: React.FC = () => {
 
   if (!state.source) {
     return (
-      <div style={{ maxWidth: '960px', margin: '60px auto', textAlign: 'center', padding: '40px', background: 'white', borderRadius: '12px', border: '1px solid oklch(90% 0.005 250)' }}>
+      <div style={{ maxWidth: '960px', margin: '60px auto', textAlign: 'center', padding: '40px', background: 'var(--relay-surface)', borderRadius: '12px', border: '1px solid var(--relay-border-soft)' }}>
         <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>No import yet</div>
-        <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginBottom: '20px' }}>
+        <div style={{ fontSize: '14px', color: 'var(--relay-text-muted)', marginBottom: '20px' }}>
           Upload a WordPress export first — then build the final migration file here.
         </div>
         <button
@@ -95,8 +95,8 @@ export const BuildTab: React.FC = () => {
   };
 
   const cardStyleBase: React.CSSProperties = {
-    background: 'white',
-    border: '1px solid oklch(90% 0.005 250)',
+    background: 'var(--relay-surface)',
+    border: '1px solid var(--relay-border-soft)',
     borderRadius: '14px',
     padding: '22px',
     boxShadow: '0 1px 3px oklch(0% 0 0 / 0.02)',
@@ -106,7 +106,7 @@ export const BuildTab: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '960px', width: '100%', margin: '0 auto' }}>
       <div>
         <div style={{ fontSize: '22px', fontWeight: 700 }}>Build &amp; export</div>
-        <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
+        <div style={{ fontSize: '14px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>
           Run a quick check, then build the final import file for the new site.
         </div>
       </div>
@@ -142,7 +142,7 @@ export const BuildTab: React.FC = () => {
             <div className="stat-card__label">Total warnings</div>
           </div>
         </div>
-        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>
+        <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)' }}>
           {countReview > 0
             ? 'Articles flagged for review will still be converted using automatic settings.'
             : 'All included articles are ready for conversion.'}
@@ -161,7 +161,7 @@ export const BuildTab: React.FC = () => {
             Run check
           </button>
         </div>
-        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginBottom: '12px' }}>
+        <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', marginBottom: '12px' }}>
           Instant — scans all articles without building anything.
         </div>
         {hasCheckResults && (
@@ -187,23 +187,23 @@ export const BuildTab: React.FC = () => {
                     alignItems: 'center',
                     fontSize: '13px',
                     padding: '10px 12px',
-                    background: 'oklch(97% 0.04 60)',
-                    border: '1px solid oklch(88% 0.1 60)',
+                    background: 'var(--relay-warning-bg)',
+                    border: '1px solid var(--relay-warning-border)',
                     borderRadius: '8px',
                     cursor: 'pointer',
                   }}
                 >
-                  <div style={{ color: 'oklch(50% 0.16 60)', fontWeight: 700 }}>⚠</div>
+                  <div style={{ color: 'var(--relay-warning)', fontWeight: 700 }}>⚠</div>
                   <div style={{ flex: 1 }}>
                     <b>{w.title}:</b> {w.text}
                   </div>
-                  <div style={{ fontSize: '12px', color: 'oklch(50% 0.14 60)', textDecoration: 'underline', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--relay-warning)', textDecoration: 'underline', whiteSpace: 'nowrap' }}>
                     Review →
                   </div>
                 </div>
               ))
             ) : (
-              <div style={{ fontSize: '13px', color: 'oklch(40% 0.14 150)', padding: '10px 12px', background: 'oklch(96% 0.03 150)', border: '1px solid oklch(88% 0.1 150)', borderRadius: '8px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--relay-success)', padding: '10px 12px', background: 'var(--relay-success-bg)', border: '1px solid var(--relay-success-border)', borderRadius: '8px' }}>
                 No problems found — ready to build.
               </div>
             )}
@@ -235,12 +235,12 @@ export const BuildTab: React.FC = () => {
             </button>
           )}
         </div>
-        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginBottom: '14px' }}>
+        <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', marginBottom: '14px' }}>
           Converts every included article and packages a downloadable import file.
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
-          <span style={{ fontSize: '12px', fontWeight: 600, color: 'oklch(55% 0.01 250)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--relay-text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
             Include:
           </span>
           {[
@@ -255,9 +255,9 @@ export const BuildTab: React.FC = () => {
               onClick={() => setIncludeFilter(bc.id as any)}
               style={{
                 border: '1px solid',
-                borderColor: includeFilter === bc.id ? 'oklch(50% 0.16 265)' : 'oklch(88% 0.005 250)',
-                background: includeFilter === bc.id ? 'oklch(96% 0.04 265)' : 'white',
-                color: includeFilter === bc.id ? 'oklch(45% 0.18 265)' : 'oklch(35% 0.01 250)',
+                borderColor: includeFilter === bc.id ? 'var(--relay-accent)' : 'var(--relay-border)',
+                background: includeFilter === bc.id ? 'var(--relay-accent-soft)' : 'var(--relay-surface)',
+                color: includeFilter === bc.id ? 'var(--relay-accent-hover)' : 'var(--relay-text)',
                 padding: '5px 12px',
                 borderRadius: '20px',
                 fontSize: '12px',
@@ -281,12 +281,12 @@ export const BuildTab: React.FC = () => {
 
         {isBuilding && (
           <div style={{ marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'oklch(50% 0.01 250)', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--relay-text-muted)', marginBottom: '6px' }}>
               <span>Converting blocks and resolving media…</span>
               <span>{buildPercent}%</span>
             </div>
-            <div style={{ height: '8px', background: 'oklch(94% 0.005 250)', borderRadius: '4px', overflow: 'hidden' }}>
-              <div style={{ width: `${buildPercent}%`, height: '100%', background: 'oklch(50% 0.16 265)', transition: 'width 0.2s ease' }} />
+            <div style={{ height: '8px', background: 'var(--relay-surface-hover)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ width: `${buildPercent}%`, height: '100%', background: 'var(--relay-accent)', transition: 'width 0.2s ease' }} />
             </div>
           </div>
         )}
@@ -315,13 +315,13 @@ export const BuildTab: React.FC = () => {
         )}
 
         {buildCancelled && (
-          <div style={{ fontSize: '13px', color: 'oklch(50% 0.01 250)', padding: '12px', background: 'oklch(96% 0.005 250)', borderRadius: '8px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', padding: '12px', background: 'var(--relay-surface-hover)', borderRadius: '8px' }}>
             Build cancelled. No file was produced.
           </div>
         )}
 
         {buildError && (
-          <div style={{ fontSize: '13px', color: 'oklch(45% 0.16 25)', padding: '12px', background: 'oklch(97% 0.04 25)', border: '1px solid oklch(88% 0.1 25)', borderRadius: '8px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--relay-danger)', padding: '12px', background: 'var(--relay-danger-bg)', border: '1px solid var(--relay-danger-border)', borderRadius: '8px' }}>
             Build failed: {buildError}
           </div>
         )}
@@ -329,29 +329,29 @@ export const BuildTab: React.FC = () => {
         {buildDone && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-              <div style={{ background: 'oklch(96% 0.03 150)', borderRadius: '10px', padding: '16px', border: '1px solid oklch(88% 0.08 150)' }}>
-                <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(40% 0.14 150)' }}>{countIncluded}</div>
-                <div style={{ fontSize: '12px', color: 'oklch(45% 0.05 150)', marginTop: '2px' }}>included articles</div>
+              <div style={{ background: 'var(--relay-success-bg)', borderRadius: '10px', padding: '16px', border: '1px solid var(--relay-success-border)' }}>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--relay-success)' }}>{countIncluded}</div>
+                <div style={{ fontSize: '12px', color: 'var(--relay-success)', marginTop: '2px' }}>included articles</div>
               </div>
-              <div style={{ background: 'oklch(97% 0.04 60)', borderRadius: '10px', padding: '16px', border: '1px solid oklch(88% 0.1 60)' }}>
-                <div data-testid="post-build-review-count" style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(50% 0.16 60)' }}>{countReviewInBuild}</div>
-                <div style={{ fontSize: '12px', color: 'oklch(50% 0.08 60)', marginTop: '2px' }}>flagged in log</div>
+              <div style={{ background: 'var(--relay-warning-bg)', borderRadius: '10px', padding: '16px', border: '1px solid var(--relay-warning-border)' }}>
+                <div data-testid="post-build-review-count" style={{ fontSize: '24px', fontWeight: 700, color: 'var(--relay-warning)' }}>{countReviewInBuild}</div>
+                <div style={{ fontSize: '12px', color: 'var(--relay-warning)', marginTop: '2px' }}>flagged in log</div>
               </div>
-              <div style={{ background: 'oklch(96% 0.005 250)', borderRadius: '10px', padding: '16px', border: '1px solid oklch(90% 0.005 250)' }}>
-                <div style={{ fontSize: '24px', fontWeight: 700, color: 'oklch(50% 0.01 250)' }}>{countExcluded}</div>
-                <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>skipped</div>
+              <div style={{ background: 'var(--relay-surface-hover)', borderRadius: '10px', padding: '16px', border: '1px solid var(--relay-border-soft)' }}>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--relay-text-muted)' }}>{countExcluded}</div>
+                <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>skipped</div>
               </div>
             </div>
 
-            <div style={{ border: '1px solid oklch(92% 0.005 250)', borderRadius: '10px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'oklch(99% 0.002 250)' }}>
+            <div style={{ border: '1px solid var(--relay-border-soft)', borderRadius: '10px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--relay-surface-subtle)' }}>
               <div style={{ fontSize: '14px', fontWeight: 700 }}>What happened</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '13px' }}>
                 <div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'oklch(55% 0.01 250)', marginBottom: '4px' }}>Target Tables Generated</div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--relay-text-muted)', marginBottom: '4px' }}>Target Tables Generated</div>
                   <div>{Object.values(state.target.tables).length} category/tag tables mapped</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'oklch(55% 0.01 250)', marginBottom: '4px' }}>Output WXR Size</div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--relay-text-muted)', marginBottom: '4px' }}>Output WXR Size</div>
                   <div>{Math.round(wxrResult.length / 1024)} KB XML package ready</div>
                 </div>
               </div>

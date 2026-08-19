@@ -42,12 +42,12 @@ function builderOptionLabel(id: BuilderId, entry: BuilderScore | undefined): str
  *   - anything else -> neutral gray */
 function confidenceTierStyle(confidentCount: number, isTopPick: boolean): React.CSSProperties {
   if (confidentCount > 0) {
-    return { color: 'oklch(50% 0.14 150)', background: 'oklch(95% 0.03 150)' };
+    return { color: 'var(--relay-success)', background: 'var(--relay-success-bg)' };
   }
   if (isTopPick) {
-    return { color: 'oklch(55% 0.16 60)', background: 'oklch(96% 0.06 60)' };
+    return { color: 'var(--relay-warning)', background: 'var(--relay-warning-bg)' };
   }
-  return { color: 'oklch(55% 0.01 250)', background: 'oklch(95% 0.01 250)' };
+  return { color: 'var(--relay-text-muted)', background: 'var(--relay-surface-hover)' };
 }
 
 export const ImportTab: React.FC = () => {
@@ -463,9 +463,9 @@ export const ImportTab: React.FC = () => {
           onDragOver={onDragOver}
           onDrop={onDrop}
           style={{
-            border: '2px dashed oklch(80% 0.01 250)',
+            border: '2px dashed var(--relay-border-strong)',
             borderRadius: '16px',
-            background: 'white',
+            background: 'var(--relay-surface)',
             padding: '56px 32px',
             textAlign: 'center',
             transition: 'border-color 0.15s',
@@ -476,7 +476,7 @@ export const ImportTab: React.FC = () => {
             <div>
               <div className="spinner" />
               <div style={{ fontSize: '15px', fontWeight: 600 }}>Reading {fileName}…</div>
-              <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '4px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', marginTop: '4px' }}>
                 Detecting page builder, taxonomies and media
               </div>
             </div>
@@ -488,11 +488,11 @@ export const ImportTab: React.FC = () => {
                   height: '48px',
                   margin: '0 auto 16px',
                   borderRadius: '12px',
-                  background: 'oklch(95% 0.01 265)',
+                  background: 'var(--relay-accent-soft)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'oklch(50% 0.16 265)',
+                  color: 'var(--relay-accent)',
                   fontSize: '24px',
                 }}
               >
@@ -502,7 +502,7 @@ export const ImportTab: React.FC = () => {
               <div
                 style={{
                   fontSize: '14px',
-                  color: 'oklch(55% 0.01 250)',
+                  color: 'var(--relay-text-muted)',
                   marginBottom: '20px',
                   lineHeight: 1.5,
                   maxWidth: '480px',
@@ -523,7 +523,7 @@ export const ImportTab: React.FC = () => {
                     background: 'none',
                     border: 'none',
                     fontSize: '13px',
-                    color: 'oklch(50% 0.16 265)',
+                    color: 'var(--relay-accent)',
                     cursor: 'pointer',
                     textDecoration: 'underline',
                   }}
@@ -536,7 +536,7 @@ export const ImportTab: React.FC = () => {
         </div>
         <div style={{ marginTop: '24px' }}>
           <div style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px' }}>Or fetch the site directly (no WXR file needed)</div>
-          <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginBottom: '12px', lineHeight: 1.5 }}>
+          <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', marginBottom: '12px', lineHeight: 1.5 }}>
             For sites where you can&apos;t get a Tools → Export file: Relay reads the public WordPress REST API
             (or falls back to the RSS feed) to pull published posts and their featured images.
           </div>
@@ -556,7 +556,7 @@ export const ImportTab: React.FC = () => {
                 aria-label="Site URL"
                 aria-expanded={fetchDropdownOpen}
                 aria-haspopup="listbox"
-                style={{ width: '100%', padding: '10px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px' }}
+                style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '14px' }}
               />
               {fetchDropdownOpen && filteredProfiles.length > 0 && (
                 <div
@@ -567,8 +567,8 @@ export const ImportTab: React.FC = () => {
                     left: 0,
                     right: 0,
                     zIndex: 20,
-                    background: 'white',
-                    border: '1px solid oklch(88% 0.005 250)',
+                    background: 'var(--relay-surface)',
+                    border: '1px solid var(--relay-border)',
                     borderRadius: '8px',
                     boxShadow: '0 6px 16px oklch(0% 0 0 / 0.10)',
                     maxHeight: '240px',
@@ -591,14 +591,14 @@ export const ImportTab: React.FC = () => {
                         width: '100%',
                         padding: '9px 12px',
                         border: 'none',
-                        background: i === fetchDropdownIndex ? 'oklch(96% 0.02 265)' : 'white',
+                        background: i === fetchDropdownIndex ? 'var(--relay-accent-soft)' : 'var(--relay-surface)',
                         cursor: 'pointer',
                         textAlign: 'left',
                         fontSize: '13px',
                       }}
                     >
                       <span style={{ fontWeight: 600 }}>{profile.domain}</span>
-                      <span style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--relay-text-muted)', whiteSpace: 'nowrap' }}>
                         Saved {formatSavedAt(profile.savedAt)}
                       </span>
                     </button>
@@ -611,7 +611,7 @@ export const ImportTab: React.FC = () => {
             </button>
           </div>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', marginTop: '10px' }}>
-            <label style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>
+            <label style={{ fontSize: '13px', color: 'var(--relay-text-muted)' }}>
               Start date{' '}
               <input
                 type="date"
@@ -619,10 +619,10 @@ export const ImportTab: React.FC = () => {
                 value={fetchStartDate}
                 onChange={(e) => setFetchStartDate(e.target.value)}
                 disabled={fetchingSite}
-                style={{ padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px' }}
+                style={{ padding: '8px 10px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '14px' }}
               />
             </label>
-            <label style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>
+            <label style={{ fontSize: '13px', color: 'var(--relay-text-muted)' }}>
               End date{' '}
               <input
                 type="date"
@@ -630,12 +630,12 @@ export const ImportTab: React.FC = () => {
                 value={fetchEndDate}
                 onChange={(e) => setFetchEndDate(e.target.value)}
                 disabled={fetchingSite}
-                style={{ padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px' }}
+                style={{ padding: '8px 10px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '14px' }}
               />
             </label>
           </div>
-          {fetchProgress && <div style={{ marginTop: '10px', fontSize: '13px', color: 'oklch(50% 0.01 250)' }}>{fetchProgress}</div>}
-          {fetchError && <div style={{ marginTop: '10px', fontSize: '13px', color: 'oklch(50% 0.15 20)' }}>{fetchError}</div>}
+          {fetchProgress && <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--relay-text-muted)' }}>{fetchProgress}</div>}
+          {fetchError && <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--relay-danger)' }}>{fetchError}</div>}
         </div>
       </div>
     );
@@ -663,8 +663,8 @@ export const ImportTab: React.FC = () => {
   const totalAuthors = source.authors?.length ?? 0;
 
   const cardStyleBase: React.CSSProperties = {
-    background: 'white',
-    border: '1px solid oklch(90% 0.005 250)',
+    background: 'var(--relay-surface)',
+    border: '1px solid var(--relay-border-soft)',
     borderRadius: '12px',
     padding: '20px',
     boxShadow: '0 1px 3px oklch(0% 0 0 / 0.02)',
@@ -676,9 +676,9 @@ export const ImportTab: React.FC = () => {
         <div>
           <div style={{ fontSize: '22px', fontWeight: 700 }}>Import detected</div>
           {fetchProgress && (
-            <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>{fetchProgress}</div>
+            <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>{fetchProgress}</div>
           )}
-          <div style={{ fontSize: '14px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
+          <div style={{ fontSize: '14px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>
             From {fileName} — review before mapping content
           </div>
         </div>
@@ -697,7 +697,7 @@ export const ImportTab: React.FC = () => {
             style={{
               fontSize: '12px',
               fontWeight: 600,
-              color: 'oklch(50% 0.01 250)',
+              color: 'var(--relay-text-muted)',
               textTransform: 'uppercase',
               letterSpacing: '0.04em',
               marginBottom: '6px',
@@ -712,7 +712,7 @@ export const ImportTab: React.FC = () => {
             value={source.siteUrl ? domain : (state.ui.sourceDomain ?? '')}
             placeholder={source.siteUrl ? undefined : 'e.g. oldsite.com'}
             onChange={(e) => dispatch({ type: 'SET_SOURCE_DOMAIN', domain: e.target.value })}
-            style={{ width: '100%', padding: '10px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px', background: source.siteUrl ? 'oklch(97% 0.004 250)' : 'white' }}
+            style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '14px', background: source.siteUrl ? 'var(--relay-surface-subtle)' : 'var(--relay-surface)' }}
           />
         </div>
 
@@ -721,7 +721,7 @@ export const ImportTab: React.FC = () => {
             style={{
               fontSize: '12px',
               fontWeight: 600,
-              color: 'oklch(50% 0.01 250)',
+              color: 'var(--relay-text-muted)',
               textTransform: 'uppercase',
               letterSpacing: '0.04em',
               marginBottom: '6px',
@@ -733,7 +733,7 @@ export const ImportTab: React.FC = () => {
             <select
               value={builderId ?? 'plainHtml'}
               onChange={(e) => dispatch({ type: 'SET_BUILDER', builderId: e.target.value as BuilderId })}
-              style={{ flex: 1, padding: '10px 12px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '8px', fontSize: '14px' }}
+              style={{ flex: 1, padding: '10px 12px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '14px' }}
             >
               {BUILDER_OPTIONS.map((opt) => (
                 <option key={opt} value={opt}>
@@ -766,7 +766,7 @@ export const ImportTab: React.FC = () => {
             style={{
               fontSize: '12px',
               fontWeight: 600,
-              color: 'oklch(50% 0.01 250)',
+              color: 'var(--relay-text-muted)',
               textTransform: 'uppercase',
               letterSpacing: '0.04em',
               marginBottom: '10px',
@@ -774,7 +774,7 @@ export const ImportTab: React.FC = () => {
           >
             Builder match breakdown
           </div>
-          <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginBottom: '12px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', marginBottom: '12px' }}>
             Share of posts where each builder&apos;s markup was unambiguously found — not a raw score, so a builder
             used on only part of the site can still be the correct pick.
           </div>
@@ -790,26 +790,26 @@ export const ImportTab: React.FC = () => {
                     gap: '10px',
                     padding: '8px 10px',
                     borderRadius: '8px',
-                    background: i === 0 ? 'oklch(97% 0.02 150)' : 'transparent',
-                    border: i === 0 ? '1px solid oklch(88% 0.05 150)' : '1px solid transparent',
+                    background: i === 0 ? 'var(--relay-success-bg)' : 'transparent',
+                    border: i === 0 ? '1px solid var(--relay-success-border)' : '1px solid transparent',
                   }}
                 >
                   <div style={{ width: '110px', fontSize: '13px', fontWeight: i === 0 ? 700 : 500 }}>
                     {BUILDER_LABELS[entry.builderId]}
                   </div>
-                  <div style={{ flex: 1, height: '6px', background: 'oklch(93% 0.005 250)', borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ flex: 1, height: '6px', background: 'var(--relay-surface-hover)', borderRadius: '3px', overflow: 'hidden' }}>
                     <div
                       style={{
                         width: `${confidenceSharePct}%`,
                         height: '100%',
-                        background: i === 0 ? 'oklch(60% 0.14 150)' : 'oklch(75% 0.01 250)',
+                        background: i === 0 ? 'var(--relay-success)' : 'var(--relay-border-strong)',
                       }}
                     />
                   </div>
-                  <div style={{ width: '78px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: 'oklch(45% 0.01 250)' }}>
+                  <div style={{ width: '78px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: 'var(--relay-text-2)' }}>
                     {entry.confidentCount}/{entry.totalPosts} posts
                   </div>
-                  <div style={{ width: '56px', textAlign: 'right', fontSize: '11px', color: 'oklch(60% 0.01 250)' }}>
+                  <div style={{ width: '56px', textAlign: 'right', fontSize: '11px', color: 'var(--relay-text-muted)' }}>
                     avg {Math.round(entry.score * 100)}%
                   </div>
                   <BuilderStatusPill status={BUILDER_VALIDATION_STATUS[entry.builderId]} />
@@ -823,31 +823,31 @@ export const ImportTab: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
         <div style={cardStyleBase}>
           <div style={{ fontSize: '26px', fontWeight: 700 }}>{totalArticles}</div>
-          <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Posts &amp; pages</div>
-          <div style={{ fontSize: '12px', color: 'oklch(60% 0.01 250)', marginTop: '8px' }}>Ready for block conversion</div>
+          <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>Posts &amp; pages</div>
+          <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', marginTop: '8px' }}>Ready for block conversion</div>
         </div>
         <div style={cardStyleBase}>
           <div style={{ fontSize: '26px', fontWeight: 700 }}>{totalAttachments}</div>
-          <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Media attachments</div>
-          <div style={{ fontSize: '12px', color: 'oklch(60% 0.01 250)', marginTop: '8px' }}>Indexed for URL resolution</div>
+          <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>Media attachments</div>
+          <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', marginTop: '8px' }}>Indexed for URL resolution</div>
         </div>
         <div style={cardStyleBase}>
           <div style={{ fontSize: '26px', fontWeight: 700 }}>{totalTaxonomies}</div>
-          <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Taxonomy terms</div>
-          <div style={{ fontSize: '12px', color: 'oklch(60% 0.01 250)', marginTop: '8px' }}>Categories and tags found</div>
+          <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>Taxonomy terms</div>
+          <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', marginTop: '8px' }}>Categories and tags found</div>
         </div>
         <div style={cardStyleBase}>
           <div style={{ fontSize: '26px', fontWeight: 700 }}>{totalAuthors}</div>
-          <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>Authors</div>
-          <div style={{ fontSize: '12px', color: 'oklch(60% 0.01 250)', marginTop: '8px' }}>Found in metadata</div>
+          <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>Authors</div>
+          <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', marginTop: '8px' }}>Found in metadata</div>
         </div>
       </div>
 
       <div style={{ ...cardStyleBase, padding: 0, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid oklch(92% 0.005 250)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--relay-border-soft)' }}>
           <div>
             <div style={{ fontSize: '15px', fontWeight: 700 }}>Old &amp; new site data</div>
-            <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', marginTop: '2px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>
               Export/Import JSON covers taxonomy tables, term mappings, and conversion settings — reusable across a different WXR import.
             </div>
           </div>
@@ -862,15 +862,15 @@ export const ImportTab: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', borderBottom: '1px solid oklch(92% 0.005 250)', background: 'oklch(98% 0.003 250)' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--relay-border-soft)', background: 'var(--relay-bg)' }}>
           <button
             type="button"
             onClick={() => setActiveDataTab('old')}
             style={{
               padding: '12px 20px',
               border: 'none',
-              background: activeDataTab === 'old' ? 'white' : 'transparent',
-              borderBottom: activeDataTab === 'old' ? '2px solid oklch(50% 0.16 265)' : '2px solid transparent',
+              background: activeDataTab === 'old' ? 'var(--relay-surface)' : 'transparent',
+              borderBottom: activeDataTab === 'old' ? '2px solid var(--relay-accent)' : '2px solid transparent',
               fontWeight: activeDataTab === 'old' ? 600 : 500,
               fontSize: '13px',
               cursor: 'pointer',
@@ -884,8 +884,8 @@ export const ImportTab: React.FC = () => {
             style={{
               padding: '12px 20px',
               border: 'none',
-              background: activeDataTab === 'new' ? 'white' : 'transparent',
-              borderBottom: activeDataTab === 'new' ? '2px solid oklch(50% 0.16 265)' : '2px solid transparent',
+              background: activeDataTab === 'new' ? 'var(--relay-surface)' : 'transparent',
+              borderBottom: activeDataTab === 'new' ? '2px solid var(--relay-accent)' : '2px solid transparent',
               fontWeight: activeDataTab === 'new' ? 600 : 500,
               fontSize: '13px',
               cursor: 'pointer',
@@ -898,7 +898,7 @@ export const ImportTab: React.FC = () => {
         <div style={{ padding: '20px' }}>
           {activeDataTab === 'old' ? (
             <div>
-              <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginBottom: '14px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', marginBottom: '14px' }}>
                 Add legacy categories/tags/taxonomies on the old site:
               </div>
               {missingOldTerms.length > 0 && (
@@ -908,8 +908,8 @@ export const ImportTab: React.FC = () => {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: '12px',
-                    background: 'oklch(97% 0.02 80)',
-                    border: '1px solid oklch(88% 0.05 80)',
+                    background: 'var(--relay-warning-bg)',
+                    border: '1px solid var(--relay-warning-border)',
                     borderRadius: '8px',
                     padding: '10px 14px',
                     marginBottom: '14px',
@@ -934,11 +934,11 @@ export const ImportTab: React.FC = () => {
                 {Object.values(state.oldTables).map((tbl) => {
                   const isOldExpanded = expandedOldTables[tbl.id] ?? true;
                   return (
-                  <div key={tbl.id} style={{ border: '1px solid oklch(93% 0.005 250)', borderRadius: '10px', padding: '14px', background: 'white' }}>
+                  <div key={tbl.id} style={{ border: '1px solid var(--relay-border-soft)', borderRadius: '10px', padding: '14px', background: 'var(--relay-surface)' }}>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center' }}>
                       <span
                         onClick={() => toggleOldTable(tbl.id)}
-                        style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', cursor: 'pointer', padding: '0 4px', userSelect: 'none' }}
+                        style={{ fontSize: '12px', color: 'var(--relay-text-muted)', cursor: 'pointer', padding: '0 4px', userSelect: 'none' }}
                       >
                         {isOldExpanded ? '▼' : '►'}
                       </span>
@@ -947,9 +947,9 @@ export const ImportTab: React.FC = () => {
                         value={tbl.label}
                         onChange={(e) => updateOldTableLabel(tbl.id, e.target.value)}
                         placeholder="Table name"
-                        style={{ flex: 1, padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '13px', fontWeight: 600 }}
+                        style={{ flex: 1, padding: '8px 10px', border: '1px solid var(--relay-border)', borderRadius: '7px', fontSize: '13px', fontWeight: 600 }}
                       />
-                      <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', whiteSpace: 'nowrap' }}>
                         {tbl.terms.length} term{tbl.terms.length === 1 ? '' : 's'}
                       </div>
                       <button
@@ -971,19 +971,19 @@ export const ImportTab: React.FC = () => {
                                 value={trm.name}
                                 onChange={(e) => updateOldTermName(tbl.id, trm.id, e.target.value)}
                                 placeholder="Term name"
-                                style={{ flex: 1, padding: '7px 9px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px' }}
+                                style={{ flex: 1, padding: '7px 9px', border: '1px solid var(--relay-border)', borderRadius: '6px', fontSize: '13px' }}
                               />
                               <input
                                 type="text"
                                 value={trm.slug || ''}
                                 onChange={(e) => updateOldTermSlug(tbl.id, trm.id, e.target.value)}
                                 placeholder="slug"
-                                style={{ width: '120px', padding: '7px 9px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace" }}
+                                style={{ width: '120px', padding: '7px 9px', border: '1px solid var(--relay-border)', borderRadius: '6px', fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace" }}
                               />
                               <button
                                 type="button"
                                 onClick={() => removeTermFromOldTable(tbl.id, trm.id)}
-                                style={{ width: '30px', height: '32px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: 'oklch(55% 0.01 250)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                style={{ width: '30px', height: '32px', background: 'var(--relay-surface)', border: '1px solid var(--relay-border)', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: 'var(--relay-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                               >
                                 ✕
                               </button>
@@ -1004,7 +1004,7 @@ export const ImportTab: React.FC = () => {
                   );
                 })}
                 {Object.values(state.oldTables).length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '20px', color: 'oklch(55% 0.01 250)', fontSize: '13px' }}>
+                  <div style={{ textAlign: 'center', padding: '20px', color: 'var(--relay-text-muted)', fontSize: '13px' }}>
                     No tables defined yet. Click &quot;+ Add Table&quot; below to create one.
                   </div>
                 )}
@@ -1020,18 +1020,18 @@ export const ImportTab: React.FC = () => {
             </div>
           ) : (
             <div>
-              <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', marginBottom: '14px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', marginBottom: '14px' }}>
                 Add target categories/tags where legacy items should be mapped:
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {Object.values(state.target.tables).map((tbl) => {
                   const isNewExpanded = expandedNewTables[tbl.id] ?? true;
                   return (
-                  <div key={tbl.id} style={{ border: '1px solid oklch(93% 0.005 250)', borderRadius: '10px', padding: '14px', background: 'white' }}>
+                  <div key={tbl.id} style={{ border: '1px solid var(--relay-border-soft)', borderRadius: '10px', padding: '14px', background: 'var(--relay-surface)' }}>
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', alignItems: 'center' }}>
                       <span
                         onClick={() => toggleNewTable(tbl.id)}
-                        style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', cursor: 'pointer', padding: '0 4px', userSelect: 'none' }}
+                        style={{ fontSize: '12px', color: 'var(--relay-text-muted)', cursor: 'pointer', padding: '0 4px', userSelect: 'none' }}
                       >
                         {isNewExpanded ? '▼' : '►'}
                       </span>
@@ -1040,9 +1040,9 @@ export const ImportTab: React.FC = () => {
                         value={tbl.label}
                         onChange={(e) => updateTableLabel(tbl.id, e.target.value)}
                         placeholder="Table name"
-                        style={{ flex: 1, padding: '8px 10px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '7px', fontSize: '13px', fontWeight: 600 }}
+                        style={{ flex: 1, padding: '8px 10px', border: '1px solid var(--relay-border)', borderRadius: '7px', fontSize: '13px', fontWeight: 600 }}
                       />
-                      <div style={{ fontSize: '12px', color: 'oklch(55% 0.01 250)', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)', whiteSpace: 'nowrap' }}>
                         {tbl.terms.length} term{tbl.terms.length === 1 ? '' : 's'}
                       </div>
                       <button
@@ -1064,19 +1064,19 @@ export const ImportTab: React.FC = () => {
                                 value={trm.name}
                                 onChange={(e) => updateTermName(tbl.id, trm.id, e.target.value)}
                                 placeholder="Term name"
-                                style={{ flex: 1, padding: '7px 9px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px' }}
+                                style={{ flex: 1, padding: '7px 9px', border: '1px solid var(--relay-border)', borderRadius: '6px', fontSize: '13px' }}
                               />
                               <input
                                 type="text"
                                 value={trm.slug || ''}
                                 onChange={(e) => updateTermSlug(tbl.id, trm.id, e.target.value)}
                                 placeholder="slug"
-                                style={{ width: '120px', padding: '7px 9px', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace" }}
+                                style={{ width: '120px', padding: '7px 9px', border: '1px solid var(--relay-border)', borderRadius: '6px', fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace" }}
                               />
                               <button
                                 type="button"
                                 onClick={() => removeTermFromTable(tbl.id, trm.id)}
-                                style={{ width: '30px', height: '32px', background: 'white', border: '1px solid oklch(88% 0.005 250)', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: 'oklch(55% 0.01 250)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                style={{ width: '30px', height: '32px', background: 'var(--relay-surface)', border: '1px solid var(--relay-border)', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: 'var(--relay-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                               >
                                 ✕
                               </button>
@@ -1097,7 +1097,7 @@ export const ImportTab: React.FC = () => {
                   );
                 })}
                 {Object.values(state.target.tables).length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '20px', color: 'oklch(55% 0.01 250)', fontSize: '13px' }}>
+                  <div style={{ textAlign: 'center', padding: '20px', color: 'var(--relay-text-muted)', fontSize: '13px' }}>
                     No tables defined yet. Click &quot;+ Add Table&quot; below to create one.
                   </div>
                 )}
@@ -1115,7 +1115,7 @@ export const ImportTab: React.FC = () => {
         </div>
 
         {restoreStatus && (
-          <div style={{ padding: '12px 20px', background: 'oklch(96% 0.05 150)', color: 'oklch(40% 0.15 150)', fontSize: '13px' }}>
+          <div style={{ padding: '12px 20px', background: 'var(--relay-success-bg)', color: 'var(--relay-success)', fontSize: '13px' }}>
             {restoreStatus}
           </div>
         )}
