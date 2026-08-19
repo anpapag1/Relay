@@ -312,8 +312,8 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
             )
           ) : previewHtml.trim() ? (
             <>
-              <div className="wp-preview-editing-hint">Editing… Press Ctrl+Enter to finish</div>
               <div ref={bodyRef} className="wp-preview-body" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+              <div className="wp-preview-editing-hint">Editing… Press Ctrl+Enter to finish</div>
             </>
           ) : (
             <div className="wp-preview-empty">Nothing to preview yet</div>
