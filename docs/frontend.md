@@ -171,6 +171,13 @@ domain is detected.
   `prefers-color-scheme` live via a `matchMedia` listener.
 - **Toggle.** The header's theme button (left of the domain pill) cycles
   Light → Dark → Auto, persisting the choice to localStorage on each click.
+- **Native form controls.** `input`, `select` and `textarea` elements only
+  carry border tokens inline, so `index.css` gives them a global default of
+  `var(--relay-surface)` background and `var(--relay-text)` color (inline
+  backgrounds like `--relay-surface-subtle` or `transparent` still win), and
+  `color-scheme: light|dark` on `:root` / `[data-theme='dark']` makes the
+  date picker, `<select>` dropdown, number spinners and checkbox chrome follow
+  the theme.
 
 ## Cross-cutting patterns
 
