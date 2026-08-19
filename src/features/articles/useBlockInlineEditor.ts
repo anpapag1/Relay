@@ -282,7 +282,7 @@ export function useBlockInlineEditor({
       }
 
       const prevNeedle = stripEditingArtifacts(prev.outerHTML);
-      const prevIndex = singleOccurrenceIndex(container, prev);
+      const prevIndex = strippedOccurrenceIndex(container, prev, prevNeedle);
       prev.textContent = (prev.textContent ?? '') + (block.textContent ?? '');
       block.remove();
       session.editHtml = replaceNth(session.editHtml, session.needle, session.occIndex, '');

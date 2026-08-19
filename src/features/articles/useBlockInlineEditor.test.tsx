@@ -487,4 +487,34 @@ describe('useBlockInlineEditor', () => {
 
     expect(committed).toBe('<p>x</p><p>x</p>');
   });
+
+  it('keeps the committed string in sync after Enter then Backspace over duplicated markup', async () => {
+    await mount('<p>y</p><p>y</p><p>yz</p>');
+    const body = getBody();
+    const third = body.querySelectorAll('p')[2]!;
+
+    await beginEditing(third);
+    placeCaret(third.firstChild!, 1);
+
+    await act(async () => {
+      third.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+
+    const newBlock = body.querySelectorAll('p')[3]!;
+    placeCaret(newBlock.firstChild!, 0);
+
+    await act(async () => {
+      newBlock.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
+    });
+
+    const ps = body.querySelectorAll('p');
+    expect(ps).toHaveLength(3);
+    expect(ps[0]!.textContent).toBe('y');
+    expect(ps[1]!.textContent).toBe('y');
+    expect(ps[2]!.textContent).toBe('yz');
+
+    await exitEditing(body);
+
+    expect(committed).toBe('<p>y</p><p>y</p><p>yz</p>');
+  });
 });
