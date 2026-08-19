@@ -8,6 +8,10 @@ export interface ArticleOverride {
   excluded?: boolean;
   reason?: string;
   editedHtml?: string;
+  /** User-edited title; falls back to the parsed title when unset. */
+  title?: string;
+  /** User-edited publish date; falls back to the parsed date when unset. */
+  postDate?: string;
   /** Whether the exclusion was automatically decided at parse time (duplicate slug or empty content). */
   auto?: boolean;
   /** Manually flagged by the user as needing a human look, independent of

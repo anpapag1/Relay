@@ -127,7 +127,9 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
           isDirty={isDirty}
           onSave={handleSave}
           onClose={requestClose}
-          onEdit={() => handleSelectPreviewMode('edit')}
+          onSaveMetadata={(metadata) => {
+            dispatch({ type: 'UPDATE_ARTICLE_METADATA', articleId: article.id, ...metadata });
+          }}
           onToggleInclude={handleToggleInclude}
           onToggleManualReview={handleToggleManualReview}
           scrollRef={sidebarScrollRef}

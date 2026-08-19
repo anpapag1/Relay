@@ -316,6 +316,21 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
         },
       };
     }
+    case 'UPDATE_ARTICLE_METADATA': {
+      const prev = state.articles[action.articleId] ?? {};
+      const next = { ...prev };
+      if (action.title) next.title = action.title;
+      else delete next.title;
+      if (action.postDate) next.postDate = action.postDate;
+      else delete next.postDate;
+      return {
+        ...state,
+        articles: {
+          ...state.articles,
+          [action.articleId]: next,
+        },
+      };
+    }
     case 'SET_MEDIA_RESOLUTIONS':
       return {
         ...state,

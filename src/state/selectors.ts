@@ -140,6 +140,8 @@ export function getDerivedArticles(state: AppState): DerivedArticle[] {
       isExcluded: status.startsWith('excluded'),
       isManualReview: override?.manualReview ?? false,
       editedHtml: override?.editedHtml,
+      title: override?.title ?? art.title,
+      postDate: override?.postDate ?? art.postDate,
       destinationTerms: resolveArticleTerms(art.terms, state.mappings, newTables),
     };
   });
@@ -364,6 +366,10 @@ export function getMediaStats(
 export function hasSessionUnsavedWork(state: AppState): boolean {
   return Object.values(state.articles).some(
     (override) =>
-      (override.excluded !== undefined && override.auto !== true) || override.manualReview === true || override.editedHtml !== undefined,
+      (override.excluded !== undefined && override.auto !== true) ||
+      override.manualReview === true ||
+      override.editedHtml !== undefined ||
+      override.title !== undefined ||
+      override.postDate !== undefined,
   );
 }

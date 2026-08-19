@@ -111,6 +111,36 @@ describe('runBuild', () => {
     expect(parsed.ok && parsed.articles[0].contentHtml).toBe('<!-- wp:paragraph --><p>Hand-edited</p><!-- /wp:paragraph -->');
   });
 
+  it('applies title/postDate overrides in the exported WXR, falling back to parsed values otherwise', async () => {
+    const articles: BuildArticleInput[] = [
+      { article: makeArticle({ postId: 1, title: 'Original Title', postDate: '2026-01-01 00:00:00' }), excluded: false, title: 'Edited Title', postDate: '2026-02-02 02:02:02' },
+      { article: makeArticle({ postId: 2, title: 'Kept Title', postDate: '2026-03-03 03:03:03' }), excluded: false },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+
+    expect(result.articles[0].title).toBe('Edited Title');
+    expect(result.articles[1].title).toBe('Kept Title');
+
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.articles).toHaveLength(2);
+    expect(parsed.articles[0].title).toBe('Edited Title');
+    expect(parsed.articles[0].postDate).toBe('2026-02-02 02:02:02');
+    expect(parsed.articles[1].title).toBe('Kept Title');
+    expect(parsed.articles[1].postDate).toBe('2026-03-03 03:03:03');
+  });
+
   it('marks an article "review" when its reader produces a warning', async () => {
     const articles: BuildArticleInput[] = [
       { article: makeArticle({ contentHtml: '<canvas width="10" height="10"></canvas>' }), excluded: false },

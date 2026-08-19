@@ -101,7 +101,7 @@ AppState
 ├─ oldTables: old-site term tables from the source
 ├─ mappings:  Record<oldTermId, TermMapping>   // origin: 'suggested' | 'user'
 ├─ settings:  ConversionSettings
-├─ articles:  Record<articleId, ArticleOverride>  // { excluded, editedHtml, manualReview }
+├─ articles:  Record<articleId, ArticleOverride>  // { excluded, editedHtml, title, postDate, manualReview }
 ├─ media:     { resolved: Record<srcUrl, MediaResolution>, probing: string[] }
 ├─ build:     { running, progress, log, cancelled, done, error, report, history }
 ├─ builderId / builderConfidence:   // detected page builder + match %
@@ -122,6 +122,11 @@ Two deliberate choices:
   `editedHtml` bypasses the reader/writer entirely and its stored markup is
   emitted as-is — that is what makes "Revert" meaningful (re-run conversion,
   discard the edit).
+- **`title` / `postDate` hold optional metadata overrides** set from the
+  sidebar's "Edit metadata" form. During a build and in derived articles the
+  override wins over the parsed value; clearing the field drops the override
+  and falls back to the source. The exported author is not overridable — every
+  post is attributed to the fixed `migration` login (see `runBuild.ts`).
 
 The per-site profile store (`state/siteProfiles.ts`) keeps one record per
 old-site domain under the `relay_site_v1_<domain>` localStorage key. Each

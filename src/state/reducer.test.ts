@@ -334,6 +334,19 @@ describe('appReducer', () => {
     expect(reverted.articles[1]?.editedHtml).toBeUndefined();
   });
 
+  it('handles UPDATE_ARTICLE_METADATA and drops empty overrides', () => {
+    const updated = appReducer(initialState, {
+      type: 'UPDATE_ARTICLE_METADATA',
+      articleId: 1,
+      title: 'Edited Title',
+      postDate: '2026-05-05 05:05:05',
+    });
+    expect(updated.articles[1]).toEqual({ title: 'Edited Title', postDate: '2026-05-05 05:05:05' });
+
+    const cleared = appReducer(updated, { type: 'UPDATE_ARTICLE_METADATA', articleId: 1, title: '', postDate: '' });
+    expect(cleared.articles[1]).toEqual({});
+  });
+
   it('handles build lifecycle actions', () => {
     const start = appReducer(initialState, { type: 'START_BUILD' });
     expect(start.build.running).toBe(true);

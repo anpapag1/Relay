@@ -132,6 +132,19 @@ describe('selectors', () => {
     expect(excluded?.isExcluded).toBe(true);
   });
 
+  it('applies title/postDate metadata overrides to derived articles', () => {
+    let s = getTestState();
+    s = appReducer(s, { type: 'UPDATE_ARTICLE_METADATA', articleId: 101, title: 'Renamed Title', postDate: '2027-01-01 00:00:00' });
+    const derived = getDerivedArticles(s);
+
+    const overridden = derived.find((a) => a.id === 101);
+    expect(overridden?.title).toBe('Renamed Title');
+    expect(overridden?.postDate).toBe('2027-01-01 00:00:00');
+
+    const untouched = derived.find((a) => a.id === 102);
+    expect(untouched?.title).toBe('Review Article');
+  });
+
   it('does not flip status to "review" for a reader note that is purely informational (e.g. the known-empty wpbakery sidebar-anchor)', () => {
     const result: ParseResult = {
       ok: true,
@@ -501,6 +514,15 @@ describe('hasSessionUnsavedWork', () => {
     let s = loadedState();
     s = appReducer(s, { type: 'SAVE_ARTICLE_EDIT', articleId: 103, editedHtml: '<p>v2</p>' });
     expect(hasSessionUnsavedWork(s)).toBe(true);
+  });
+
+  it('is true after a metadata override, and false once cleared', () => {
+    let s = loadedState();
+    s = appReducer(s, { type: 'UPDATE_ARTICLE_METADATA', articleId: 101, title: 'Renamed' });
+    expect(hasSessionUnsavedWork(s)).toBe(true);
+
+    s = appReducer(s, { type: 'UPDATE_ARTICLE_METADATA', articleId: 101, title: '', postDate: '' });
+    expect(hasSessionUnsavedWork(s)).toBe(false);
   });
 
   it('is false after reverting the only saved edit', () => {

@@ -71,6 +71,10 @@ export interface BuildArticleInput {
    * set, the reader/writer are bypassed entirely and this is emitted
    * as-is (design spec §4). */
   editedHtml?: string;
+  /** User-edited metadata overrides from the article drawer; the parsed
+   * values fall back when unset. */
+  title?: string;
+  postDate?: string;
 }
 
 export type ArticleBuildStatus = 'ready' | 'review' | 'skipped';
@@ -111,18 +115,19 @@ function yieldToEventLoop(): Promise<void> {
 }
 
 function toExportArticle(
-  article: ParsedArticle,
+  input: BuildArticleInput,
   contentHtml: string,
   terms: ExportArticle['terms'],
   featuredAttachmentUrl: string | null,
   mediaAttachmentUrls: string[],
   postStatus: ExportArticle['postStatus'],
 ): ExportArticle {
+  const article = input.article;
   return {
     postId: article.postId ?? 0,
-    title: article.title,
+    title: input.title ?? article.title,
     link: article.link,
-    postDate: article.postDate,
+    postDate: input.postDate ?? article.postDate,
     postName: article.postName || undefined,
     authorLogin: MIGRATION_AUTHOR_LOGIN,
     contentHtml,
@@ -196,10 +201,10 @@ function buildOneArticle(
   if (input.editedHtml != null) {
     const warnings = termWarnings;
     return {
-      exportArticle: toExportArticle(article, input.editedHtml, terms, featuredAttachmentUrl, [], postStatusFor(warnings)),
+      exportArticle: toExportArticle(input, input.editedHtml, terms, featuredAttachmentUrl, [], postStatusFor(warnings)),
       result: {
         postId: article.postId,
-        title: article.title,
+        title: input.title ?? article.title,
         status: warnings.length > 0 ? 'review' : 'ready',
         warnings,
       },
@@ -221,7 +226,7 @@ function buildOneArticle(
       exportArticle: null,
       result: {
         postId: article.postId,
-        title: article.title,
+        title: input.title ?? article.title,
         status: 'skipped',
         warnings: ['Skipped: no content or media survived conversion.'],
       },
@@ -229,10 +234,10 @@ function buildOneArticle(
   }
 
   return {
-    exportArticle: toExportArticle(article, contentHtml, terms, featuredAttachmentUrl, mediaAttachmentUrls, postStatusFor(warnings)),
+    exportArticle: toExportArticle(input, contentHtml, terms, featuredAttachmentUrl, mediaAttachmentUrls, postStatusFor(warnings)),
     result: {
       postId: article.postId,
-      title: article.title,
+      title: input.title ?? article.title,
       status: warnings.length > 0 ? 'review' : 'ready',
       warnings,
     },
@@ -292,7 +297,7 @@ export async function runBuild(options: RunBuildOptions): Promise<RunBuildResult
     } catch (err) {
       results.push({
         postId: resolvedArticle.input.article.postId,
-        title: resolvedArticle.input.article.title,
+        title: resolvedArticle.input.title ?? resolvedArticle.input.article.title,
         status: 'review',
         warnings: [`Failed to convert this article: ${err instanceof Error ? err.message : String(err)}`],
       });

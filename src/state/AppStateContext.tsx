@@ -110,6 +110,8 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({
           article: art,
           excluded: override?.excluded ?? false,
           editedHtml: override?.editedHtml,
+          title: override?.title,
+          postDate: override?.postDate,
         };
       });
       const builderId = state.builderId || 'plainHtml';

@@ -1,5 +1,5 @@
 // src/features/articles/ArticleSidebar.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import type { DerivedArticle } from '../../state/types';
 import { Badge } from '../../ui/Badge';
 import { termSourceDomain } from '../../core/build/resolveTerms';
@@ -11,7 +11,7 @@ export interface ArticleSidebarProps {
   isDirty: boolean;
   onSave: () => void;
   onClose: () => void;
-  onEdit: () => void;
+  onSaveMetadata: (metadata: { title: string; postDate: string }) => void;
   onToggleInclude: () => void;
   onToggleManualReview: () => void;
   scrollRef: React.RefObject<HTMLDivElement>;
@@ -24,12 +24,32 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
   isDirty,
   onSave,
   onClose,
-  onEdit,
+  onSaveMetadata,
   onToggleInclude,
   onToggleManualReview,
   scrollRef,
 }) => {
   const isExcluded = article.status.startsWith('excluded');
+  const [editing, setEditing] = useState(false);
+  const [draftTitle, setDraftTitle] = useState('');
+  const [draftPostDate, setDraftPostDate] = useState('');
+
+  const startEditing = () => {
+    setDraftTitle(article.title || '');
+    setDraftPostDate(article.postDate || '');
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setDraftTitle('');
+    setDraftPostDate('');
+  };
+
+  const saveMetadata = () => {
+    onSaveMetadata({ title: draftTitle.trim(), postDate: draftPostDate.trim() });
+    setEditing(false);
+  };
 
   return (
     <div
@@ -88,14 +108,35 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
           <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em', color: 'oklch(55% 0.01 250)' }}>
             Article metadata
           </div>
-          <button
-            type="button"
-            onClick={onEdit}
-            className="btn btn-secondary"
-            style={{ padding: '4px 10px', fontSize: '12px', fontWeight: 600 }}
-          >
-            Edit article
-          </button>
+          {editing ? (
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={saveMetadata}
+                className="btn btn-primary"
+                style={{ padding: '4px 10px', fontSize: '12px', fontWeight: 600 }}
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={cancelEditing}
+                className="btn btn-secondary"
+                style={{ padding: '4px 10px', fontSize: '12px', fontWeight: 600 }}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={startEditing}
+              className="btn btn-secondary"
+              style={{ padding: '4px 10px', fontSize: '12px', fontWeight: 600 }}
+            >
+              Edit metadata
+            </button>
+          )}
         </div>
         {featuredImageUrl ? (
           <img
@@ -123,10 +164,32 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
           </div>
         )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
+          {editing && (
+            <div style={{ gridColumn: '1 / -1' }}>
+              <span style={{ color: 'oklch(55% 0.01 250)' }}>Title</span>
+              <br />
+              <input
+                type="text"
+                value={draftTitle}
+                onChange={(e) => setDraftTitle(e.target.value)}
+                style={{ width: '100%', marginTop: '4px', padding: '6px 8px', borderRadius: '6px', border: '1px solid oklch(85% 0.005 250)', fontSize: '13px' }}
+              />
+            </div>
+          )}
           <div>
             <span style={{ color: 'oklch(55% 0.01 250)' }}>Published</span>
             <br />
-            <b>{article.postDate || '—'}</b>
+            {editing ? (
+              <input
+                type="text"
+                value={draftPostDate}
+                onChange={(e) => setDraftPostDate(e.target.value)}
+                placeholder="YYYY-MM-DD HH:MM:SS"
+                style={{ width: '100%', marginTop: '4px', padding: '6px 8px', borderRadius: '6px', border: '1px solid oklch(85% 0.005 250)', fontSize: '12px', fontFamily: 'monospace' }}
+              />
+            ) : (
+              <b>{article.postDate || '—'}</b>
+            )}
           </div>
           <div>
             <span style={{ color: 'oklch(55% 0.01 250)' }}>New slug</span>

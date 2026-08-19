@@ -113,8 +113,11 @@ build uses — so what you see is what exports.
   dirty), `I` toggle include, `R` toggle review, `Escape` close. Editable
   fields are skipped so typing in the HTML editor isn't hijacked.
 - **`ArticleSidebar.tsx`** — article metadata, include/flag toggles, and a
-  save/close footer. An "Edit article" button in the metadata panel switches
-  the preview to Edit mode.
+  save/close footer. An "Edit metadata" button in the metadata panel turns the
+  title and published-date fields into inline inputs; saving dispatches
+  `UPDATE_ARTICLE_METADATA`, which stores title/postDate overrides on the
+  article (used by the build's export and the derived articles). The preview's
+  Edit mode is a separate toggle on the preview pane itself.
 - **`useFeaturedImage.ts`** — featured-image resolution for the drawer.
 - **`DiscardConfirmDialog.tsx`** — the unsaved-changes modal.
 
