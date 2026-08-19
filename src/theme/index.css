@@ -545,3 +545,28 @@ a:hover {
   text-align: center;
   padding: 40px 0;
 }
+
+.wp-preview-body [data-editable] {
+  cursor: text;
+  outline: none;
+}
+.wp-preview-body [data-editable]:hover {
+  box-shadow: 0 0 0 1px var(--relay-border);
+  border-radius: 2px;
+}
+.wp-preview-body [data-editable].is-editing {
+  box-shadow: 0 0 0 2px var(--relay-accent);
+}
+.wp-preview-body[data-editing] + .wp-preview-editing-hint {
+  display: block;
+}
+.wp-preview-editing-hint {
+  display: none;
+  margin: 12px 0 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--relay-accent-soft);
+  color: var(--relay-accent-hover);
+  font-size: 12px;
+  font-weight: 600;
+}

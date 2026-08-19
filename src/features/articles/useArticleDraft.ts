@@ -9,6 +9,7 @@ export interface UseArticleDraftResult {
   handleTextChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleSave: () => void;
   handleRevert: () => void;
+  setDraft: (html: string) => void;
 }
 
 export function useArticleDraft(
@@ -31,9 +32,13 @@ export function useArticleDraft(
     return () => reportDraftDirty(false);
   }, [isDirty]);
 
+  const setDraft = (html: string) => {
+    setDraftHtml(html);
+    setIsDirty(html !== (article?.editedHtml || article?.contentHtml || ''));
+  };
+
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setDraftHtml(e.target.value);
-    setIsDirty(e.target.value !== (article?.editedHtml || article?.contentHtml || ''));
+    setDraft(e.target.value);
   };
 
   const handleSave = () => {
@@ -48,5 +53,5 @@ export function useArticleDraft(
     setIsDirty(false);
   };
 
-  return { draftHtml, isDirty, handleTextChange, handleSave, handleRevert };
+  return { draftHtml, isDirty, handleTextChange, handleSave, handleRevert, setDraft };
 }

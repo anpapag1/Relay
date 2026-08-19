@@ -109,7 +109,24 @@ build uses — so what you see is what exports.
   site's WordPress look via `.wp-preview` rules in `src/theme/index.css`).
   Navigation pills (Previous / Next) sit in the drawer's top bar; scroll
   position resets automatically when the article changes
-  (`useScrollManagement.ts`).
+  (`useScrollManagement.ts`). The rendered **after** view also supports inline
+  block editing (via `useBlockInlineEditor.ts`): click a paragraph, heading,
+  list item, or quote text to edit it in place — Enter splits the block at the
+  caret (a heading split makes the second half a new paragraph, a list item
+  splits within the same list, a quote paragraph within the same quote);
+  Backspace at the very start of a block joins it into the previous block or,
+  when empty, deletes it (deleting the last list item or quote paragraph
+  removes the whole list/quote); `Ctrl/Cmd+Enter` or `Escape` finishes and
+  commits the change back into the draft as a manual override. **Before** stays
+  read-only and the textarea Edit mode is unchanged.
+- **`blockEditing.ts`** — shared helpers for inline block editing: which
+  elements are editable (`p`, `h2`–`h6`, `li`, `blockquote > p`), classifying a
+  block by kind, caret-position checks, and the nth-occurrence string splicing
+  (`replaceNth`) that writes edits back into the draft HTML.
+- **`useBlockInlineEditor.ts`** — the hook wiring inline block editing into the
+  after-mode preview: click-to-edit sessions tracked without React re-renders
+  (caret-safe), Enter/Backspace split-and-join handling, and commit on blur /
+  `Ctrl+Cmd+Enter` / `Escape` back into the draft.
 - **`useArticleDraft.ts`** — edit-buffer handling for the drawer.
 - **`useDrawerNavigationGuard.ts`** — confirm before discarding unsaved edits.
 - **`useDrawerShortcuts.ts`** — drawer keyboard shortcuts on top of the

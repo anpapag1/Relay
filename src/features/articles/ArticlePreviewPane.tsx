@@ -1,6 +1,7 @@
 // src/features/articles/ArticlePreviewPane.tsx
-import React from 'react';
+import React, { useRef } from 'react';
 import type { DerivedArticle } from '../../state/types';
+import { useBlockInlineEditor } from './useBlockInlineEditor';
 
 export interface ArticlePreviewPaneProps {
   article: DerivedArticle;
@@ -14,6 +15,7 @@ export interface ArticlePreviewPaneProps {
   onNext: () => void;
   scrollRef: React.RefObject<HTMLDivElement>;
   onSelectPreviewMode: (mode: 'before' | 'after' | 'edit') => void;
+  onInlineCommit: (html: string) => void;
 }
 
 export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
@@ -28,10 +30,20 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
   onNext,
   scrollRef,
   onSelectPreviewMode,
+  onInlineCommit,
 }) => {
   const showBefore = previewMode === 'before';
   const showEdit = previewMode === 'edit';
   const previewHtml = showBefore ? article.contentHtml : draftHtml;
+
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const inlineEnabled = !showEdit && !showBefore && previewHtml.trim() !== '';
+  useBlockInlineEditor({
+    containerRef: bodyRef,
+    enabled: inlineEnabled,
+    draftHtml,
+    onCommit: onInlineCommit,
+  });
 
   return (
     <div
@@ -299,7 +311,10 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
               <div className="wp-preview-empty">Nothing to preview yet</div>
             )
           ) : previewHtml.trim() ? (
-            <div className="wp-preview-body" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+            <>
+              <div ref={bodyRef} className="wp-preview-body" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+              <div className="wp-preview-editing-hint">Editing… Press Ctrl+Enter to finish</div>
+            </>
           ) : (
             <div className="wp-preview-empty">Nothing to preview yet</div>
           )}

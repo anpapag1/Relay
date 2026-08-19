@@ -95,6 +95,28 @@ describe('useArticleDraft', () => {
     expect(dispatched).toEqual([{ type: 'REVERT_ARTICLE_EDIT', articleId: 1 }]);
   });
 
+  it('setDraft updates draftHtml and marks dirty when the html diverges from the saved content', async () => {
+    await act(async () => {
+      root.render(<Harness article={makeArticle({ editedHtml: '<p>orig</p>' })} previewHtml="<p>orig</p>" />);
+    });
+    await act(async () => {
+      lastResult!.setDraft('<p>changed</p>');
+    });
+    expect(lastResult?.draftHtml).toBe('<p>changed</p>');
+    expect(lastResult?.isDirty).toBe(true);
+  });
+
+  it('setDraft marks the draft clean when the html equals the saved content', async () => {
+    await act(async () => {
+      root.render(<Harness article={makeArticle({ editedHtml: '<p>same</p>' })} previewHtml="<p>same</p>" />);
+    });
+    await act(async () => {
+      lastResult!.setDraft('<p>same</p>');
+    });
+    expect(lastResult?.draftHtml).toBe('<p>same</p>');
+    expect(lastResult?.isDirty).toBe(false);
+  });
+
   it('reports draft dirtiness to the unsaved-changes bridge and clears it on unmount', async () => {
     await act(async () => {
       root.render(<Harness article={makeArticle()} previewHtml="<p>converted</p>" />);

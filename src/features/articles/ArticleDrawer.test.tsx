@@ -166,6 +166,62 @@ describe('ArticleDrawer before/after preview toggle', () => {
     await act(async () => { beforeBtn.click(); });
     expect(container.textContent).toContain('Nothing to preview yet');
   });
+
+  it('marks editable blocks in "After" mode but keeps them read-only until clicked', async () => {
+    const article = makeArticle();
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false}>
+          <ArticleDrawer article={article} onClose={vi.fn()} onPrev={vi.fn()} onNext={vi.fn()} hasPrev={false} hasNext={false} />
+        </AppStateProvider>,
+      );
+    });
+    const paragraph = container.querySelector('.wp-preview-body p');
+    expect(paragraph).not.toBeNull();
+    expect(paragraph?.getAttribute('data-editable')).toBe('true');
+    expect(paragraph?.getAttribute('contenteditable')).toBeNull();
+  });
+
+  it('shows the editing hint only while the body carries data-editing', async () => {
+    const article = makeArticle();
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false}>
+          <ArticleDrawer article={article} onClose={vi.fn()} onPrev={vi.fn()} onNext={vi.fn()} hasPrev={false} hasNext={false} />
+        </AppStateProvider>,
+      );
+    });
+
+    // jsdom never re-cascades stylesheet rules when attributes change after
+    // the initial computed-style evaluation, so besides checking the base
+    // rule computes to display:none, assert visibility through matches() on
+    // the exact selector index.css uses to show the hint.
+    const style = document.createElement('style');
+    style.textContent = '.wp-preview-editing-hint { display: none; }';
+    document.head.appendChild(style);
+
+    const body = container.querySelector('.wp-preview-body') as HTMLDivElement;
+    const hint = container.querySelector('.wp-preview-editing-hint') as HTMLDivElement;
+    expect(hint).not.toBeNull();
+    expect(hint.textContent).toBe('Editing… Press Ctrl+Enter to finish');
+    expect(body.nextElementSibling).toBe(hint);
+    expect(getComputedStyle(hint).display).toBe('none');
+
+    const visibilitySelector = '.wp-preview-body[data-editing] + .wp-preview-editing-hint';
+    expect(hint.matches(visibilitySelector)).toBe(false);
+
+    await act(async () => {
+      body.dataset.editing = 'true';
+    });
+    expect(hint.matches(visibilitySelector)).toBe(true);
+
+    await act(async () => {
+      delete body.dataset.editing;
+    });
+    expect(hint.matches(visibilitySelector)).toBe(false);
+
+    document.head.removeChild(style);
+  });
 });
 
 describe('ArticleDrawer navigation buttons', () => {

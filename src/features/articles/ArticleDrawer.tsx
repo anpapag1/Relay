@@ -38,7 +38,7 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [article, state.settings, state.builderId]);
 
-  const { draftHtml, isDirty, handleTextChange, handleSave, handleRevert } = useArticleDraft(
+  const { draftHtml, isDirty, handleTextChange, handleSave, handleRevert, setDraft } = useArticleDraft(
     article,
     converted.html,
     dispatch,
@@ -118,6 +118,7 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
           onNext={requestNext}
           scrollRef={mainScrollRef}
           onSelectPreviewMode={handleSelectPreviewMode}
+          onInlineCommit={setDraft}
         />
 
         <ArticleSidebar
