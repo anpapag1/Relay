@@ -30,6 +30,15 @@ export function caretOffsetIn(el: Element): number {
   return pre.toString().length;
 }
 
+export function collapsedAtStart(el: Element): boolean {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || !sel.anchorNode) return false;
+  const range = sel.getRangeAt(0);
+  if (!range.collapsed) return false;
+  if (!el.contains(sel.anchorNode)) return false;
+  return caretOffsetIn(el) === 0;
+}
+
 export function singleOccurrenceIndex(root: Element, blockEl: Element, needle?: string): number {
   const target = needle ?? blockEl.outerHTML;
   let n = 0;

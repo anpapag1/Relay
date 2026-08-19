@@ -1,6 +1,12 @@
 /* global MouseEvent, FocusEvent */
 import { useEffect, useRef, type RefObject } from 'react';
-import { EDITABLE_SELECTOR, singleOccurrenceIndex, replaceNth } from './blockEditing';
+import {
+  EDITABLE_SELECTOR,
+  caretOffsetIn,
+  classifyBlock,
+  singleOccurrenceIndex,
+  replaceNth,
+} from './blockEditing';
 
 export interface UseBlockInlineEditorOptions {
   containerRef: RefObject<HTMLElement | null>;
@@ -130,12 +136,68 @@ export function useBlockInlineEditor({
       commit();
     };
 
+    // Enter splits the block at the caret: the first half stays in place and
+    // the second half moves into a fresh sibling element chosen by block kind
+    // (heading → new paragraph, li → new li in the same ul, quote-p → new p in
+    // the same blockquote). The replacement is spliced into editHtml before
+    // the editing affordances are reshuffled, so the stripped needle still
+    // matches what the string store holds.
+    const handleEnter = () => {
+      const session = sessionRef.current;
+      if (!session) return;
+      const block = session.block;
+      const kind = classifyBlock(block);
+      if (!kind) return;
+      const offset = caretOffsetIn(block);
+      const text = block.textContent ?? '';
+      const second = text.slice(offset);
+      block.textContent = text.slice(0, offset);
+
+      const newEl = document.createElement(kind === 'li' ? 'li' : 'p');
+      newEl.textContent = second;
+      block.insertAdjacentElement('afterend', newEl);
+
+      session.editHtml = replaceNth(
+        session.editHtml,
+        session.needle,
+        session.occIndex,
+        stripEditingArtifacts(block.outerHTML) + stripEditingArtifacts(newEl.outerHTML),
+      );
+
+      block.contentEditable = 'false';
+      block.setAttribute('contenteditable', 'false');
+      block.classList.remove('is-editing');
+
+      newEl.dataset.editable = 'true';
+      newEl.contentEditable = 'true';
+      newEl.setAttribute('contenteditable', 'true');
+      newEl.classList.add('is-editing');
+
+      session.block = newEl;
+      session.needle = stripEditingArtifacts(newEl.outerHTML);
+      session.occIndex = singleOccurrenceIndex(container, newEl);
+
+      const range = document.createRange();
+      if (newEl.firstChild) range.setStart(newEl.firstChild, 0);
+      else range.setStart(newEl, 0);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+      newEl.focus();
+    };
+
     const handleKeydown = (e: KeyboardEvent) => {
       const session = sessionRef.current;
       if (!session) return;
       if ((e.key === 'Enter' && (e.ctrlKey || e.metaKey)) || e.key === 'Escape') {
         e.preventDefault();
         commit();
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleEnter();
       }
     };
 
@@ -145,6 +207,7 @@ export function useBlockInlineEditor({
     container.addEventListener('keydown', handleKeydown);
 
     return () => {
+      pendingIndexRef.current = null;
       container.removeEventListener('mousedown', handleMousedown, true);
       container.removeEventListener('input', handleInput, true);
       container.removeEventListener('blur', handleBlur, true);

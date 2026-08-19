@@ -5,6 +5,7 @@ import {
   singleOccurrenceIndex,
   elementOccurrenceIndex,
   replaceNth,
+  collapsedAtStart,
 } from './blockEditing';
 
 let body: HTMLDivElement;
@@ -76,5 +77,35 @@ describe('replaceNth', () => {
 
   it('returns the input unchanged when the needle occurs fewer than n+1 times', () => {
     expect(replaceNth('a X a', 'X', 3, 'Y')).toBe('a X a');
+  });
+});
+
+describe('collapsedAtStart', () => {
+  function withCaret(offset: number) {
+    const p = body.querySelector('p')!;
+    const range = document.createRange();
+    range.setStart(p.firstChild!, offset);
+    range.collapse(true);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    return p;
+  }
+
+  it('is true when the caret is collapsed at offset 0 in the first text node', () => {
+    editableHTML('<p>Hello</p>');
+    expect(collapsedAtStart(withCaret(0))).toBe(true);
+  });
+
+  it('is false when the caret is elsewhere in the element', () => {
+    editableHTML('<p>Hello</p>');
+    expect(collapsedAtStart(withCaret(2))).toBe(false);
+  });
+
+  it('is false when there is no selection', () => {
+    editableHTML('<p>Hello</p>');
+    const p = body.querySelector('p')!;
+    window.getSelection()?.removeAllRanges();
+    expect(collapsedAtStart(p)).toBe(false);
   });
 });
