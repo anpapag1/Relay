@@ -139,11 +139,13 @@ describe('fetchSite', () => {
         return { ok: true, status: 200, headers: { get: () => null }, text: async () => JSON.stringify([
           { id: 13, name: 'Αθλητισμός', slug: 'athlitismos' },
           { id: 75, name: 'Εκδηλώσεις', slug: 'ekdiloseis' },
+          { id: 99, name: 'Αχρησιμοποίητο', slug: 'unused' },
         ]) };
       }
       if (url.pathname.endsWith('/tags')) {
         return { ok: true, status: 200, headers: { get: () => null }, text: async () => JSON.stringify([
           { id: 55, name: 'Ανακοίνωση', slug: 'anakoinosi' },
+          { id: 56, name: 'Αχρησιμοποίητο Tag', slug: 'unused-tag' },
         ]) };
       }
       return {
@@ -167,7 +169,11 @@ describe('fetchSite', () => {
     expect(res.result.taxonomies.category).toEqual([
       { nicename: 'athlitismos', name: 'Αθλητισμός', count: 2 },
       { nicename: 'ekdiloseis', name: 'Εκδηλώσεις', count: 1 },
+      { nicename: 'unused', name: 'Αχρησιμοποίητο', count: 0 },
     ]);
-    expect(res.result.taxonomies.post_tag).toEqual([{ nicename: 'anakoinosi', name: 'Ανακοίνωση', count: 1 }]);
+    expect(res.result.taxonomies.post_tag).toEqual([
+      { nicename: 'anakoinosi', name: 'Ανακοίνωση', count: 1 },
+      { nicename: 'unused-tag', name: 'Αχρησιμοποίητο Tag', count: 0 },
+    ]);
   });
 });

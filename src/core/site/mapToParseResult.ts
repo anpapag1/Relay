@@ -75,7 +75,35 @@ function aggregateTaxonomies(articles: SiteArticle[]): Record<string, TaxonomyTe
   return Object.fromEntries(Array.from(byDomain.entries()).map(([domain, map]) => [domain, Array.from(map.values())]));
 }
 
-export function mapToParseResult(data: { baseUrl: string; articles: SiteArticle[] }): ParseResult {
+/** Merges the fetched full taxonomy lists (every category/tag on the source
+ * site, not just ones used by the imported articles) with the article-usage
+ * counts, so unused terms still surface for mapping. Terms with no article
+ * usage carry `count: 0`. */
+function mergeTaxonomyMaps(
+  aggregated: Record<string, TaxonomyTermSummary[]>,
+  taxonomyMaps: TaxonomyMaps,
+): Record<string, TaxonomyTermSummary[]> {
+  const result: Record<string, TaxonomyTermSummary[]> = {};
+  for (const { domain } of TAXONOMIES) {
+    const full = taxonomyMaps[domain];
+    if (!full) continue;
+    const byNicename = new Map<string, TaxonomyTermSummary>();
+    for (const term of full.values()) {
+      byNicename.set(term.nicename, { nicename: term.nicename, name: term.name, count: 0 });
+    }
+    for (const term of aggregated[domain] ?? []) {
+      byNicename.set(term.nicename, { ...term });
+    }
+    result[domain] = Array.from(byNicename.values());
+  }
+  for (const [domain, terms] of Object.entries(aggregated)) {
+    if (result[domain]) continue;
+    result[domain] = terms;
+  }
+  return result;
+}
+
+export function mapToParseResult(data: { baseUrl: string; articles: SiteArticle[]; taxonomyMaps?: TaxonomyMaps }): ParseResult {
   const authors = Array.from(new Set(data.articles.map((a) => a.creator).filter(Boolean)));
   return {
     ok: true,
@@ -97,7 +125,7 @@ export function mapToParseResult(data: { baseUrl: string; articles: SiteArticle[
       featuredImageUrl: a.featuredImageUrl,
     })),
     attachments: [],
-    taxonomies: aggregateTaxonomies(data.articles),
+    taxonomies: data.taxonomyMaps ? mergeTaxonomyMaps(aggregateTaxonomies(data.articles), data.taxonomyMaps) : aggregateTaxonomies(data.articles),
     authors,
     statusCounts: data.articles.reduce<Record<string, number>>((acc, a) => {
       acc[a.status] = (acc[a.status] ?? 0) + 1;

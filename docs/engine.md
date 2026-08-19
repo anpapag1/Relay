@@ -62,7 +62,10 @@ produces the same `ParseResult`.
   `featured_media` id is carried through as `_thumbnail_id` postmeta even
   when the media endpoint withheld its URL (e.g. a 401-private attachment),
   so the standard featured-image resolution (stage-1 attachment match, then
-  og:image scrape) still engages.
+  og:image scrape) still engages. On the REST path the fetched taxonomy maps
+  are merged into the result's `taxonomies`, so every category/tag on the
+  source site appears for mapping — including ones no imported article uses
+  (count 0) — not just the terms that happen to be attached to fetched posts.
 - **`cleanSiteContent.ts`** — strips junk from live-fetched content.
 - **`decodeHtmlEntities`** lives in `core/utils/` and is shared by the WXR
   parser, the feed importer, and the REST mapper — some source sites store

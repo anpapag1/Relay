@@ -139,6 +139,36 @@ describe('mapToParseResult', () => {
       { nicename: 'Εκδηλώσεις', name: 'Εκδηλώσεις', count: 1 },
     ]);
   });
+
+  it('includes full fetched taxonomy lists when taxonomyMaps are given, with zero-count unused terms', () => {
+    const result = mapToParseResult({
+      baseUrl: 'https://site.example',
+      articles: [
+        restPostToSiteArticle(
+          { id: 1, date: '2026-08-01T09:00:00', slug: 'a', link: 'https://site.example/a/', title: { rendered: 'A' }, content: { rendered: '' }, featured_media: 0, status: 'publish', categories: [1], tags: [] },
+          undefined,
+          {
+            category: new Map([
+              [1, { nicename: 'dimos', name: 'Δήμος' }],
+              [2, { nicename: 'ekdiloseis', name: 'Εκδηλώσεις' }],
+            ]),
+          },
+        ),
+      ],
+      taxonomyMaps: {
+        category: new Map([
+          [1, { nicename: 'dimos', name: 'Δήμος' }],
+          [2, { nicename: 'ekdiloseis', name: 'Εκδηλώσεις' }],
+        ]),
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.taxonomies.category).toEqual([
+      { nicename: 'dimos', name: 'Δήμος', count: 1 },
+      { nicename: 'ekdiloseis', name: 'Εκδηλώσεις', count: 0 },
+    ]);
+  });
 });
 
 describe('mapToParseResult statuses', () => {

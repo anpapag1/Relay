@@ -26,3 +26,4 @@
 ## Fix
 
 - [x] **Fix edit metadata button** — done: the metadata panel's "Edit article" button now edits the article's metadata (title + published date) inline instead of switching the preview to Edit mode. `UPDATE_ARTICLE_METADATA` stores the overrides; `runBuild`'s `toExportArticle` and the derived articles both honour them. Scope decision: author editing was left out — the export attributes every post to the fixed `migration` author (see `runBuild.ts`), so editing it would have had no effect on the WXR.
+- [x] **Auto taxonomy scraping** — done: `fetchRestTaxonomies` always fetched the *entire* category/tag list from the source site, but `mapToParseResult` kept only terms that appeared on imported articles. It now merges the full fetched lists in (via `taxonomyMaps`), so every category/tag on the source is available for mapping — unused ones carry `count: 0` and still reconcile into the old tables.

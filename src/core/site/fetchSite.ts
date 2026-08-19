@@ -49,7 +49,7 @@ export async function fetchSite(
       );
       return {
         ok: true,
-        result: mapToParseResult({ baseUrl: normalizeBaseUrl(baseUrl), articles }),
+        result: mapToParseResult({ baseUrl: normalizeBaseUrl(baseUrl), articles, taxonomyMaps }),
         source: 'rest',
         truncated,
       };
