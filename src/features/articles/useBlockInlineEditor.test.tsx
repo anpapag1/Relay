@@ -378,4 +378,54 @@ describe('useBlockInlineEditor', () => {
 
     expect(committed).toBe('<p>keep</p>');
   });
+
+  it('splits on Enter after typing, keeping the typed character in the commit', async () => {
+    await mount('<p>x</p><p>x</p>');
+    const body = getBody();
+    const second = body.querySelectorAll('p')[1]!;
+
+    await beginEditing(second);
+    await type(second, 'xa');
+    placeCaret(second.firstChild!, 1);
+
+    await act(async () => {
+      second.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+
+    const ps = body.querySelectorAll('p');
+    expect(ps).toHaveLength(3);
+    expect(ps[0]!.textContent).toBe('x');
+    expect(ps[1]!.textContent).toBe('x');
+    expect(ps[2]!.textContent).toBe('a');
+    expect(ps[1]!.classList.contains('is-editing')).toBe(false);
+    expect(ps[2]!.classList.contains('is-editing')).toBe(true);
+
+    await exitEditing(body);
+
+    expect(committed).toBe('<p>x</p><p>x</p><p>a</p>');
+  });
+
+  it('joins on Backspace after typing, keeping the typed character in the commit', async () => {
+    await mount('<p>x</p><p>x</p>');
+    const body = getBody();
+    const first = body.querySelectorAll('p')[0]!;
+    const second = body.querySelectorAll('p')[1]!;
+
+    await beginEditing(second);
+    await type(second, 'xa');
+    placeCaret(second.firstChild!, 0);
+
+    await act(async () => {
+      second.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
+    });
+
+    const ps = body.querySelectorAll('p');
+    expect(ps).toHaveLength(1);
+    expect(ps[0]).toBe(first);
+    expect(ps[0]!.textContent).toBe('xxa');
+
+    await exitEditing(body);
+
+    expect(committed).toBe('<p>xxa</p>');
+  });
 });

@@ -42,6 +42,18 @@ function stripEditingArtifacts(outerHTML: string): string {
   return cleanedTag + rest;
 }
 
+// Like singleOccurrenceIndex but compares artifact-stripped markup, so it stays
+// correct once the active block carries contenteditable/is-editing attributes
+// that identical siblings lack.
+function strippedOccurrenceIndex(root: Element, blockEl: HTMLElement, needle: string): number {
+  let n = 0;
+  for (const el of root.querySelectorAll<HTMLElement>(EDITABLE_SELECTOR)) {
+    if (el === blockEl) return n;
+    if (stripEditingArtifacts(el.outerHTML) === needle) n += 1;
+  }
+  return n;
+}
+
 export function useBlockInlineEditor({
   containerRef,
   enabled,
@@ -128,6 +140,7 @@ export function useBlockInlineEditor({
       const newOuter = stripEditingArtifacts(session.block.outerHTML);
       session.editHtml = replaceNth(session.editHtml, session.needle, session.occIndex, newOuter);
       session.needle = newOuter;
+      session.occIndex = strippedOccurrenceIndex(container, session.block, newOuter);
     };
 
     const handleBlur = (e: FocusEvent) => {
