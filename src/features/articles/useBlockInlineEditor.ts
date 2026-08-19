@@ -60,6 +60,7 @@ export function useBlockInlineEditor({
     // mid-keystroke would re-run dangerouslySetInnerHTML and destroy the caret.
     // Edits accumulate in session.editHtml and only leave via onCommit on exit.
     const beginEditing = (block: HTMLElement) => {
+      pendingIndexRef.current = null;
       const editHtml = cleanBaseRef.current;
       sessionRef.current = {
         block,

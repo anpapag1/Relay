@@ -1,7 +1,7 @@
 /* global MouseEvent, FocusEvent */
 /** @jsxImportSource react */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, useRef } from 'react';
+import { act, useRef, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { useBlockInlineEditor } from './useBlockInlineEditor';
 
@@ -14,8 +14,9 @@ let root: Root;
 let committed: string | null;
 let commitSpy: ReturnType<typeof vi.fn>;
 
-function Harness({ enabled = true, html = FULL_HTML }: { enabled?: boolean; html?: string }) {
+function Harness({ enabled = true, initialHtml = FULL_HTML }: { enabled?: boolean; initialHtml?: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [html, setHtml] = useState(initialHtml);
   useBlockInlineEditor({
     containerRef: ref,
     enabled,
@@ -23,6 +24,7 @@ function Harness({ enabled = true, html = FULL_HTML }: { enabled?: boolean; html
     onCommit: (next) => {
       committed = next;
       commitSpy(next);
+      setHtml(next);
     },
   });
   return <div ref={ref} className="wp-preview-body" dangerouslySetInnerHTML={{ __html: html }} />;
@@ -32,9 +34,9 @@ function getBody(): HTMLElement {
   return host.querySelector<HTMLElement>('.wp-preview-body')!;
 }
 
-async function mount(html = FULL_HTML) {
+async function mount(initialHtml = FULL_HTML) {
   await act(async () => {
-    root.render(<Harness html={html} />);
+    root.render(<Harness initialHtml={initialHtml} />);
   });
 }
 
@@ -174,5 +176,33 @@ describe('useBlockInlineEditor', () => {
 
     expect(commitSpy).toHaveBeenCalledTimes(1);
     expect(committed).toBe('<p>Bye</p><h2 class="wp-block-heading">Title</h2><p>Again</p>');
+  });
+
+  it('does not re-enter editing from a stale pending index after an unchanged commit', async () => {
+    await mount(BASE_HTML);
+    const body = getBody();
+    const a = body.querySelectorAll('p')[0]!;
+    const b = body.querySelectorAll('p')[1]!;
+
+    await beginEditing(a);
+    await act(async () => {
+      b.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+
+    expect(commitSpy).toHaveBeenCalledTimes(1);
+    expect(committed).toBe(BASE_HTML);
+
+    await beginEditing(b);
+    await type(b, 'Again2');
+    await exitEditing(body);
+
+    expect(commitSpy).toHaveBeenCalledTimes(2);
+    expect(committed).toBe('<p>Hello</p><h2 class="wp-block-heading">Title</h2><p>Again2</p>');
+
+    const freshBody = getBody();
+    const freshB = freshBody.querySelectorAll('p')[1]!;
+    expect(freshB.getAttribute('contenteditable')).toBeNull();
+    expect(freshB.classList.contains('is-editing')).toBe(false);
+    expect(freshBody.dataset.editing).toBeUndefined();
   });
 });
