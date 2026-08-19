@@ -169,8 +169,11 @@ domain is detected.
   'system'`, defaulting to `'system'`), applies `data-theme` to
   `document.documentElement`, and — when `system` — follows the OS
   `prefers-color-scheme` live via a `matchMedia` listener.
-- **Toggle.** The header's theme button (left of the domain pill) cycles
-  Light → Dark → Auto, persisting the choice to localStorage on each click.
+- **Toggle.** The header's theme button (left of the domain pill) shows an
+  icon for the current preference — sun (Light), moon (Dark), monitor (Auto),
+  all inline SVG — and cycles Light → Dark → Auto on click, persisting the
+  choice to localStorage on each click. The accessible name and tooltip still
+  spell out the label ("Theme: Dark — click to cycle").
 - **Native form controls.** `input`, `select` and `textarea` elements only
   carry border tokens inline, so `index.css` gives them a global default of
   `var(--relay-field)` background and `var(--relay-text)` color (inline

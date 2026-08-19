@@ -20,6 +20,38 @@ const THEME_LABELS: Record<string, string> = {
   system: 'Auto',
 };
 
+const ThemeIcon: React.FC<{ preference: string }> = ({ preference }) => {
+  if (preference === 'dark') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+      </svg>
+    );
+  }
+  if (preference === 'light') {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4" />
+        <line x1="12" y1="2" x2="12" y2="4" />
+        <line x1="12" y1="20" x2="12" y2="22" />
+        <line x1="4.93" y1="4.93" x2="6.34" y2="6.34" />
+        <line x1="17.66" y1="17.66" x2="19.07" y2="19.07" />
+        <line x1="2" y1="12" x2="4" y2="12" />
+        <line x1="20" y1="12" x2="22" y2="12" />
+        <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" />
+        <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </svg>
+  );
+};
+
 export const Header: React.FC = () => {
   const { state, dispatch } = useAppState();
   const { activeTab } = state.ui;
@@ -123,7 +155,7 @@ export const Header: React.FC = () => {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
+                  justifyContent: 'center',
                   fontSize: '12px',
                   fontWeight: 600,
                   color: 'var(--relay-text-2)',
@@ -132,12 +164,11 @@ export const Header: React.FC = () => {
                   borderRadius: '6px',
                   padding: '6px 10px',
                   marginBottom: '14px',
-                  whiteSpace: 'nowrap',
                   flexShrink: 0,
                   cursor: 'pointer',
                 }}
               >
-                {THEME_LABELS[preference]}
+                <ThemeIcon preference={preference} />
               </button>
               <button
                 type="button"
