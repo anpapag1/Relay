@@ -34,7 +34,10 @@ npm run test --workspace server -- --run src/index.test.ts   # one server file
   mapping change reflows statuses, profile restore recomputes rather than
   restoring stale statuses).
 - **Components get light smoke tests** via React Testing Library — render,
-  basic interactions, no snapshot-heavy UI tests.
+  basic interactions, no snapshot-heavy UI tests. The theme gets a couple of
+  focused tests (`src/theme/useTheme.test.tsx`) plus an App-level test that
+  clicks the header theme toggle and asserts the cycle and persistence;
+  `vitest.setup.ts` stubs `window.matchMedia` for jsdom.
 - **`suggestTerms` origin rule:** recomputation overwrites `suggested`
   mappings and leaves `user` ones untouched.
 

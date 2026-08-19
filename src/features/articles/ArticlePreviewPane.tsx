@@ -273,6 +273,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                   fontSize: '12px',
                   fontFamily: 'monospace',
                   resize: 'none',
+                  fieldSizing: 'content',
                 }}
               />
             </>
