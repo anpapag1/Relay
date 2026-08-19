@@ -9,6 +9,7 @@
   color-scheme: light;
   --relay-bg: oklch(98% 0.003 250);
   --relay-surface: #ffffff;
+  --relay-field: #ffffff;
   --relay-surface-subtle: oklch(97% 0.004 250);
   --relay-surface-hover: oklch(95% 0.01 250);
   --relay-border: oklch(88% 0.005 250);
@@ -41,6 +42,7 @@
   color-scheme: dark;
   --relay-bg: oklch(22% 0.012 260);
   --relay-surface: oklch(26% 0.015 260);
+  --relay-field: oklch(22% 0.015 260);
   --relay-surface-subtle: oklch(29% 0.015 260);
   --relay-surface-hover: oklch(33% 0.018 260);
   --relay-border: oklch(40% 0.02 260);
@@ -96,7 +98,7 @@ input, select, textarea, button {
  * :root / [data-theme='dark'] above) makes the date picker, <select>
  * dropdown, number spinners and checkbox chrome follow the theme too. */
 input, select, textarea {
-  background: var(--relay-surface);
+  background: var(--relay-field);
   color: var(--relay-text);
 }
 

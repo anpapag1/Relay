@@ -173,11 +173,13 @@ domain is detected.
   Light → Dark → Auto, persisting the choice to localStorage on each click.
 - **Native form controls.** `input`, `select` and `textarea` elements only
   carry border tokens inline, so `index.css` gives them a global default of
-  `var(--relay-surface)` background and `var(--relay-text)` color (inline
+  `var(--relay-field)` background and `var(--relay-text)` color (inline
   backgrounds like `--relay-surface-subtle` or `transparent` still win), and
   `color-scheme: light|dark` on `:root` / `[data-theme='dark']` makes the
   date picker, `<select>` dropdown, number spinners and checkbox chrome follow
-  the theme.
+  the theme. `--relay-field` is white in light mode and slightly recessed
+  darker than the surrounding `--relay-surface` cards in dark mode, so fields
+  stay clearly visible instead of blending into their panel.
 
 ## Cross-cutting patterns
 
