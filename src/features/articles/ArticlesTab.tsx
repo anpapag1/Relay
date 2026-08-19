@@ -10,6 +10,16 @@ type StatusFilter = 'all' | 'ready' | 'review' | 'edited' | 'excluded';
 type SortField = 'title' | 'date' | 'status';
 type SortOrder = 'asc' | 'desc';
 
+// Above VIRTUALIZE_THRESHOLD rows, only the rows near the current scroll
+// position (plus OVERSCAN rows of buffer) are mounted, matching the
+// MappingsTab pattern — thousands of articles each carrying several DOM
+// cells would otherwise freeze the browser tab on interaction. Below the
+// threshold the list renders exactly as before (no scroll container).
+const VIRTUALIZE_THRESHOLD = 150;
+const ROW_HEIGHT = 52;
+const OVERSCAN = 10;
+const VIRTUAL_LIST_HEIGHT = 600;
+
 export const ArticlesTab: React.FC = () => {
   const { state, dispatch } = useAppState();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -17,6 +27,7 @@ export const ArticlesTab: React.FC = () => {
   const [sortField, setSortField] = useState<SortField>('title');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [selectedArticleId, setSelectedArticleId] = useState<number | null>(null);
+  const [scrollTop, setScrollTop] = useState(0);
 
   if (!state.source) {
     return (
@@ -117,6 +128,91 @@ export const ArticlesTab: React.FC = () => {
   };
 
   const allAreExcluded = derivedArticles.length > 0 && derivedArticles.every((a) => a.status.startsWith('excluded'));
+
+  const renderRow = (art: DerivedArticle) => {
+    const isExc = art.status.startsWith('excluded');
+    return (
+      <div
+        key={art.id}
+        onClick={() => setSelectedArticleId(art.id)}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '2fr 0.85fr 0.85fr 0.6fr 0.9fr 1.3fr',
+          height: ROW_HEIGHT,
+          padding: '0 20px',
+          boxSizing: 'border-box',
+          alignItems: 'center',
+          borderTop: '1px solid oklch(95% 0.005 250)',
+          cursor: 'pointer',
+          background: selectedArticleId === art.id ? 'oklch(97% 0.02 265)' : 'white',
+        }}
+      >
+        <div style={{ fontSize: '14px', fontWeight: 500, opacity: isExc ? 0.6 : 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '12px' }}>
+          {art.title || '(Untitled)'}
+        </div>
+        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '12px' }}>{art.postDate || '—'}</div>
+        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '12px' }}>{art.destinationTerms.filter(t => termSourceDomain(t) === 'category').map(t => t.name).join(', ') || '—'}</div>
+        <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+          {art.mediaCount}
+          {art.warnings && art.warnings.length > 0 && (
+            <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'oklch(65% 0.15 60)', color: 'white', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              !
+            </div>
+          )}
+        </div>
+        <div>
+          <Badge status={art.status} />
+        </div>
+        <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '6px' }}>
+          <button
+            type="button"
+            onClick={() => {
+              dispatch({
+                type: 'SET_ARTICLE_EXCLUDED',
+                articleId: art.id,
+                excluded: !isExc,
+              });
+            }}
+            className={isExc ? 'btn btn-secondary' : 'btn btn-secondary'}
+            style={{
+              padding: '5px 10px',
+              fontSize: '12px',
+              color: isExc ? 'oklch(50% 0.16 265)' : 'oklch(50% 0.18 25)',
+              borderColor: isExc ? 'oklch(85% 0.05 265)' : 'oklch(85% 0.1 25)',
+            }}
+          >
+            {isExc ? 'Include' : 'Exclude'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              dispatch({
+                type: 'SET_ARTICLE_MANUAL_REVIEW',
+                articleId: art.id,
+                manualReview: !art.isManualReview,
+              });
+            }}
+            className="btn btn-secondary"
+            title={art.isManualReview ? 'Unflag for review' : 'Flag for review'}
+            style={{
+              padding: '5px 10px',
+              fontSize: '12px',
+              color: art.isManualReview ? 'oklch(50% 0.16 60)' : 'oklch(35% 0.01 250)',
+              borderColor: art.isManualReview ? 'oklch(85% 0.1 60)' : 'oklch(88% 0.005 250)',
+            }}
+          >
+            {art.isManualReview ? 'Unflag' : 'Flag'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const virtualizeRows = sorted.length > VIRTUALIZE_THRESHOLD;
+  const startIndex = virtualizeRows ? Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN) : 0;
+  const visibleCount = virtualizeRows ? Math.ceil(VIRTUAL_LIST_HEIGHT / ROW_HEIGHT) + OVERSCAN * 2 : sorted.length;
+  const endIndex = Math.min(sorted.length, startIndex + visibleCount);
+  const visibleRows = sorted.slice(startIndex, endIndex);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '960px', width: '100%', margin: '0 auto' }}>
@@ -222,82 +318,20 @@ export const ArticlesTab: React.FC = () => {
           <div></div>
         </div>
 
-        {sorted.map((art) => {
-          const isExc = art.status.startsWith('excluded');
-          return (
-            <div
-              key={art.id}
-              onClick={() => setSelectedArticleId(art.id)}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '2fr 0.85fr 0.85fr 0.6fr 0.9fr 1.3fr',
-                padding: '14px 20px',
-                alignItems: 'center',
-                borderTop: '1px solid oklch(95% 0.005 250)',
-                cursor: 'pointer',
-                background: selectedArticleId === art.id ? 'oklch(97% 0.02 265)' : 'white',
-              }}
-            >
-              <div style={{ fontSize: '14px', fontWeight: 500, opacity: isExc ? 0.6 : 1 }}>
-                {art.title || '(Untitled)'}
-              </div>
-              <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{art.postDate || '—'}</div>
-              <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)' }}>{art.destinationTerms.filter(t => termSourceDomain(t) === 'category').map(t => t.name).join(', ') || '—'}</div>
-              <div style={{ fontSize: '13px', color: 'oklch(55% 0.01 250)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                {art.mediaCount}
-                {art.warnings && art.warnings.length > 0 && (
-                  <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: 'oklch(65% 0.15 60)', color: 'white', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    !
-                  </div>
-                )}
-              </div>
-              <div>
-                <Badge status={art.status} />
-              </div>
-              <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '6px' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    dispatch({
-                      type: 'SET_ARTICLE_EXCLUDED',
-                      articleId: art.id,
-                      excluded: !isExc,
-                    });
-                  }}
-                  className={isExc ? 'btn btn-secondary' : 'btn btn-secondary'}
-                  style={{
-                    padding: '5px 10px',
-                    fontSize: '12px',
-                    color: isExc ? 'oklch(50% 0.16 265)' : 'oklch(50% 0.18 25)',
-                    borderColor: isExc ? 'oklch(85% 0.05 265)' : 'oklch(85% 0.1 25)',
-                  }}
-                >
-                  {isExc ? 'Include' : 'Exclude'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    dispatch({
-                      type: 'SET_ARTICLE_MANUAL_REVIEW',
-                      articleId: art.id,
-                      manualReview: !art.isManualReview,
-                    });
-                  }}
-                  className="btn btn-secondary"
-                  title={art.isManualReview ? 'Unflag for review' : 'Flag for review'}
-                  style={{
-                    padding: '5px 10px',
-                    fontSize: '12px',
-                    color: art.isManualReview ? 'oklch(50% 0.16 60)' : 'oklch(35% 0.01 250)',
-                    borderColor: art.isManualReview ? 'oklch(85% 0.1 60)' : 'oklch(88% 0.005 250)',
-                  }}
-                >
-                  {art.isManualReview ? 'Unflag' : 'Flag'}
-                </button>
+        {virtualizeRows ? (
+          <div
+            onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+            style={{ maxHeight: VIRTUAL_LIST_HEIGHT, overflowY: 'auto' }}
+          >
+            <div style={{ height: sorted.length * ROW_HEIGHT, position: 'relative' }}>
+              <div style={{ position: 'absolute', top: startIndex * ROW_HEIGHT, left: 0, right: 0 }}>
+                {visibleRows.map(renderRow)}
               </div>
             </div>
-          );
-        })}
+          </div>
+        ) : (
+          sorted.map(renderRow)
+        )}
 
         {sorted.length === 0 && (
           <div style={{ padding: '40px', textAlign: 'center', fontSize: '14px', color: 'oklch(55% 0.01 250)' }}>

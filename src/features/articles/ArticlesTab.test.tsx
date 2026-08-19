@@ -43,6 +43,20 @@ function stateWithImport() {
   });
 }
 
+function stateWithArticles(count: number) {
+  const articles: ParseResult['articles'] = Array.from({ length: count }, (_, i) => ({
+    postId: i + 1, postType: 'post', status: 'publish', title: `Article ${i}`,
+    link: `https://old.example/a${i}/`, postDate: '2026-01-01', postName: `a${i}`,
+    creator: 'a', contentHtml: '<p>Body</p>', excerptHtml: '', terms: [], postmeta: {},
+  }));
+  return appReducer(initialState, {
+    type: 'LOAD_SOURCE',
+    result: { ...MOCK_PARSE_RESULT, totalItems: count, articles },
+    defaultBuilder: 'plainHtml',
+    confidence: 100,
+  });
+}
+
 let container: HTMLDivElement;
 let root: Root;
 
@@ -90,5 +104,39 @@ describe('ArticlesTab prev/next navigation', () => {
     nextBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Next')) as HTMLButtonElement;
     expect(nextBtn.disabled).toBe(true);
     expect(prevBtn.disabled).toBe(false);
+  });
+});
+
+describe('ArticlesTab large-list rendering', () => {
+  it('renders every row directly for a small list (no virtualization change in behavior)', async () => {
+    const seeded = stateWithArticles(20);
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false} initialStateOverride={seeded}>
+          <ArticlesTab />
+        </AppStateProvider>,
+      );
+    });
+
+    expect(container.textContent).toContain('Article 0');
+    expect(container.textContent).toContain('Article 19');
+  });
+
+  it('only mounts a bounded window of rows for thousands of articles', async () => {
+    const seeded = stateWithArticles(5000);
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false} initialStateOverride={seeded}>
+          <ArticlesTab />
+        </AppStateProvider>,
+      );
+    });
+
+    expect(container.textContent).toContain('Article 0');
+    // An article far down the list must not be mounted at all yet.
+    expect(container.textContent).not.toContain('Article 4999');
+
+    const domNodeCount = container.querySelectorAll('*').length;
+    expect(domNodeCount).toBeLessThan(2000);
   });
 });
