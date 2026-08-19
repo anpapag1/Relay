@@ -14,6 +14,10 @@ npm run test --workspace server -- --run src/index.test.ts   # one server file
 
 `npm run build` runs `tsc -b` typecheck; run it before pushing.
 
+The client workspace raises vitest's `testTimeout` to 30s (in `vite.config.ts`):
+the ArticlesTab virtualization test renders thousands of rows in jsdom and
+regularly exceeds the default 5s when the suite runs in parallel.
+
 ## Client strategy (`src/`)
 
 - **Core is pure, so it tests as plain units.** jsdom is configured because

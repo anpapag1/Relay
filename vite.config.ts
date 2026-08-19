@@ -15,5 +15,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    // The ArticlesTab virtualization test renders thousands of rows in
+    // jsdom, which can take >5s (vitest's default) when the suite runs
+    // in parallel; without this it flakes intermittently.
+    testTimeout: 30000,
   },
 });
