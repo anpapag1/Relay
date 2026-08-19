@@ -81,7 +81,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                 style={{
                   display: 'flex',
                   gap: '4px',
-                  background: 'oklch(30% 0.005 250 / 0.6)',
+                  background: 'var(--relay-surface-hover)',
                   borderRadius: '8px',
                   padding: '3px',
                 }}
@@ -97,7 +97,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                     fontWeight: 600,
                     border: 'none',
                     background: 'transparent',
-                    color: 'white',
+                    color: 'var(--relay-text-2)',
                     cursor: hasPrev ? 'pointer' : 'not-allowed',
                     opacity: hasPrev ? 1 : 0.4,
                   }}
@@ -115,7 +115,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                     fontWeight: 600,
                     border: 'none',
                     background: 'transparent',
-                    color: 'white',
+                    color: 'var(--relay-text-2)',
                     cursor: hasNext ? 'pointer' : 'not-allowed',
                     opacity: hasNext ? 1 : 0.4,
                   }}
@@ -127,7 +127,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                 style={{
                   display: 'flex',
                   gap: '4px',
-                  background: 'oklch(30% 0.005 250 / 0.6)',
+                  background: 'var(--relay-surface-hover)',
                   borderRadius: '8px',
                   padding: '3px',
                 }}
@@ -143,7 +143,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                     border: 'none',
                     cursor: 'pointer',
                     background: showBefore ? 'var(--relay-surface)' : 'transparent',
-                    color: showBefore ? 'var(--relay-text)' : 'white',
+                    color: showBefore ? 'var(--relay-text)' : 'var(--relay-text-2)',
                     boxShadow: showBefore ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
                   }}
                 >
@@ -160,7 +160,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                     border: 'none',
                     cursor: 'pointer',
                     background: !showBefore ? 'var(--relay-surface)' : 'transparent',
-                    color: !showBefore ? 'var(--relay-text)' : 'white',
+                    color: !showBefore ? 'var(--relay-text)' : 'var(--relay-text-2)',
                     boxShadow: !showBefore ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
                   }}
                 >
@@ -177,7 +177,7 @@ export const ArticlePreviewPane: React.FC<ArticlePreviewPaneProps> = ({
                     border: 'none',
                     cursor: 'pointer',
                     background: showEdit ? 'var(--relay-surface)' : 'transparent',
-                    color: showEdit ? 'var(--relay-text)' : 'white',
+                    color: showEdit ? 'var(--relay-text)' : 'var(--relay-text-2)',
                     boxShadow: showEdit ? '0 1px 3px oklch(0% 0 0 / 0.1)' : 'none',
                   }}
                 >
