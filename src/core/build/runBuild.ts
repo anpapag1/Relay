@@ -106,7 +106,12 @@ export interface RunBuildOptions {
    * wp:status=pending ("Pending Review" in wp-admin) instead of publish,
    * so it can't accidentally go live unreviewed. */
   exportPendingForReview?: boolean;
-  onProgress?: (progress: { completed: number; total: number }) => void;
+  /** Called after each article in each phase. Progress is reported across
+   * both phases monotonically: the resolve phase counts the first half of
+   * `total` (resolving media for each article, the network-bound pass), the
+   * convert phase counts the second half — so the bar never sits at 0% for
+   * the whole network pass and never jumps backwards. */
+  onProgress?: (progress: { completed: number; total: number; phase?: 'resolve' | 'convert' }) => void;
   isCancelled?: () => boolean;
 }
 
@@ -260,19 +265,22 @@ function buildOneArticle(
  * and Relay's synthetic ids are deduped by URL *across the whole
  * export* (see attachmentRegistry.ts) — so no single article's id is
  * knowable until every article's media has been resolved. Pass 1
- * resolves media for every article (silent — no progress ticks; it's
- * the network-bound phase but doesn't produce output yet) and builds
- * the shared registry from all of it; pass 2 (the one progress/Cancel/
- * per-article-try-catch apply to, exactly as before) writes the actual
- * blocks now that every image's id is known, using the exact same
- * writeBlocks function the settings preview calls so preview and build
- * output can never disagree. A throw while converting one article in
- * pass 2 is caught and reported as that article failing to build,
- * marked 'review', rather than failing the whole build (design spec
- * §6). */
+ * resolves media for every article (the network-bound phase — it
+ * doesn't produce output yet, but reports progress so the UI never sits
+ * at 0% for the whole network pass) and builds the shared registry from
+ * all of it; pass 2 (the phase per-article-try-catch and Cancel checks
+ * apply to, exactly as before) writes the actual blocks now that every
+ * image's id is known, using the exact same writeBlocks function the
+ * settings preview calls so preview and build output can never
+ * disagree. Progress is reported monotonically across both phases. A
+ * throw while converting one article in pass 2 is caught and reported
+ * as that article failing to build, marked 'review', rather than
+ * failing the whole build (design spec §6). */
 export async function runBuild(options: RunBuildOptions): Promise<RunBuildResult> {
   const included = options.articles.filter((input) => !input.excluded);
   const attachmentIndex = buildAttachmentIndex(options.attachments);
+
+  const totalSteps = included.length * 2;
 
   const resolvedArticles: ResolvedArticle[] = [];
   for (const input of included) {
@@ -280,6 +288,7 @@ export async function runBuild(options: RunBuildOptions): Promise<RunBuildResult
       return { wxr: '', articles: [], cancelled: true };
     }
     resolvedArticles.push(await resolveOneArticle(input, options, attachmentIndex));
+    options.onProgress?.({ completed: resolvedArticles.length, total: totalSteps, phase: 'resolve' });
   }
 
   const registryUrls: Array<string | null | undefined> = [];
@@ -313,7 +322,7 @@ export async function runBuild(options: RunBuildOptions): Promise<RunBuildResult
       });
     }
 
-    options.onProgress?.({ completed: i + 1, total: resolvedArticles.length });
+    options.onProgress?.({ completed: included.length + i + 1, total: totalSteps, phase: 'convert' });
     await yieldToEventLoop();
   }
 

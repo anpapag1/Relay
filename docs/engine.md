@@ -226,7 +226,12 @@ Two rules keep suggestions from fighting the user (in `applyMappings` /
 - **`runBuild.ts`** — processes included articles in chunks yielded via
   `setTimeout(0)` so the progress bar and Cancel stay responsive. Per-article
   failures are caught, marked `review` with the message, and the build
-  continues. Produces `BuildArticleResult[]` + the WXR string.
+  continues. Produces `BuildArticleResult[]` + the WXR string. Progress is
+  reported monotonically across its two passes: the resolve pass (media, the
+  network-bound half) ticks the first `N` steps and the convert pass the
+  second, so the bar never sits at 0% for the whole network phase. The
+  provider wraps the build's fetches with a 20s client-side timeout as a
+  backstop against a wedged proxy connection.
 - **`collectMediaRefs.ts`** — gathers every inline media URL an article uses so
   the export can emit synthetic attachment items.
 - **`resolveTerms.ts`** — resolves each article's terms through the mapping

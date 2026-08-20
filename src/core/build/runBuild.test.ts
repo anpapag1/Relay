@@ -189,7 +189,7 @@ describe('runBuild', () => {
     expect(result.articles.length).toBeLessThan(3);
   });
 
-  it('reports progress after each article', async () => {
+  it('reports progress after each article in each phase', async () => {
     const progress: Array<{ completed: number; total: number }> = [];
     const articles: BuildArticleInput[] = [
       { article: makeArticle({ postId: 1 }), excluded: false },
@@ -208,7 +208,15 @@ describe('runBuild', () => {
       onProgress: (p) => progress.push(p),
     });
 
-    expect(progress).toEqual([{ completed: 1, total: 2 }, { completed: 2, total: 2 }]);
+    // Two phases (resolve then convert), each article ticking once, sharing
+    // one monotonic total so the bar never sits at 0% during the
+    // network-bound resolve pass nor jumps backwards.
+    expect(progress).toEqual([
+      { completed: 1, total: 4, phase: 'resolve' },
+      { completed: 2, total: 4, phase: 'resolve' },
+      { completed: 3, total: 4, phase: 'convert' },
+      { completed: 4, total: 4, phase: 'convert' },
+    ]);
   });
 
   it('wires mapped terms through into the exported WXR', async () => {

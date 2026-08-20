@@ -5,6 +5,7 @@ import type { AppState, BuildHistoryEntry } from './types';
 import { createSiteDataBackup } from './session';
 import { domainForState, loadSiteProfile, saveSiteProfile } from './siteProfiles';
 import { runBuild, type BuildArticleInput } from '../core/build/runBuild';
+import type { FetchLike } from '../core/media/mediaClient';
 
 interface AppStateContextValue {
   state: AppState;
@@ -119,6 +120,16 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({
       });
       const builderId = state.builderId || 'plainHtml';
 
+      // The build's media pass makes one fetch per article through the proxy.
+      // The proxy has its own per-request timeouts, but a wedged connection
+      // would otherwise leave a fetch pending indefinitely and the whole
+      // build stuck at 0% — abort it client-side as a backstop.
+      const fetchWithTimeout: FetchLike = (url) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 20_000);
+        return window.fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+      };
+
       try {
         const res = await runBuild({
           articles: buildInputs,
@@ -130,10 +141,11 @@ export const AppStateProvider: React.FC<AppStateProviderProps> = ({
           siteTitle: 'Relay Migration Site',
           siteUrl: source.siteUrl || 'https://example.com',
           exportPendingForReview,
-          fetchImpl: window.fetch ? window.fetch.bind(window) : ((async () => new Response()) as any),
-          onProgress: ({ completed, total }) => {
+          fetchImpl: fetchWithTimeout,
+          onProgress: ({ completed, total, phase }) => {
             const pct = Math.round((completed / Math.max(total, 1)) * 100);
-            dispatch({ type: 'BUILD_PROGRESS', completed, total, logLine: `Converted post ${completed}/${total} (${pct}%)` });
+            const label = phase === 'resolve' ? 'Resolved media for post' : 'Converted post';
+            dispatch({ type: 'BUILD_PROGRESS', completed, total, logLine: `${label} ${completed}/${total} (${pct}%)` });
           },
           isCancelled: () => cancelRef.current,
         });
