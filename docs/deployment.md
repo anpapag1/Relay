@@ -97,6 +97,39 @@ Image names are `DOCKER_HUB_USERNAME/<repo-slug>:latest` plus a
 > registry-agnostic. The first push creates the Docker Hub repository; it is
 > public by default, so mark it **private** unless you want it exposed.
 
+## Hosting on Render (free)
+
+`render.yaml` is a Render Blueprint that deploys the same single container as a
+free Web Service — no Docker Hub involved, Render builds the `Dockerfile`
+itself. The app is stateless, so the free plan (512 MB RAM, 750 hrs/month)
+suffices; the service **sleeps after 15 minutes idle** and takes ~1 min to cold
+start on the next visit.
+
+To deploy:
+
+1. Push this repo to a git host Render can connect to (GitHub/GitLab/Bitbucket)
+   and set the `repo`/`branch` fields in `render.yaml`. The repo currently has
+   no remote, so this is the one prerequisite.
+2. Render → **New +** → **Blueprint** → pick the repo. Render finds
+   `render.yaml`, creates the Web Service, and builds from the Dockerfile.
+3. When the deploy finishes, open the `*.onrender.com` URL (TLS is automatic).
+   Everything comes from that origin — SPA and `/api/*` — so there are no CORS
+   or environment changes.
+
+No-git alternative: build and push the image to any registry, then Render →
+**New Web Service** → *Deploy an existing image from a registry* and enter the
+image name (updates are then a re-push + manual redeploy rather than
+auto-deploy on push).
+
+Port/health: Render routes traffic to the container's `8080` (`port` in the
+blueprint matches the Dockerfile `EXPOSE` and the `PORT` env default), and its
+health check polls `/health` — the same liveness route the Docker
+`HEALTHCHECK` uses.
+
+Outbound egress to old-site hosts works out of the box on Render, so live-site
+import ("fetch from site") and image health checks behave exactly as they do
+running locally.
+
 ## Deploying to your internal host
 
 Once the image is in the registry, one of:

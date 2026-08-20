@@ -1,0 +1,27 @@
+# Render Blueprint — deploy Relay as a single free web service.
+# One container serves the SPA and the /api proxy from the same origin
+# (see docs/deployment.md). The app is stateless, so the free plan is enough.
+#
+# To use:
+#   1. Push this repo to GitHub/GitLab/Bitbucket and fill in `repo` below.
+#   2. Render → New + → Blueprint → pick the repo. Render finds this file,
+#      creates the service, and starts building the Dockerfile.
+#   3. When the deploy finishes you get https://<name>.onrender.com (TLS).
+#
+# Free-plan caveats: the service sleeps after 15 min idle (cold start ~1 min)
+# and has a 750-hour/month cap.
+services:
+  - type: web
+    name: relay
+    runtime: docker
+    repo: https://github.com/your-org/relay
+    branch: main
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    port: 8080
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: NODE_ENV
+        value: production
