@@ -159,6 +159,22 @@ a:hover {
   50% { opacity: 0.4; }
 }
 
+@keyframes progress-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+/* Indeterminate progress fill: a short accent slug sweeps the track until a
+ * total becomes known (or the phase ends). Used by the Import tab's live-site
+ * scrape bar during probing and RSS feeds, which have no count to fill by. */
+.progress-indeterminate {
+  width: 25%;
+  height: 100%;
+  background: var(--relay-accent);
+  border-radius: inherit;
+  animation: progress-slide 1.2s ease-in-out infinite;
+}
+
 /* Common utility classes */
 .spinner {
   width: 24px;

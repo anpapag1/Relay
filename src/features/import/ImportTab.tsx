@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import { parseWxr } from '../../core/wxr/parseWxr';
 import { rankBuilders, type BuilderScore } from '../../core/builders/detectBuilder';
-import { fetchSite } from '../../core/site/fetchSite';
+import { fetchSite, type FetchSiteProgress } from '../../core/site/fetchSite';
 import { browserTextFetch } from '../../core/site/fetchLike';
 import { normalizeBaseUrl } from '../../core/site/probeSite';
 import { SAMPLE_WXR } from './sampleWxr';
@@ -12,6 +12,7 @@ import { findMissingOldTerms, mergeMissingIntoOldTables } from '../../core/mappi
 import { BUILDER_VALIDATION_STATUS, type BuilderId } from '../../core/builders/types';
 import type { TermTable } from '../../types/domain';
 import { BuilderStatusPill } from '../../ui/Badge';
+import { FetchProgressBar } from './FetchProgressBar';
 
 const BUILDER_OPTIONS: BuilderId[] = ['plainHtml', 'elementor', 'divi', 'wpbakery'];
 
@@ -61,7 +62,8 @@ export const ImportTab: React.FC = () => {
   const [builderRanking, setBuilderRanking] = useState<BuilderScore[]>([]);
   const [fetchUrl, setFetchUrl] = useState('');
   const [fetchingSite, setFetchingSite] = useState(false);
-  const [fetchProgress, setFetchProgress] = useState<string | null>(null);
+  const [fetchProgress, setFetchProgress] = useState<FetchSiteProgress | null>(null);
+  const [fetchSummary, setFetchSummary] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [fetchStartDate, setFetchStartDate] = useState('');
   const [fetchEndDate, setFetchEndDate] = useState('');
@@ -167,15 +169,12 @@ export const ImportTab: React.FC = () => {
     setFetchingSite(true);
     setFetchError(null);
     setFetchProgress(null);
+    setFetchSummary(null);
     try {
       const res = await fetchSite(
         fetchUrl.trim(),
         browserTextFetch,
-        ({ stage, fetched, total }) => {
-          if (stage === 'probe') setFetchProgress('Detecting REST API or feed…');
-          else if (stage === 'media') setFetchProgress(`Resolving featured images (${fetched}/${total ?? '…'})`);
-          else setFetchProgress(total != null ? `Fetching posts (${fetched}/${total})…` : `Fetched ${fetched} posts…`);
-        },
+        (p) => setFetchProgress(p),
         { startDate: fetchStartDate, endDate: fetchEndDate },
       );
       if (!res.ok) {
@@ -196,7 +195,7 @@ export const ImportTab: React.FC = () => {
           ? `Fetched ${res.result.totalItems} posts (may be truncated at 10,000) — ${sourceLabel}`
           : `Fetched ${res.result.totalItems} posts (may be truncated at 500 pages) — ${sourceLabel}`
         : `Fetched ${res.result.totalItems} posts from ${sourceLabel}`;
-      setFetchProgress(truncationNote);
+      setFetchSummary(truncationNote);
       const ranking = rankBuilders(res.result.articles);
       setBuilderRanking(ranking);
       const [best] = ranking;
@@ -213,6 +212,7 @@ export const ImportTab: React.FC = () => {
     setFetchStartDate('');
     setFetchEndDate('');
     setFetchProgress(null);
+    setFetchSummary(null);
     setFetchError(null);
     dispatch({ type: 'CLEAR_SOURCE' });
   };
@@ -634,7 +634,7 @@ export const ImportTab: React.FC = () => {
               />
             </label>
           </div>
-          {fetchProgress && <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--relay-text-muted)' }}>{fetchProgress}</div>}
+          {fetchProgress && <FetchProgressBar progress={fetchProgress} />}
           {fetchError && <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--relay-danger)' }}>{fetchError}</div>}
         </div>
       </div>
@@ -675,8 +675,8 @@ export const ImportTab: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: '22px', fontWeight: 700 }}>Import detected</div>
-          {fetchProgress && (
-            <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>{fetchProgress}</div>
+          {fetchSummary && (
+            <div style={{ fontSize: '13px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>{fetchSummary}</div>
           )}
           <div style={{ fontSize: '14px', color: 'var(--relay-text-muted)', marginTop: '2px' }}>
             From {fileName} — review before mapping content

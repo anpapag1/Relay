@@ -65,7 +65,15 @@ Three ways in:
    focus it lists saved-site profiles from `localStorage`
    (`state/siteProfiles.ts`, most recent first), filtered as you type;
    arrow keys navigate, Enter or click picks one (filling the URL), Escape
-   closes.
+   closes. While the scrape runs, `FetchProgressBar` (a small presentational
+   component in `src/features/import/`) renders a progress bar fed by
+   `fetchSite`'s `onProgress` callback (`FetchSiteProgress`): a determinate
+   fill with percentage when a total is known (REST posts and media
+   resolution), or an animated indeterminate bar while probing / over RSS
+   where the count is unknown. Once the fetch lands, the bar is replaced by
+   a one-line summary (`fetchSummary`, e.g. "Fetched 400 posts from REST
+   API", including the truncation warning when applicable); both the bar and
+   the summary clear on "Start over".
 3. **Sample export** — loads the bundled WPBakery fixture so the whole pipeline
    can be exercised without a real file.
 

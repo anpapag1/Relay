@@ -192,6 +192,34 @@ describe('ImportTab fetch-from-site', () => {
     root.unmount();
     document.body.removeChild(container);
   });
+
+  it('shows the REST fetch summary after import', async () => {
+    mockFetchSite.mockResolvedValue({ ok: true, source: 'rest', truncated: false, result: SUCCESS_RESULT });
+
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+    await fetchSource(container, 'https://news.example.com');
+
+    expect(container.textContent).toContain('Import detected');
+    expect(container.textContent).toContain('Fetched 1 posts from REST API');
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
+
+  it('shows the RSS fetch summary after import', async () => {
+    mockFetchSite.mockResolvedValue({ ok: true, source: 'rss', truncated: false, result: SUCCESS_RESULT });
+
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+    await fetchSource(container, 'https://news.example.com');
+
+    expect(container.textContent).toContain('Import detected');
+    expect(container.textContent).toContain('Fetched 1 posts from RSS feed');
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
 });
 
 describe('ImportTab source domain', () => {
