@@ -103,6 +103,76 @@ describe('ArticleDrawer preview pane', () => {
     });
     expect(container.textContent).toContain('Nothing to preview yet');
   });
+
+  it('keeps an inline edit committed across a parent re-render with a fresh article object reference', async () => {
+    const article = makeArticle();
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false}>
+          <ArticleDrawer article={article} onClose={vi.fn()} onPrev={vi.fn()} onNext={vi.fn()} hasPrev={false} hasNext={false} />
+        </AppStateProvider>,
+      );
+    });
+
+    const body = container.querySelector<HTMLElement>('.wp-preview-body');
+    const block = body?.querySelector<HTMLElement>('[data-editable]');
+    expect(block).not.toBeNull();
+    await act(async () => {
+      block!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+    block!.textContent = 'Hello EDITED';
+    await act(async () => {
+      block!.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      body!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));
+    });
+    expect(container.querySelector('.wp-preview-body')?.textContent).toContain('EDITED');
+
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false}>
+          <ArticleDrawer article={makeArticle()} onClose={vi.fn()} onPrev={vi.fn()} onNext={vi.fn()} hasPrev={false} hasNext={false} />
+        </AppStateProvider>,
+      );
+    });
+    expect(container.querySelector('.wp-preview-body')?.textContent).toContain('EDITED');
+  });
+
+  it('keeps an inline edit committed on blur across a parent re-render with a fresh article object reference', async () => {
+    const article = makeArticle();
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false}>
+          <ArticleDrawer article={article} onClose={vi.fn()} onPrev={vi.fn()} onNext={vi.fn()} hasPrev={false} hasNext={false} />
+        </AppStateProvider>,
+      );
+    });
+
+    const body = container.querySelector<HTMLElement>('.wp-preview-body');
+    const block = body?.querySelector<HTMLElement>('[data-editable]');
+    expect(block).not.toBeNull();
+    await act(async () => {
+      block!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+    block!.textContent = 'Hello BLURRED';
+    await act(async () => {
+      block!.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      body!.dispatchEvent(new FocusEvent('blur', { bubbles: true, relatedTarget: null }));
+    });
+    expect(container.querySelector('.wp-preview-body')?.textContent).toContain('BLURRED');
+
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false}>
+          <ArticleDrawer article={makeArticle()} onClose={vi.fn()} onPrev={vi.fn()} onNext={vi.fn()} hasPrev={false} hasNext={false} />
+        </AppStateProvider>,
+      );
+    });
+    expect(container.querySelector('.wp-preview-body')?.textContent).toContain('BLURRED');
+  });
 });
 
 describe('ArticleDrawer before/after preview toggle', () => {

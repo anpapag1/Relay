@@ -117,6 +117,37 @@ describe('useArticleDraft', () => {
     expect(lastResult?.isDirty).toBe(false);
   });
 
+  it('keeps the draft when the parent re-renders with a fresh article object for the same article', async () => {
+    const article = makeArticle();
+    await act(async () => {
+      root.render(<Harness article={article} previewHtml="<p>converted</p>" />);
+    });
+    await act(async () => {
+      lastResult!.setDraft('<p>edited</p>');
+    });
+    expect(lastResult?.draftHtml).toBe('<p>edited</p>');
+
+    await act(async () => {
+      root.render(<Harness article={makeArticle()} previewHtml="<p>converted</p>" />);
+    });
+    expect(lastResult?.draftHtml).toBe('<p>edited</p>');
+    expect(lastResult?.isDirty).toBe(true);
+  });
+
+  it('resets the draft when the selected article actually changes', async () => {
+    await act(async () => {
+      root.render(<Harness article={makeArticle({ id: 1 })} previewHtml="<p>one</p>" />);
+    });
+    await act(async () => {
+      lastResult!.setDraft('<p>edited</p>');
+    });
+    await act(async () => {
+      root.render(<Harness article={makeArticle({ id: 2 })} previewHtml="<p>two</p>" />);
+    });
+    expect(lastResult?.draftHtml).toBe('<p>two</p>');
+    expect(lastResult?.isDirty).toBe(false);
+  });
+
   it('reports draft dirtiness to the unsaved-changes bridge and clears it on unmount', async () => {
     await act(async () => {
       root.render(<Harness article={makeArticle()} previewHtml="<p>converted</p>" />);

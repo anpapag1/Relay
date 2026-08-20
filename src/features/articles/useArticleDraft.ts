@@ -25,7 +25,12 @@ export function useArticleDraft(
       setDraftHtml(previewHtml);
       setIsDirty(false);
     }
-  }, [article, previewHtml]);
+    // The parent re-derives a fresh DerivedArticle object on every render,
+    // so keying on the reference would reset an unsaved draft on any
+    // unrelated re-render cascade. The draft resets when the *article*
+    // changes (id) or the converted preview changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [article?.id, previewHtml]);
 
   useEffect(() => {
     reportDraftDirty(isDirty);
