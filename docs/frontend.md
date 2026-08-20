@@ -99,7 +99,11 @@ build uses — so what you see is what exports.
   above a 150-row threshold: only the rows near the current scroll position
   (plus a 10-row overscan buffer) are mounted inside a fixed-height scroll
   container, matching `MappingsTab`; below the threshold it renders every row
-  directly. Row text truncates with ellipsis at the fixed row height.
+  directly. Row text truncates with ellipsis at the fixed row height. An edited
+  article's status badge reveals a **Reset** button on hover (`.article-status-cell`
+  in `src/theme/index.css`) that dispatches `RESET_ARTICLE` — removing every
+  manual override (edited content, title/date metadata, exclusion, review flag)
+  so the row returns to its pristine imported state.
 - **`ArticleDrawer.tsx`** — the review drawer. Three preview modes in
   `state.ui.previewMode`: **before** (original content), **after** (converted
   Gutenberg), **edit** (an editable view of the Gutenberg, saved to

@@ -531,4 +531,30 @@ describe('hasSessionUnsavedWork', () => {
     s = appReducer(s, { type: 'REVERT_ARTICLE_EDIT', articleId: 103 });
     expect(hasSessionUnsavedWork(s)).toBe(false);
   });
+
+  it('is false after RESET_ARTICLE clears every override for that article, while other articles keep theirs', () => {
+    let s = loadedState();
+    s = appReducer(s, { type: 'SAVE_ARTICLE_EDIT', articleId: 103, editedHtml: '<p>v2</p>' });
+    s = appReducer(s, { type: 'UPDATE_ARTICLE_METADATA', articleId: 101, title: 'Renamed' });
+    s = appReducer(s, { type: 'RESET_ARTICLE', articleId: 103 });
+    expect(hasSessionUnsavedWork(s)).toBe(true);
+
+    s = appReducer(s, { type: 'RESET_ARTICLE', articleId: 101 });
+    expect(hasSessionUnsavedWork(s)).toBe(false);
+  });
+
+  it('returns a pristine derived article after RESET_ARTICLE, with status re-derived', () => {
+    let s = loadedState();
+    s = appReducer(s, { type: 'SAVE_ARTICLE_EDIT', articleId: 103, editedHtml: '<p>v2</p>' });
+    s = appReducer(s, { type: 'UPDATE_ARTICLE_METADATA', articleId: 103, title: 'Renamed' });
+    s = appReducer(s, { type: 'RESET_ARTICLE', articleId: 103 });
+    const derived = getDerivedArticles(s);
+
+    const reset = derived.find((a) => a.id === 103);
+    expect(reset?.status).toBe('ready');
+    expect(reset?.isEdited).toBe(false);
+    expect(reset?.editedHtml).toBeUndefined();
+    expect(reset?.title).toBe('Edited Article');
+    expect(reset?.postDate).toBe('2026-01-03');
+  });
 });

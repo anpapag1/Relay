@@ -28,6 +28,7 @@ export type Action =
   | { type: 'SET_ARTICLE_MANUAL_REVIEW'; articleId: number; manualReview: boolean }
   | { type: 'SAVE_ARTICLE_EDIT'; articleId: number; editedHtml: string }
   | { type: 'REVERT_ARTICLE_EDIT'; articleId: number }
+  | { type: 'RESET_ARTICLE'; articleId: number }
   | { type: 'UPDATE_ARTICLE_METADATA'; articleId: number; title?: string; postDate?: string }
   | { type: 'SET_MEDIA_RESOLUTIONS'; resolutions: Record<string, MediaResolution> }
   | { type: 'START_BUILD' }
@@ -88,6 +89,7 @@ export const actions = {
   setArticleManualReview: (articleId: number, manualReview: boolean): Action => ({ type: 'SET_ARTICLE_MANUAL_REVIEW', articleId, manualReview }),
   saveArticleEdit: (articleId: number, editedHtml: string): Action => ({ type: 'SAVE_ARTICLE_EDIT', articleId, editedHtml }),
   revertArticleEdit: (articleId: number): Action => ({ type: 'REVERT_ARTICLE_EDIT', articleId }),
+  resetArticle: (articleId: number): Action => ({ type: 'RESET_ARTICLE', articleId }),
   updateArticleMetadata: (articleId: number, metadata: { title?: string; postDate?: string }): Action => ({
     type: 'UPDATE_ARTICLE_METADATA',
     articleId,

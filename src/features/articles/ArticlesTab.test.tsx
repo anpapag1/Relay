@@ -107,6 +107,31 @@ describe('ArticlesTab prev/next navigation', () => {
   });
 });
 
+describe('ArticlesTab reset-overrides button', () => {
+  it('shows a Reset button on an edited article row that clears its overrides, and none on untouched rows', async () => {
+    let seeded = stateWithImport();
+    seeded = appReducer(seeded, { type: 'SAVE_ARTICLE_EDIT', articleId: 1, editedHtml: '<p>Edited</p>' });
+    seeded = appReducer(seeded, { type: 'UPDATE_ARTICLE_METADATA', articleId: 1, title: 'Renamed' });
+    await act(async () => {
+      root.render(
+        <AppStateProvider enableAutosave={false} initialStateOverride={seeded}>
+          <ArticlesTab />
+        </AppStateProvider>,
+      );
+    });
+
+    const resetButtons = () => Array.from(container.querySelectorAll('button')).filter((b) => b.textContent?.trim() === 'Reset');
+    expect(resetButtons()).toHaveLength(1);
+    expect(container.textContent).toContain('Renamed');
+
+    await act(async () => { resetButtons()[0].click(); });
+
+    expect(resetButtons()).toHaveLength(0);
+    expect(container.textContent).toContain('Alpha');
+    expect(container.textContent).not.toContain('Renamed');
+  });
+});
+
 describe('ArticlesTab large-list rendering', () => {
   it('renders every row directly for a small list (no virtualization change in behavior)', async () => {
     const seeded = stateWithArticles(20);

@@ -334,6 +334,18 @@ describe('appReducer', () => {
     expect(reverted.articles[1]?.editedHtml).toBeUndefined();
   });
 
+  it('handles RESET_ARTICLE, removing every override for that article and leaving other articles intact', () => {
+    let s = appReducer(initialState, { type: 'SET_ARTICLE_EXCLUDED', articleId: 1, excluded: true });
+    s = appReducer(s, { type: 'SAVE_ARTICLE_EDIT', articleId: 1, editedHtml: '<p>Edited</p>' });
+    s = appReducer(s, { type: 'UPDATE_ARTICLE_METADATA', articleId: 1, title: 'Renamed', postDate: '2026-02-02' });
+    s = appReducer(s, { type: 'SET_ARTICLE_MANUAL_REVIEW', articleId: 1, manualReview: true });
+    s = appReducer(s, { type: 'SAVE_ARTICLE_EDIT', articleId: 2, editedHtml: '<p>Other</p>' });
+
+    const reset = appReducer(s, { type: 'RESET_ARTICLE', articleId: 1 });
+    expect(reset.articles[1]).toBeUndefined();
+    expect(reset.articles[2]?.editedHtml).toBe('<p>Other</p>');
+  });
+
   it('handles UPDATE_ARTICLE_METADATA and drops empty overrides', () => {
     const updated = appReducer(initialState, {
       type: 'UPDATE_ARTICLE_METADATA',

@@ -316,6 +316,14 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
         },
       };
     }
+    case 'RESET_ARTICLE': {
+      // A full per-article reset: removes every manual override — edited
+      // content, metadata, exclusion, review flag — so the article returns
+      // to its pristine imported state and status is re-derived.
+      const next = { ...state.articles };
+      delete next[action.articleId];
+      return { ...state, articles: next };
+    }
     case 'UPDATE_ARTICLE_METADATA': {
       const prev = state.articles[action.articleId] ?? {};
       const next = { ...prev };

@@ -160,8 +160,21 @@ export const ArticlesTab: React.FC = () => {
             </div>
           )}
         </div>
-        <div>
+        <div className="article-status-cell">
           <Badge status={art.status} />
+          {art.isEdited && (
+            <button
+              type="button"
+              className="btn btn-secondary article-reset-btn"
+              title="Reset edits, metadata, exclusion and review flag to the original values"
+              onClick={(e) => {
+                e.stopPropagation();
+                dispatch({ type: 'RESET_ARTICLE', articleId: art.id });
+              }}
+            >
+              Reset
+            </button>
+          )}
         </div>
         <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: '6px' }}>
           <button

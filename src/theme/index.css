@@ -330,6 +330,25 @@ a:hover {
   background: var(--relay-danger-hover);
 }
 
+/* Articles tab status cell — a small Reset button revealed on hover (or
+ * keyboard focus) over an edited article's badge, so one click reverts
+ * every manual override (edited content, metadata, exclusion, review
+ * flag) at once without opening the drawer. */
+.article-status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.article-reset-btn {
+  display: none;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+.article-status-cell:hover .article-reset-btn,
+.article-reset-btn:focus-visible {
+  display: inline-flex;
+}
+
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
