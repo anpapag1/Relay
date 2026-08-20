@@ -3,8 +3,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { ArticleSidebar } from './ArticleSidebar';
+import * as debugPayload from './debugPayload';
 import type { DerivedArticle } from '../../state/types';
 import type { NewSiteTerm } from '../../types/domain';
+
+vi.mock('./debugPayload', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./debugPayload')>();
+  return { ...actual, downloadJson: vi.fn() };
+});
 
 function makeArticle(overrides: Partial<DerivedArticle> = {}): DerivedArticle {
   return {
@@ -45,6 +51,7 @@ beforeEach(() => {
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
+  vi.mocked(debugPayload.downloadJson).mockClear();
 });
 
 afterEach(async () => {
@@ -61,6 +68,8 @@ function renderSidebar(overrides: Partial<Parameters<typeof ArticleSidebar>[0]> 
     featuredImageUrl: null,
     featuredImageLoading: false,
     isDirty: false,
+    afterHtml: '',
+    draftHtml: '',
     onSave: vi.fn(),
     onClose: vi.fn(),
     onSaveMetadata,
@@ -69,6 +78,8 @@ function renderSidebar(overrides: Partial<Parameters<typeof ArticleSidebar>[0]> 
     scrollRef: { current: null },
     categoryOptions: CATEGORY_OPTIONS,
     tagOptions: TAG_OPTIONS,
+    builder: null,
+    settings: {} as Parameters<typeof ArticleSidebar>[0]['settings'],
   };
   const props = { ...base, ...overrides };
   act(() => {
@@ -78,6 +89,8 @@ function renderSidebar(overrides: Partial<Parameters<typeof ArticleSidebar>[0]> 
         featuredImageUrl={props.featuredImageUrl}
         featuredImageLoading={props.featuredImageLoading}
         isDirty={props.isDirty}
+        afterHtml={props.afterHtml}
+        draftHtml={props.draftHtml}
         onSave={props.onSave}
         onClose={props.onClose}
         onSaveMetadata={props.onSaveMetadata}
@@ -86,6 +99,8 @@ function renderSidebar(overrides: Partial<Parameters<typeof ArticleSidebar>[0]> 
         scrollRef={props.scrollRef}
         categoryOptions={props.categoryOptions}
         tagOptions={props.tagOptions}
+        builder={props.builder}
+        settings={props.settings}
       />,
     );
   });
@@ -96,11 +111,23 @@ function findByText(text: string) {
   return Array.from(container.querySelectorAll('button, div, b, span')).find((el) => el.textContent?.trim() === text) as HTMLElement | undefined;
 }
 
+function findButtonByText(text: string) {
+  return Array.from(container.querySelectorAll('button')).find((el) => el.textContent?.trim() === text) as HTMLButtonElement | undefined;
+}
+
 function setInputValue(input: HTMLInputElement, value: string) {
   const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
   act(() => {
     setter?.call(input, value);
     input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+function setTextareaValue(textarea: HTMLTextAreaElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+  act(() => {
+    setter?.call(textarea, value);
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
   });
 }
 
@@ -208,5 +235,65 @@ describe('ArticleSidebar metadata edit', () => {
 
     expect(onSaveMetadata).not.toHaveBeenCalled();
     expect(findByText('Edit metadata')).toBeDefined();
+  });
+});
+
+describe('ArticleSidebar debug copy', () => {
+  it('shows a "There is a problem with this article" button', async () => {
+    renderSidebar();
+    expect(findButtonByText('There is a problem with this article')).toBeDefined();
+  });
+
+  it('reveals a problem textarea with Submit and Cancel when clicked', async () => {
+    renderSidebar();
+
+    await act(async () => {
+      findButtonByText('There is a problem with this article')?.click();
+    });
+
+    expect(container.querySelector('textarea[placeholder*="What looks wrong"]')).not.toBeNull();
+    expect(findButtonByText('Submit for debugging')).toBeDefined();
+    expect(findButtonByText('Cancel')).toBeDefined();
+    expect(findButtonByText('There is a problem with this article')).toBeUndefined();
+  });
+
+  it('downloads a JSON debug payload with the problem description on submit', async () => {
+    renderSidebar({ afterHtml: '<p>Converted after</p>', draftHtml: '<p>Edited in drawer</p>' });
+
+    await act(async () => {
+      findButtonByText('There is a problem with this article')?.click();
+    });
+    const textarea = container.querySelector<HTMLTextAreaElement>('textarea[placeholder*="What looks wrong"]')!;
+    setTextareaValue(textarea, 'the image does not load');
+
+    await act(async () => {
+      findButtonByText('Submit for debugging')?.click();
+    });
+
+    expect(debugPayload.downloadJson).toHaveBeenCalledTimes(1);
+    expect(debugPayload.downloadJson).toHaveBeenCalledWith(
+      'relay-debug-test-article-1.json',
+      expect.objectContaining({
+        problem: 'the image does not load',
+        content: { before: '<p>Hello</p>', after: '<p>Converted after</p>', draft: '<p>Edited in drawer</p>' },
+        article: expect.objectContaining({ title: 'Test Article' }),
+      }),
+    );
+    expect(container.textContent).toContain('Send this file to the dev to patch the problem.');
+  });
+
+  it('Cancel collapses the form without downloading', async () => {
+    renderSidebar();
+
+    await act(async () => {
+      findButtonByText('There is a problem with this article')?.click();
+    });
+    await act(async () => {
+      findButtonByText('Cancel')?.click();
+    });
+
+    expect(debugPayload.downloadJson).not.toHaveBeenCalled();
+    expect(findButtonByText('There is a problem with this article')).toBeDefined();
+    expect(container.textContent).not.toContain('Send this file to the dev to patch the problem.');
   });
 });

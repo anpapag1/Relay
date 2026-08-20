@@ -158,7 +158,16 @@ build uses — so what you see is what exports.
   `UPDATE_ARTICLE_METADATA`, which stores title/postDate/newSlug/categoryIds/
   tagIds overrides on the article (used by the build's export and the derived
   articles). The preview's Edit mode is a separate toggle on the preview pane
-  itself.
+  itself. A "There is a problem with this article" button at the bottom of the
+  sidebar expands a small form: the user types what looks wrong and hits
+  "Submit for debugging", which downloads a JSON file
+  (`relay-debug-<slug>-<id>.json`) containing the article's metadata, its
+  before/after/draft content, the problem description, the active builder, and
+  the conversion settings — designed to be sent to a developer or AI to patch
+  the conversion problem (`debugPayload.ts`).
+- **`debugPayload.ts`** — the debug-file builder (`buildDebugPayload`) and the
+  `downloadJson` helper that serialises the payload and triggers the browser
+  download. Pure and unit-testable, separate from the sidebar UI.
 - **`useFeaturedImage.ts`** — featured-image resolution for the drawer.
 - **`DiscardConfirmDialog.tsx`** — the unsaved-changes modal.
 

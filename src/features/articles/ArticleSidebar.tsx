@@ -1,15 +1,20 @@
 // src/features/articles/ArticleSidebar.tsx
 import React, { useState } from 'react';
 import type { DerivedArticle } from '../../state/types';
-import type { NewSiteTerm } from '../../types/domain';
+import type { ConversionSettings, NewSiteTerm } from '../../types/domain';
 import { Badge } from '../../ui/Badge';
 import { termSourceDomain } from '../../core/build/resolveTerms';
+import { buildDebugPayload, debugFileName, downloadJson } from './debugPayload';
 
 export interface ArticleSidebarProps {
   article: DerivedArticle;
   featuredImageUrl: string | null;
   featuredImageLoading: boolean;
   isDirty: boolean;
+  /** The converted "after" HTML for this article (honors manual overrides). */
+  afterHtml: string;
+  /** The current editor draft, including unsaved edits. */
+  draftHtml: string;
   onSave: () => void;
   onClose: () => void;
   onSaveMetadata: (metadata: {
@@ -29,6 +34,10 @@ export interface ArticleSidebarProps {
   /** Destination terms available for the tags dropdown, from the target
    * table id'd `post_tag`. */
   tagOptions: NewSiteTerm[];
+  /** The active builder id (included in the debug payload). */
+  builder: string | null;
+  /** Conversion settings (included in the debug payload). */
+  settings: ConversionSettings;
 }
 
 /** Matches a resolved destination term back to its target term id so the
@@ -52,6 +61,8 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
   featuredImageUrl,
   featuredImageLoading,
   isDirty,
+  afterHtml,
+  draftHtml,
   onSave,
   onClose,
   onSaveMetadata,
@@ -60,6 +71,8 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
   scrollRef,
   categoryOptions,
   tagOptions,
+  builder,
+  settings,
 }) => {
   const isExcluded = article.status.startsWith('excluded');
   const [editing, setEditing] = useState(false);
@@ -68,6 +81,9 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
   const [draftSlug, setDraftSlug] = useState('');
   const [draftCategoryIds, setDraftCategoryIds] = useState<string[]>([]);
   const [draftTagIds, setDraftTagIds] = useState<string[]>([]);
+  const [problemOpen, setProblemOpen] = useState(false);
+  const [problemText, setProblemText] = useState('');
+  const [problemSent, setProblemSent] = useState(false);
 
   const currentCategoryIds = article.destinationTerms
     .filter((t) => termSourceDomain(t) === 'category')
@@ -110,6 +126,16 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
       tagIds: draftTagIds,
     });
     setEditing(false);
+  };
+
+  const handleProblemSubmit = () => {
+    downloadJson(
+      debugFileName(article.postName, article.id),
+      buildDebugPayload({ article, afterHtml, draftHtml, problem: problemText.trim(), builder, settings }),
+    );
+    setProblemSent(true);
+    setProblemOpen(false);
+    setProblemText('');
   };
 
   const termChecklist = (
@@ -473,6 +499,71 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
         <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1, padding: '11px', fontSize: '14px' }}>
           Done
         </button>
+      </div>
+
+      <div style={{ marginTop: '14px' }}>
+        {problemSent ? (
+          <div
+            style={{
+              padding: '12px 14px',
+              background: 'var(--relay-success-bg)',
+              border: '1px solid var(--relay-success-border)',
+              borderRadius: '8px',
+              fontSize: '13px',
+              color: 'var(--relay-success)',
+            }}
+          >
+            Send this file to the dev to patch the problem.
+          </div>
+        ) : problemOpen ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <textarea
+              value={problemText}
+              onChange={(e) => setProblemText(e.target.value)}
+              placeholder="What looks wrong with this article? A JSON file with the metadata and before/after content will be downloaded."
+              style={{
+                width: '100%',
+                minHeight: '80px',
+                padding: '8px',
+                borderRadius: '8px',
+                border: '1px solid var(--relay-border)',
+                fontSize: '13px',
+                fontFamily: 'inherit',
+                resize: 'vertical',
+              }}
+            />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={handleProblemSubmit}
+                className="btn btn-primary"
+                style={{ flex: 1, padding: '8px', fontSize: '13px', fontWeight: 600 }}
+              >
+                Submit for debugging
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setProblemOpen(false);
+                  setProblemText('');
+                }}
+                className="btn btn-secondary"
+                style={{ flex: 1, padding: '8px', fontSize: '13px', fontWeight: 600 }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setProblemOpen(true)}
+            className="btn btn-secondary"
+            style={{ width: '100%', padding: '9px', fontSize: '13px', fontWeight: 600 }}
+          >
+            There is a problem with this article
+          </button>
+        )}
       </div>
     </div>
   );

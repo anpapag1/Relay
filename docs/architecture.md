@@ -79,7 +79,7 @@ Relay/
    │  ├─ mappings/      MappingsTab
    │  ├─ settings/      SettingsTab
    │  ├─ articles/      ArticlesTab · ArticleDrawer · ArticlePreviewPane
-   │  │                 ArticleSidebar · useArticleDraft · useScrollManagement …
+   │  │                 ArticleSidebar · debugPayload · useArticleDraft · useScrollManagement …
    │  ├─ build/         BuildTab
    │  └─ sites/         SitesDrawer (auto-saved per-site configs)
    ├─ ui/               Header · Modal · Badge

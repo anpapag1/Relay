@@ -130,6 +130,8 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
           featuredImageUrl={featuredImageUrl}
           featuredImageLoading={featuredImageLoading}
           isDirty={isDirty}
+          afterHtml={converted.html}
+          draftHtml={draftHtml}
           onSave={handleSave}
           onClose={requestClose}
           onSaveMetadata={(metadata) => {
@@ -140,6 +142,8 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
           scrollRef={sidebarScrollRef}
           categoryOptions={categoryOptions}
           tagOptions={tagOptions}
+          builder={state.builderId}
+          settings={state.settings}
         />
       </div>
 
