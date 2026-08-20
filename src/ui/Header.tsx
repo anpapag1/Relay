@@ -92,19 +92,11 @@ export const Header: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '44px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '18px 0 16px' }}>
-                <div
-                  style={{
-                    width: '26px',
-                    height: '26px',
-                    borderRadius: '7px',
-                    background: 'var(--relay-accent)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <div style={{ width: '11px', height: '11px', borderRadius: '2.5px', background: 'white' }} />
-                </div>
+                <img
+                  src="/icon.svg"
+                  alt="Relay logo"
+                  style={{ height: '26px', width: 'auto', display: 'block' }}
+                />
                 <div style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '-0.01em' }}>Relay</div>
                 <div
                   style={{

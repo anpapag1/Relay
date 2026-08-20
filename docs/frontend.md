@@ -224,10 +224,11 @@ domain is detected.
 
 ## Shared UI and theme
 
-- **`src/ui/`** — `Header.tsx` (app header, including the detected-domain pill
-  that opens the saved-sites drawer, the theme toggle, the `?` help button
-  that reopens the onboarding tour, and a `tour-tab-pulse` glow on the tab
-  the open tour step explains), `Modal.tsx`, `Badge.tsx` (status chips).
+- **`src/ui/`** — `Header.tsx` (app header: the Relay logo from `public/icon.svg`,
+  the detected-domain pill that opens the saved-sites drawer, the theme toggle,
+  the `?` help button that reopens the onboarding tour, and a
+  `tour-tab-pulse` glow on the tab the open tour step explains), `Modal.tsx`,
+  `Badge.tsx` (status chips).
   Small, file-per-component.
 - **`src/theme/`** — `tokens.ts` (frozen design values), `index.css` (the
   design-token `:root` / `[data-theme='dark']` variable block plus the

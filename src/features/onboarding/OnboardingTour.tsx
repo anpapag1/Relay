@@ -622,9 +622,7 @@ export const OnboardingTour: React.FC = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 24, height: 24, borderRadius: 6, background: 'var(--relay-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ width: 10, height: 10, borderRadius: 2.5, background: 'white' }} />
-          </div>
+          <img src="/icon.svg" alt="Relay logo" style={{ height: 24, width: 'auto', display: 'block' }} />
           <div style={{ fontSize: 17, fontWeight: 700 }}>Welcome to Relay</div>
           <div style={{ fontSize: 12, color: 'var(--relay-text-muted)' }}>
             {step + 1}/{STEP_COPY.length}
