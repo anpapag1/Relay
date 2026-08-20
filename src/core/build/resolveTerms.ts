@@ -8,6 +8,51 @@ export function termSourceDomain(term: ExportTermRef): string {
   return term.sourceDomain ?? term.domain;
 }
 
+/** User-selected destination categories/tags that replace the article's
+ * mapped ones on export (see applyTermOverrides). The table ids follow the
+ * app's target-table convention: `category` and `post_tag`, matching the
+ * taxonomy domains written to the WXR. */
+export interface TermOverrides {
+  categoryIds?: string[];
+  tagIds?: string[];
+}
+
+/** Applies per-article category/tag overrides on top of the mapping's
+ * resolved terms. When an override is present (non-empty ids), every base
+ * term of that taxonomy is dropped and replaced by the chosen destination
+ * terms, resolved against the matching target table. Terms whose id no
+ * longer resolves (deleted term/table) are dropped rather than guessed,
+ * mirroring resolveArticleTerms. Terms of other taxonomies pass through
+ * untouched. */
+export function applyTermOverrides(
+  baseTerms: ExportTermRef[],
+  overrides: TermOverrides,
+  newTables: TermTable[],
+): ExportTermRef[] {
+  const out = baseTerms.filter((term) => {
+    const source = termSourceDomain(term);
+    if (source === 'category' && overrides.categoryIds !== undefined) return false;
+    if (source === 'post_tag' && overrides.tagIds !== undefined) return false;
+    return true;
+  });
+
+  const tableById = new Map(newTables.map((table) => [table.id, table]));
+  const pushResolved = (ids: string[] | undefined, tableId: string, sourceDomain: string) => {
+    if (!ids || ids.length === 0) return;
+    const table = tableById.get(tableId);
+    if (!table) return;
+    for (const id of ids) {
+      const term = table.terms.find((candidate) => candidate.id === id);
+      if (!term) continue;
+      out.push({ domain: tableId, nicename: term.slug || term.id, name: term.name, sourceDomain });
+    }
+  };
+
+  pushResolved(overrides.categoryIds, 'category', 'category');
+  pushResolved(overrides.tagIds, 'post_tag', 'post_tag');
+  return out;
+}
+
 /** Resolves an article's old-site terms into new-site terms for export,
  * via the mapping table. A term with no mapping, or one whose target
  * table/term no longer exists, is dropped rather than guessed — it never

@@ -91,6 +91,10 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
     dispatch({ type: 'SET_PREVIEW_MODE', mode });
   };
 
+  const targetTables = Object.values(state.target.tables);
+  const categoryOptions = targetTables.find((t) => t.id === 'category')?.terms ?? [];
+  const tagOptions = targetTables.find((t) => t.id === 'post_tag')?.terms ?? [];
+
   return (
     <>
       <div
@@ -134,6 +138,8 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
           onToggleInclude={handleToggleInclude}
           onToggleManualReview={handleToggleManualReview}
           scrollRef={sidebarScrollRef}
+          categoryOptions={categoryOptions}
+          tagOptions={tagOptions}
         />
       </div>
 

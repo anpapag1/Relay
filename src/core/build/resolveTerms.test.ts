@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { resolveArticleTerms, termSourceDomain } from './resolveTerms';
-import type { TermMapping, TermRef, TermTable } from '../../types/domain';
+import { applyTermOverrides, resolveArticleTerms, termSourceDomain } from './resolveTerms';
+import type { ExportTermRef, TermMapping, TermRef, TermTable } from '../../types/domain';
 
 const NEW_TABLES: TermTable[] = [
   { id: 'category', label: 'Categories', terms: [{ id: 'c1', name: 'News', slug: 'news' }, { id: 'c2', name: 'Press', slug: 'press' }] },
@@ -67,6 +67,65 @@ describe('resolveArticleTerms', () => {
       'category:news': { oldDomain: 'category', oldNicename: 'news', targetTableId: 'category', targetTermIds: ['c1'], excluded: true, origin: 'user' },
     };
     expect(resolveArticleTerms(terms, mappings, NEW_TABLES)).toEqual([]);
+  });
+});
+
+describe('applyTermOverrides', () => {
+  const TABLES: TermTable[] = [
+    {
+      id: 'category',
+      label: 'Categories',
+      terms: [
+        { id: 'c1', name: 'News', slug: 'news' },
+        { id: 'c2', name: 'Press', slug: 'press' },
+      ],
+    },
+    {
+      id: 'post_tag',
+      label: 'Tags',
+      terms: [{ id: 't1', name: 'React', slug: 'react' }],
+    },
+  ];
+
+  const base: ExportTermRef[] = [
+    { domain: 'category', nicename: 'news', name: 'News', sourceDomain: 'category' },
+    { domain: 'tags', nicename: 'react', name: 'React', sourceDomain: 'post_tag' },
+  ];
+
+  it('replaces the mapped categories with the chosen destination terms', () => {
+    expect(applyTermOverrides(base, { categoryIds: ['c2'] }, TABLES)).toEqual([
+      { domain: 'tags', nicename: 'react', name: 'React', sourceDomain: 'post_tag' },
+      { domain: 'category', nicename: 'press', name: 'Press', sourceDomain: 'category' },
+    ]);
+  });
+
+  it('replaces the mapped tags and keeps the categories', () => {
+    expect(applyTermOverrides(base, { tagIds: ['t1'] }, TABLES)).toEqual([
+      { domain: 'category', nicename: 'news', name: 'News', sourceDomain: 'category' },
+      { domain: 'post_tag', nicename: 'react', name: 'React', sourceDomain: 'post_tag' },
+    ]);
+  });
+
+  it('passes terms through untouched when no override is given', () => {
+    expect(applyTermOverrides(base, {}, TABLES)).toEqual(base);
+  });
+
+  it('drops an override id that no longer resolves to a target term', () => {
+    expect(applyTermOverrides(base, { categoryIds: ['gone'] }, TABLES)).toEqual([
+      { domain: 'tags', nicename: 'react', name: 'React', sourceDomain: 'post_tag' },
+    ]);
+  });
+
+  it('does nothing when the taxonomy table does not exist', () => {
+    expect(applyTermOverrides(base, { categoryIds: ['c2'] }, TABLES.filter((t) => t.id === 'post_tag'))).toEqual([
+      { domain: 'tags', nicename: 'react', name: 'React', sourceDomain: 'post_tag' },
+    ]);
+  });
+
+  it('uses the term id as nicename when the chosen term has no slug', () => {
+    const tables: TermTable[] = [{ id: 'category', label: 'Categories', terms: [{ id: 'c2', name: 'Press' }] }];
+    const result = applyTermOverrides(base, { categoryIds: ['c2'] }, tables);
+    expect(result).toContainEqual({ domain: 'category', nicename: 'c2', name: 'Press', sourceDomain: 'category' });
   });
 });
 

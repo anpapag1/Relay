@@ -29,7 +29,20 @@ export type Action =
   | { type: 'SAVE_ARTICLE_EDIT'; articleId: number; editedHtml: string }
   | { type: 'REVERT_ARTICLE_EDIT'; articleId: number }
   | { type: 'RESET_ARTICLE'; articleId: number }
-  | { type: 'UPDATE_ARTICLE_METADATA'; articleId: number; title?: string; postDate?: string }
+  | {
+      type: 'UPDATE_ARTICLE_METADATA';
+      articleId: number;
+      title?: string;
+      postDate?: string;
+      /** Override for the exported `wp:post_name` (new-site slug). */
+      newSlug?: string;
+      /** Destination term IDs (from the target category table) that replace
+       * the article's mapped categories on export. */
+      categoryIds?: string[];
+      /** Destination term IDs (from the target tag table) that replace the
+       * article's mapped tags on export. */
+      tagIds?: string[];
+    }
   | { type: 'SET_MEDIA_RESOLUTIONS'; resolutions: Record<string, MediaResolution> }
   | { type: 'START_BUILD' }
   | { type: 'BUILD_PROGRESS'; completed: number; total: number; logLine?: string }
@@ -90,11 +103,17 @@ export const actions = {
   saveArticleEdit: (articleId: number, editedHtml: string): Action => ({ type: 'SAVE_ARTICLE_EDIT', articleId, editedHtml }),
   revertArticleEdit: (articleId: number): Action => ({ type: 'REVERT_ARTICLE_EDIT', articleId }),
   resetArticle: (articleId: number): Action => ({ type: 'RESET_ARTICLE', articleId }),
-  updateArticleMetadata: (articleId: number, metadata: { title?: string; postDate?: string }): Action => ({
+  updateArticleMetadata: (
+    articleId: number,
+    metadata: { title?: string; postDate?: string; newSlug?: string; categoryIds?: string[]; tagIds?: string[] },
+  ): Action => ({
     type: 'UPDATE_ARTICLE_METADATA',
     articleId,
     title: metadata.title,
     postDate: metadata.postDate,
+    newSlug: metadata.newSlug,
+    categoryIds: metadata.categoryIds,
+    tagIds: metadata.tagIds,
   }),
   setMediaResolutions: (resolutions: Record<string, MediaResolution>): Action => ({ type: 'SET_MEDIA_RESOLUTIONS', resolutions }),
   startBuild: (): Action => ({ type: 'START_BUILD' }),

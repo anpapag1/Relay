@@ -331,6 +331,12 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
       else delete next.title;
       if (action.postDate) next.postDate = action.postDate;
       else delete next.postDate;
+      if (action.newSlug) next.newSlug = action.newSlug;
+      else delete next.newSlug;
+      if (action.categoryIds && action.categoryIds.length > 0) next.categoryIds = action.categoryIds;
+      else delete next.categoryIds;
+      if (action.tagIds && action.tagIds.length > 0) next.tagIds = action.tagIds;
+      else delete next.tagIds;
       return {
         ...state,
         articles: {

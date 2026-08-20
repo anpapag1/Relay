@@ -13,7 +13,7 @@ import { effectiveFallbackFeaturedImage } from '../media/effectiveFallbackFeatur
 import type { FetchLike } from '../media/mediaClient';
 import { termMappingIdOf } from '../mappings/termId';
 import { collectMediaRefs, rewriteMediaRefs } from './collectMediaRefs';
-import { resolveArticleTerms } from './resolveTerms';
+import { applyTermOverrides, resolveArticleTerms } from './resolveTerms';
 
 /** Every exported post is attributed to this one fixed login rather than
  * the article's real original author — matches the reference tool: real
@@ -75,6 +75,12 @@ export interface BuildArticleInput {
    * values fall back when unset. */
   title?: string;
   postDate?: string;
+  /** Override for the exported `wp:post_name` (new-site slug). */
+  newSlug?: string;
+  /** Destination category/tag term IDs that replace the article's mapped
+   * terms of that taxonomy on export. */
+  categoryIds?: string[];
+  tagIds?: string[];
 }
 
 export type ArticleBuildStatus = 'ready' | 'review' | 'skipped';
@@ -128,7 +134,7 @@ function toExportArticle(
     title: input.title ?? article.title,
     link: article.link,
     postDate: input.postDate ?? article.postDate,
-    postName: article.postName || undefined,
+    postName: input.newSlug || article.postName || undefined,
     authorLogin: MIGRATION_AUTHOR_LOGIN,
     contentHtml,
     terms,
@@ -159,7 +165,11 @@ async function resolveOneArticle(
   attachmentIndex: AttachmentIndex,
 ): Promise<ResolvedArticle> {
   const { article } = input;
-  const terms = resolveArticleTerms(article.terms, options.mappings, options.newTables);
+  const terms = applyTermOverrides(
+    resolveArticleTerms(article.terms, options.mappings, options.newTables),
+    { categoryIds: input.categoryIds, tagIds: input.tagIds },
+    options.newTables,
+  );
   const featuredImage = article.featuredImageUrl
     ? { outcome: 'matched-live' as const, url: article.featuredImageUrl }
     : await resolveFeaturedImage(article.postmeta, attachmentIndex, article.link || null, options.fetchImpl);

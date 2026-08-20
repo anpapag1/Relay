@@ -26,9 +26,12 @@ ParseResult → detectBuilder → reader → IR tree → writeBlocks → WXR mar
 - **`generateWxr.ts`** — emits the output WXR: channel header, `wp:wxr_version
   1.2`, `wp:category`/`wp:tag` elements from the resolved mappings, and one
   `<item>` per included article. Articles with `editedHtml` emit that stored
-  markup verbatim (no reader/writer round-trip). Title/postDate overrides from
-  the article sidebar (`UPDATE_ARTICLE_METADATA`) are applied before emission,
-  falling back to the parsed values. Each article also carries a
+  markup verbatim (no reader/writer round-trip). Title/postDate/newSlug/
+  category/tag overrides from the article sidebar (`UPDATE_ARTICLE_METADATA`)
+  are applied before emission — `newSlug` becomes `wp:post_name`, and
+  `categoryIds`/`tagIds` replace the mapped terms of that taxonomy via
+  `applyTermOverrides` in `core/build/resolveTerms.ts` — falling back to the
+  parsed/mapped values when unset. Each article also carries a
   synthetic `<wp:attachment>` item for every inline media URL it uses
   (`mediaAttachmentUrls`) — Relay never carries the source export's attachment
   items over verbatim, so without these, inline images would import as bare

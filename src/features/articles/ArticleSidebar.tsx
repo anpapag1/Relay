@@ -1,6 +1,7 @@
 // src/features/articles/ArticleSidebar.tsx
 import React, { useState } from 'react';
 import type { DerivedArticle } from '../../state/types';
+import type { NewSiteTerm } from '../../types/domain';
 import { Badge } from '../../ui/Badge';
 import { termSourceDomain } from '../../core/build/resolveTerms';
 
@@ -11,10 +12,39 @@ export interface ArticleSidebarProps {
   isDirty: boolean;
   onSave: () => void;
   onClose: () => void;
-  onSaveMetadata: (metadata: { title: string; postDate: string }) => void;
+  onSaveMetadata: (metadata: {
+    title: string;
+    postDate: string;
+    newSlug: string;
+    categoryIds: string[];
+    tagIds: string[];
+  }) => void;
   onToggleInclude: () => void;
   onToggleManualReview: () => void;
   scrollRef: React.RefObject<HTMLDivElement>;
+  /** Destination terms available for the category dropdown, from the
+   * target table id'd `category` (the app's table-id convention, matching
+   * the taxonomy domain written to the WXR). */
+  categoryOptions: NewSiteTerm[];
+  /** Destination terms available for the tags dropdown, from the target
+   * table id'd `post_tag`. */
+  tagOptions: NewSiteTerm[];
+}
+
+/** Matches a resolved destination term back to its target term id so the
+ * edit UI can pre-check the current selection. The term's nicename is the
+ * target slug (or id when the term has no slug), so an option matches when
+ * either its id or its slug equals it. */
+function targetIdForTerm(nicename: string, options: NewSiteTerm[]): string | undefined {
+  return options.find((opt) => opt.id === nicename || opt.slug === nicename)?.id;
+}
+
+function slugify(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
@@ -28,15 +58,32 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
   onToggleInclude,
   onToggleManualReview,
   scrollRef,
+  categoryOptions,
+  tagOptions,
 }) => {
   const isExcluded = article.status.startsWith('excluded');
   const [editing, setEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState('');
   const [draftPostDate, setDraftPostDate] = useState('');
+  const [draftSlug, setDraftSlug] = useState('');
+  const [draftCategoryIds, setDraftCategoryIds] = useState<string[]>([]);
+  const [draftTagIds, setDraftTagIds] = useState<string[]>([]);
+
+  const currentCategoryIds = article.destinationTerms
+    .filter((t) => termSourceDomain(t) === 'category')
+    .map((t) => targetIdForTerm(t.nicename, categoryOptions))
+    .filter((id): id is string => id !== undefined);
+  const currentTagIds = article.destinationTerms
+    .filter((t) => termSourceDomain(t) === 'post_tag')
+    .map((t) => targetIdForTerm(t.nicename, tagOptions))
+    .filter((id): id is string => id !== undefined);
 
   const startEditing = () => {
     setDraftTitle(article.title || '');
     setDraftPostDate(article.postDate || '');
+    setDraftSlug(article.postName || '');
+    setDraftCategoryIds(currentCategoryIds);
+    setDraftTagIds(currentTagIds);
     setEditing(true);
   };
 
@@ -44,12 +91,64 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
     setEditing(false);
     setDraftTitle('');
     setDraftPostDate('');
+    setDraftSlug('');
+    setDraftCategoryIds([]);
+    setDraftTagIds([]);
+  };
+
+  const toggleId = (kind: 'category' | 'tag', id: string, checked: boolean) => {
+    const setter = kind === 'category' ? setDraftCategoryIds : setDraftTagIds;
+    setter((prev) => (checked ? [...prev, id] : prev.filter((x) => x !== id)));
   };
 
   const saveMetadata = () => {
-    onSaveMetadata({ title: draftTitle.trim(), postDate: draftPostDate.trim() });
+    onSaveMetadata({
+      title: draftTitle.trim(),
+      postDate: draftPostDate.trim(),
+      newSlug: slugify(draftSlug),
+      categoryIds: draftCategoryIds,
+      tagIds: draftTagIds,
+    });
     setEditing(false);
   };
+
+  const termChecklist = (
+    label: string,
+    options: NewSiteTerm[],
+    selected: string[],
+    kind: 'category' | 'tag',
+  ) => (
+    <div style={{ gridColumn: '1 / -1' }}>
+      <span style={{ color: 'var(--relay-text-muted)' }}>{label}</span>
+      <div
+        style={{
+          maxHeight: '120px',
+          overflowY: 'auto',
+          marginTop: '4px',
+          border: '1px solid var(--relay-border)',
+          borderRadius: '6px',
+          padding: '6px 8px',
+        }}
+      >
+        {options.length === 0 ? (
+          <div style={{ fontSize: '12px', color: 'var(--relay-text-muted)' }}>No destination {label.toLowerCase()} table set up</div>
+        ) : (
+          options.map((opt) => (
+            <label key={opt.id} style={{ display: 'block', fontSize: '12px', padding: '2px 0', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                value={opt.id}
+                checked={selected.includes(opt.id)}
+                onChange={(e) => toggleId(kind, opt.id, e.target.checked)}
+                style={{ marginRight: '6px' }}
+              />
+              {opt.name}
+            </label>
+          ))
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -194,28 +293,48 @@ export const ArticleSidebar: React.FC<ArticleSidebarProps> = ({
           <div>
             <span style={{ color: 'var(--relay-text-muted)' }}>New slug</span>
             <br />
-            <b style={{ fontFamily: 'monospace' }}>{article.postName || '—'}</b>
+            {editing ? (
+              <input
+                type="text"
+                value={draftSlug}
+                onChange={(e) => setDraftSlug(e.target.value)}
+                placeholder="new-site-slug"
+                style={{ width: '100%', marginTop: '4px', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--relay-border)', fontSize: '12px', fontFamily: 'monospace' }}
+              />
+            ) : (
+              <b style={{ fontFamily: 'monospace' }}>{article.postName || '—'}</b>
+            )}
           </div>
-          <div>
-            <span style={{ color: 'var(--relay-text-muted)' }}>Category</span>
-            <br />
-            <b>
-              {article.destinationTerms
-                .filter((t) => termSourceDomain(t) === 'category')
-                .map((t) => t.name)
-                .join(', ') || 'Unmapped'}
-            </b>
-          </div>
-          <div>
-            <span style={{ color: 'var(--relay-text-muted)' }}>Tags</span>
-            <br />
-            <b>
-              {article.destinationTerms
-                .filter((t) => termSourceDomain(t) === 'post_tag')
-                .map((t) => t.name)
-                .join(', ') || 'None'}
-            </b>
-          </div>
+          {editing && (
+            <>
+              {termChecklist('Category', categoryOptions, draftCategoryIds, 'category')}
+              {termChecklist('Tags', tagOptions, draftTagIds, 'tag')}
+            </>
+          )}
+          {!editing && (
+            <>
+              <div>
+                <span style={{ color: 'var(--relay-text-muted)' }}>Category</span>
+                <br />
+                <b>
+                  {article.destinationTerms
+                    .filter((t) => termSourceDomain(t) === 'category')
+                    .map((t) => t.name)
+                    .join(', ') || 'Unmapped'}
+                </b>
+              </div>
+              <div>
+                <span style={{ color: 'var(--relay-text-muted)' }}>Tags</span>
+                <br />
+                <b>
+                  {article.destinationTerms
+                    .filter((t) => termSourceDomain(t) === 'post_tag')
+                    .map((t) => t.name)
+                    .join(', ') || 'None'}
+                </b>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

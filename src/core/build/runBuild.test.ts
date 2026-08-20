@@ -237,6 +237,78 @@ describe('runBuild', () => {
     expect(parsed.articles[0].terms).toEqual([{ domain: 'category', nicename: 'news', name: 'News' }]);
   });
 
+  it('exports the newSlug override as wp:post_name, ahead of the parsed slug', async () => {
+    const articles: BuildArticleInput[] = [
+      { article: makeArticle({ postName: 'hello-world' }), excluded: false, newSlug: 'my-custom-slug' },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.articles[0].postName).toBe('my-custom-slug');
+  });
+
+  it('replaces mapped categories/tags with the chosen override terms in the exported WXR', async () => {
+    const newTables: TermTable[] = [
+      {
+        id: 'category',
+        label: 'Categories',
+        terms: [
+          { id: 'c1', name: 'News', slug: 'news' },
+          { id: 'c2', name: 'Press', slug: 'press' },
+        ],
+      },
+      {
+        id: 'post_tag',
+        label: 'Tags',
+        terms: [{ id: 't1', name: 'React', slug: 'react' }],
+      },
+    ];
+    const mappings: Record<string, TermMapping> = {
+      'category:oldnews': { oldDomain: 'category', oldNicename: 'oldnews', targetTableId: 'category', targetTermIds: ['c1'], excluded: false, origin: 'user' },
+    };
+    const articles: BuildArticleInput[] = [
+      {
+        article: makeArticle({ terms: [{ domain: 'category', nicename: 'oldnews', name: 'Old News' }] }),
+        excluded: false,
+        categoryIds: ['c2'],
+        tagIds: ['t1'],
+      },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [],
+      mappings,
+      newTables,
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    // The mapped News category is replaced by the overridden Press + React
+    // tag; nothing from the mapping leaks through.
+    expect(parsed.articles[0].terms).toEqual([
+      { domain: 'category', nicename: 'press', name: 'Press' },
+      { domain: 'post_tag', nicename: 'react', name: 'React' },
+    ]);
+  });
+
   it('uses ParsedArticle.featuredImageUrl directly and exports it as _thumbnail_id', async () => {
     const FEATURED = 'https://old.example/uploads/hero.jpg';
     const input: BuildArticleInput = {

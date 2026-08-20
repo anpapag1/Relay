@@ -12,6 +12,15 @@ export interface ArticleOverride {
   title?: string;
   /** User-edited publish date; falls back to the parsed date when unset. */
   postDate?: string;
+  /** User-edited new-site slug; overrides `wp:post_name` on export.
+   * Falls back to the parsed slug when unset. */
+  newSlug?: string;
+  /** User-picked destination category term IDs (target category table)
+   * that replace the article's mapped categories on export. */
+  categoryIds?: string[];
+  /** User-picked destination tag term IDs (target tag table) that replace
+   * the article's mapped tags on export. */
+  tagIds?: string[];
   /** Whether the exclusion was automatically decided at parse time (duplicate slug or empty content). */
   auto?: boolean;
   /** Manually flagged by the user as needing a human look, independent of

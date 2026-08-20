@@ -5,7 +5,7 @@ import { termMappingIdOf } from '../core/mappings/termId';
 import { getReader } from '../core/builders';
 import { reviewMessages, infoMessages } from '../core/builders/types';
 import { collectMediaRefs, rewriteMediaRefs } from '../core/build/collectMediaRefs';
-import { resolveArticleTerms } from '../core/build/resolveTerms';
+import { applyTermOverrides, resolveArticleTerms } from '../core/build/resolveTerms';
 import { writeBlocks } from '../core/gutenberg/writeBlocks';
 
 export function getArticleId(article: ParsedArticle, index: number): number {
@@ -142,7 +142,12 @@ export function getDerivedArticles(state: AppState): DerivedArticle[] {
       editedHtml: override?.editedHtml,
       title: override?.title ?? art.title,
       postDate: override?.postDate ?? art.postDate,
-      destinationTerms: resolveArticleTerms(art.terms, state.mappings, newTables),
+      postName: override?.newSlug ?? art.postName,
+      destinationTerms: applyTermOverrides(
+        resolveArticleTerms(art.terms, state.mappings, newTables),
+        { categoryIds: override?.categoryIds, tagIds: override?.tagIds },
+        newTables,
+      ),
     };
   });
 }
@@ -370,6 +375,9 @@ export function hasSessionUnsavedWork(state: AppState): boolean {
       override.manualReview === true ||
       override.editedHtml !== undefined ||
       override.title !== undefined ||
-      override.postDate !== undefined,
+      override.postDate !== undefined ||
+      override.newSlug !== undefined ||
+      override.categoryIds !== undefined ||
+      override.tagIds !== undefined,
   );
 }

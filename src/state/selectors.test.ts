@@ -266,6 +266,43 @@ describe('selectors', () => {
     expect(review?.destinationTerms).toEqual([]);
   });
 
+  it('applies newSlug/categoryIds/tagIds overrides to derived articles, replacing mapped terms of that taxonomy', () => {
+    let s = getTestState();
+    s = appReducer(s, {
+      type: 'SET_TARGET_TABLES',
+      tables: [
+        {
+          id: 'category',
+          label: 'Categories',
+          terms: [
+            { id: 'cat-news', name: 'News', slug: 'news' },
+            { id: 'cat-tech', name: 'Technology', slug: 'technology' },
+          ],
+        },
+        {
+          id: 'post_tag',
+          label: 'Tags',
+          terms: [{ id: 'tag-ai', name: 'AI', slug: 'ai' }],
+        },
+      ],
+    });
+    s = appReducer(s, {
+      type: 'UPDATE_ARTICLE_METADATA',
+      articleId: 101,
+      newSlug: 'custom-slug',
+      categoryIds: ['cat-tech'],
+      tagIds: ['tag-ai'],
+    });
+
+    const derived = getDerivedArticles(s);
+    const overridden = derived.find((a) => a.id === 101);
+    expect(overridden?.postName).toBe('custom-slug');
+    expect(overridden?.destinationTerms).toEqual([
+      { domain: 'category', nicename: 'technology', name: 'Technology', sourceDomain: 'category' },
+      { domain: 'post_tag', nicename: 'ai', name: 'AI', sourceDomain: 'post_tag' },
+    ]);
+  });
+
   it('converts an article through the real reader/writeBlocks pipeline for preview', () => {
     const s = getTestState();
     const article = s.source!.articles.find((a) => a.postId === 101)!;
@@ -522,6 +559,21 @@ describe('hasSessionUnsavedWork', () => {
     expect(hasSessionUnsavedWork(s)).toBe(true);
 
     s = appReducer(s, { type: 'UPDATE_ARTICLE_METADATA', articleId: 101, title: '', postDate: '' });
+    expect(hasSessionUnsavedWork(s)).toBe(false);
+  });
+
+  it('counts newSlug/categoryIds/tagIds overrides as unsaved work', () => {
+    let s = loadedState();
+    s = appReducer(s, { type: 'UPDATE_ARTICLE_METADATA', articleId: 101, newSlug: 'new-slug' });
+    expect(hasSessionUnsavedWork(s)).toBe(true);
+
+    s = appReducer(s, { type: 'UPDATE_ARTICLE_METADATA', articleId: 101, newSlug: '' });
+    expect(hasSessionUnsavedWork(s)).toBe(false);
+
+    s = appReducer(s, { type: 'UPDATE_ARTICLE_METADATA', articleId: 101, categoryIds: ['cat-tech'] });
+    expect(hasSessionUnsavedWork(s)).toBe(true);
+
+    s = appReducer(s, { type: 'UPDATE_ARTICLE_METADATA', articleId: 101, categoryIds: [], tagIds: [] });
     expect(hasSessionUnsavedWork(s)).toBe(false);
   });
 

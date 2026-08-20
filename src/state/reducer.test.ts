@@ -337,7 +337,10 @@ describe('appReducer', () => {
   it('handles RESET_ARTICLE, removing every override for that article and leaving other articles intact', () => {
     let s = appReducer(initialState, { type: 'SET_ARTICLE_EXCLUDED', articleId: 1, excluded: true });
     s = appReducer(s, { type: 'SAVE_ARTICLE_EDIT', articleId: 1, editedHtml: '<p>Edited</p>' });
-    s = appReducer(s, { type: 'UPDATE_ARTICLE_METADATA', articleId: 1, title: 'Renamed', postDate: '2026-02-02' });
+    s = appReducer(
+      s,
+      { type: 'UPDATE_ARTICLE_METADATA', articleId: 1, title: 'Renamed', postDate: '2026-02-02', newSlug: 'new-slug', categoryIds: ['c1'], tagIds: ['t1'] },
+    );
     s = appReducer(s, { type: 'SET_ARTICLE_MANUAL_REVIEW', articleId: 1, manualReview: true });
     s = appReducer(s, { type: 'SAVE_ARTICLE_EDIT', articleId: 2, editedHtml: '<p>Other</p>' });
 
@@ -352,10 +355,27 @@ describe('appReducer', () => {
       articleId: 1,
       title: 'Edited Title',
       postDate: '2026-05-05 05:05:05',
+      newSlug: 'edited-slug',
+      categoryIds: ['c1', 'c2'],
+      tagIds: ['t9'],
     });
-    expect(updated.articles[1]).toEqual({ title: 'Edited Title', postDate: '2026-05-05 05:05:05' });
+    expect(updated.articles[1]).toEqual({
+      title: 'Edited Title',
+      postDate: '2026-05-05 05:05:05',
+      newSlug: 'edited-slug',
+      categoryIds: ['c1', 'c2'],
+      tagIds: ['t9'],
+    });
 
-    const cleared = appReducer(updated, { type: 'UPDATE_ARTICLE_METADATA', articleId: 1, title: '', postDate: '' });
+    const cleared = appReducer(updated, {
+      type: 'UPDATE_ARTICLE_METADATA',
+      articleId: 1,
+      title: '',
+      postDate: '',
+      newSlug: '',
+      categoryIds: [],
+      tagIds: [],
+    });
     expect(cleared.articles[1]).toEqual({});
   });
 
