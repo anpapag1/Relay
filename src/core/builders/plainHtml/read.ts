@@ -16,6 +16,12 @@ const PDF_EXTENSION_RE = /\.pdf(?:[?"'\s>]|$)/i;
 const CAPTION_SHORTCODE_RE = /\[caption[^\]]*\]([\s\S]*?)\[\/caption\]/g;
 const GALLERY_SHORTCODE_RE = /\[gallery([^\]]*)\]/g;
 const VIDEO_SHORTCODE_RE = /\[video([^\]]*)\](?:[\s\S]*?\[\/video\])?/g;
+/** WPBakery's own video shortcode. Its source lives in a `link` attribute
+ * (a plain embed URL, unlike the classic [video] shortcode's src/mp4/...
+ * fallbacks), so it needs its own regex; it also commonly survives as
+ * literal text inside a vc_column_text paragraph when the WPBakery
+ * tokenizer can't split it into its own element. */
+const VC_VIDEO_SHORTCODE_RE = /\[vc_video([^\]]*)\]/g;
 /** The "PDF Embedder" plugin's own shortcode — a different, much more
  * common shape than a plain <a href="...pdf"> link in real content (400+
  * occurrences in one real export, vs. a handful of bare links): a
@@ -69,6 +75,10 @@ function preprocessShortcodes(html: string): string {
   });
   out = out.replace(VIDEO_SHORTCODE_RE, (_full, attrs: string) => {
     const src = attrValue(attrs, 'src') ?? attrValue(attrs, 'mp4') ?? attrValue(attrs, 'm4v') ?? attrValue(attrs, 'webm') ?? attrValue(attrs, 'ogv') ?? attrValue(attrs, 'wmv') ?? attrValue(attrs, 'flv') ?? '';
+    return `<div data-rl-video-src="${escapeAttr(src)}"></div>`;
+  });
+  out = out.replace(VC_VIDEO_SHORTCODE_RE, (_full, attrs: string) => {
+    const src = attrValue(attrs, 'link') ?? attrValue(attrs, 'src') ?? '';
     return `<div data-rl-video-src="${escapeAttr(src)}"></div>`;
   });
   out = out.replace(PDF_EMBEDDER_SHORTCODE_RE, (_full, attrs: string) => {
@@ -148,6 +158,33 @@ function extractWrappedImage(el: Element): { img: Element; restHtml: string } | 
   return { img: nested.img, restHtml };
 }
 
+/** Repeatedly applies extractWrappedImage, peeling off *every* leading
+ * image a paragraph/inline wrapper starts with rather than just the
+ * first — real content like `<strong><img/><img/>caption</strong>` (two
+ * photos run together in one bold run) must promote both to standalone
+ * image blocks instead of burying the second inside the caption
+ * paragraph. Each later image is found by re-parsing the previous
+ * remainder, so its href/wrapper attributes are re-derived from that
+ * reconstructed markup rather than the live DOM. */
+function extractWrappedImages(el: Element): { imgs: Element[]; restHtml: string } | null {
+  const imgs: Element[] = [];
+  let current = el;
+  let rest = '';
+  for (;;) {
+    const unit = extractWrappedImage(current);
+    if (!unit) break;
+    imgs.push(unit.img);
+    rest = unit.restHtml;
+    if (!rest) break;
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = rest;
+    const next = wrapper.firstElementChild;
+    if (!next) break;
+    current = next;
+  }
+  return imgs.length > 0 ? { imgs, restHtml: rest } : null;
+}
+
 /** Same shape as extractWrappedImage, but for a link to a downloadable
  * document (pdf/doc/xlsx/...) instead of an image — e.g. a bare `<a
  * href="report.pdf">here</a>`, or that same anchor wrapped in `<strong>`.
@@ -202,10 +239,10 @@ function splitInlineContent(childNodes: ArrayLike<ChildNode>): IRNode[] {
   for (const child of Array.from(childNodes)) {
     if (child.nodeType === Node.ELEMENT_NODE) {
       const el = child as Element;
-      const wrapped = extractWrappedImage(el);
+      const wrapped = extractWrappedImages(el);
       if (wrapped) {
         flush();
-        out.push(readImageElement(wrapped.img));
+        for (const img of wrapped.imgs) out.push(readImageElement(img));
         if (wrapped.restHtml) buffer += wrapped.restHtml;
         continue;
       }
@@ -290,10 +327,10 @@ function splitHeadingContent(childNodes: ArrayLike<ChildNode>, level: 1 | 2 | 3 
   for (const child of Array.from(childNodes)) {
     if (child.nodeType === Node.ELEMENT_NODE) {
       const el = child as Element;
-      const wrapped = extractWrappedImage(el);
+      const wrapped = extractWrappedImages(el);
       if (wrapped) {
         flush();
-        out.push(readImageElement(wrapped.img));
+        for (const img of wrapped.imgs) out.push(readImageElement(img));
         if (wrapped.restHtml) buffer += wrapped.restHtml;
         continue;
       }

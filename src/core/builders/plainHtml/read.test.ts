@@ -70,6 +70,44 @@ describe('readPlainHtml', () => {
     ]);
   });
 
+  it('promotes every leading image inside a single formatted paragraph, not just the first (e.g. <p><strong><img/><img/>caption</strong></p>)', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml:
+        '<p><strong><img class="alignnone size-full wp-image-47030" src="https://x/a.jpg" alt="" width="2560" height="1920"/><img class="alignnone size-full wp-image-47031" src="https://x/b.jpg" alt="" width="1024" height="683"/>Η αξία της εθελοντικής προσφοράς</strong></p>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'image', src: 'https://x/a.jpg', alt: '', caption: undefined, href: undefined, width: 2560, height: 1920 },
+      { kind: 'image', src: 'https://x/b.jpg', alt: '', caption: undefined, href: undefined, width: 1024, height: 683 },
+      { kind: 'paragraph', html: '<strong>Η αξία της εθελοντικής προσφοράς</strong>' },
+    ]);
+  });
+
+  it('promotes every leading linked image inside a single formatted paragraph, preserving each link target', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml:
+        '<p><strong><a href="https://x/full-a.jpg"><img class="wp-image-1" src="https://x/a.jpg" alt=""/></a><a href="https://x/full-b.jpg"><img class="wp-image-2" src="https://x/b.jpg" alt=""/></a>Two photos and a caption.</strong></p>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'image', src: 'https://x/a.jpg', alt: '', caption: undefined, href: 'https://x/full-a.jpg', width: undefined, height: undefined },
+      { kind: 'image', src: 'https://x/b.jpg', alt: '', caption: undefined, href: 'https://x/full-b.jpg', width: undefined, height: undefined },
+      { kind: 'paragraph', html: '<strong>Two photos and a caption.</strong>' },
+    ]);
+  });
+
+  it('converts a WPBakery [vc_video link="..."] shortcode sitting as literal text in a paragraph to a standalone video node', () => {
+    const { nodes } = readPlainHtml({
+      contentHtml:
+        '<p><strong>ΔΕΙΤΕ ΤΟ ΒΙΝΤΕΟ</strong>[vc_video link="https://www.youtube.com/watch?v=UbUgpFAiinc" title="9ο Open Air Film Festival "]</p>',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'paragraph', html: '<strong>ΔΕΙΤΕ ΤΟ ΒΙΝΤΕΟ</strong>' },
+      { kind: 'video', src: 'https://www.youtube.com/watch?v=UbUgpFAiinc', provider: 'youtube' },
+    ]);
+  });
+
   it('promotes an image wrapped inside a heading (e.g. <h2><span><a><img></a></span></h2>, a leftover WYSIWYG styling mistake) to a standalone image node, dropping the now-empty heading', () => {
     const { nodes } = readPlainHtml({
       contentHtml:

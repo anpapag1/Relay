@@ -94,7 +94,10 @@ one registry line.
   Divi; otherwise Plain HTML.
 - **`plainHtml/`** — the baseline, and the tail the other three delegate to for
   inner content. Handles `<p>`, `<h1–6>`, `<figure>/<img>`, `<ul>/<ol>`,
-  `<blockquote>`, `<hr>`, plus classic `[gallery]` / `[caption]` shortcodes.
+  `<blockquote>`, `<hr>`, plus the classic `[gallery]` / `[caption]` / `[video]`
+  / `[pdf-embedder]` and WPBakery `[vc_video]` shortcodes. Leading images in a
+  paragraph (bare or each wrapped in inline formatting/a link, however many run
+  together before real text) are promoted to standalone image nodes.
 - **`wpbakery/`** — shortcode tree via `shortcode/tokenize.ts`. `[vc_row]` /
   `[vc_column]` → `columns`; `[vc_column_text]` delegates to plainHtml;
   `[vc_single_image]`, `[vc_gallery]`, `[vc_btn]`, `[vc_video]`,

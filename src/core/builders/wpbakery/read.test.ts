@@ -37,6 +37,18 @@ describe('readWpbakery', () => {
     expect(nodes).toEqual([]);
   });
 
+  it('converts a vc_video shortcode embedded inside vc_column_text text to a video node instead of leaving the literal shortcode in the paragraph', () => {
+    const { nodes } = readWpbakery({
+      contentHtml:
+        '[vc_row][vc_column][vc_column_text]<p><strong>ΔΕΙΤΕ ΤΟ ΒΙΝΤΕΟ</strong>[vc_video link="https://www.youtube.com/watch?v=UbUgpFAiinc" title="9ο Open Air Film Festival "]</p>[/vc_column_text][/vc_column][/vc_row]',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'paragraph', html: '<strong>ΔΕΙΤΕ ΤΟ ΒΙΝΤΕΟ</strong>' },
+      { kind: 'video', src: 'https://www.youtube.com/watch?v=UbUgpFAiinc', provider: 'youtube' },
+    ]);
+  });
+
   it('reads vc_single_image as an attachment-id-referencing image', () => {
     const { nodes } = readWpbakery({ contentHtml: '[vc_single_image image="42" alt="A photo"]', postmeta: {} });
     expect(nodes).toEqual([{ kind: 'image', src: 'attachment:42', alt: 'A photo' }]);
