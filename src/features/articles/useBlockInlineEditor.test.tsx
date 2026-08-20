@@ -241,6 +241,29 @@ describe('useBlockInlineEditor', () => {
     expect(committed).toBe('<p>Hello</p><p> world</p><h2 class="wp-block-heading">Title</h2><p>Again</p>');
   });
 
+  it('does not split the block on Shift+Enter', async () => {
+    await mount('<p>Hello world</p><h2 class="wp-block-heading">Title</h2><p>Again</p>');
+    const body = getBody();
+    const p = body.querySelectorAll('p')[0]!;
+
+    await beginEditing(p);
+    placeCaret(p.firstChild!, 5);
+
+    await act(async () => {
+      p.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true }));
+    });
+
+    const ps = body.querySelectorAll('p');
+    expect(ps).toHaveLength(2);
+    expect(ps[0]).toBe(p);
+    expect(ps[0]!.textContent).toBe('Hello world');
+    expect(ps[0]!.classList.contains('is-editing')).toBe(true);
+
+    await exitEditing(body);
+
+    expect(committed).toBe('<p>Hello world</p><h2 class="wp-block-heading">Title</h2><p>Again</p>');
+  });
+
   it('splits a heading into a heading and a new paragraph on Enter', async () => {
     await mount(BASE_HTML);
     const body = getBody();

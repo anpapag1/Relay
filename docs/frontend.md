@@ -114,11 +114,12 @@ build uses — so what you see is what exports.
   list item, or quote text to edit it in place — Enter splits the block at the
   caret (a heading split makes the second half a new paragraph, a list item
   splits within the same list, a quote paragraph within the same quote);
-  Backspace at the very start of a block joins it into the previous block or,
-  when empty, deletes it (deleting the last list item or quote paragraph
-  removes the whole list/quote); `Ctrl/Cmd+Enter` or `Escape` finishes and
-  commits the change back into the draft as a manual override. **Before** stays
-  read-only and the textarea Edit mode is unchanged.
+  Shift+Enter inserts a soft line break inside the same block instead of
+  splitting; Backspace at the very start of a block joins it into the previous
+  block or, when empty, deletes it (deleting the last list item or quote
+  paragraph removes the whole list/quote); `Ctrl/Cmd+Enter` or `Escape` finishes
+  and commits the change back into the draft as a manual override. **Before**
+  stays read-only and the textarea Edit mode is unchanged.
 - **`blockEditing.ts`** — shared helpers for inline block editing: which
   elements are editable (`p`, `h2`–`h6`, `li`, `blockquote > p`), classifying a
   block by kind, caret-position checks, and the nth-occurrence string splicing
