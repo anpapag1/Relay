@@ -40,6 +40,9 @@ export async function fetchSite(
         (p) => onProgress?.({ stage: 'posts', fetched: p.fetched, total: p.totalPages != null ? p.totalPages * 100 : null }),
         filter,
       );
+      if (posts.length === 0) {
+        return { ok: false, reason: 'No articles found in the date range.' };
+      }
       const mediaIds = Array.from(new Set(posts.map((post) => post.featured_media).filter((id) => id > 0)));
       onProgress?.({ stage: 'media', fetched: 0, total: mediaIds.length });
       const featuredByMediaId = await fetchFeaturedImageUrls(probe.apiBase, mediaIds, fetchImpl, (resolved) =>
@@ -67,6 +70,9 @@ export async function fetchSite(
       (fetched) => onProgress?.({ stage: 'posts', fetched, total: null }),
       filter,
     );
+    if (items.length === 0) {
+      return { ok: false, reason: 'No articles found in the date range.' };
+    }
     const articles = items.map(feedItemToSiteArticle);
     return {
       ok: true,

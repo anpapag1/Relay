@@ -4,7 +4,6 @@ import { parseWxr } from '../../core/wxr/parseWxr';
 import { rankBuilders, type BuilderScore } from '../../core/builders/detectBuilder';
 import { fetchSite, type FetchSiteProgress } from '../../core/site/fetchSite';
 import { browserTextFetch } from '../../core/site/fetchLike';
-import { normalizeBaseUrl } from '../../core/site/probeSite';
 import { SAMPLE_WXR } from './sampleWxr';
 import { createSiteDataBackup, restoreSiteDataBackup } from '../../state/session';
 import { listSiteProfiles, type SiteProfile } from '../../state/siteProfiles';
@@ -165,14 +164,26 @@ export const ImportTab: React.FC = () => {
   };
 
   const handleFetchSite = async () => {
-    if (!fetchUrl.trim() || fetchingSite) return;
+    const rawUrl = fetchUrl.trim();
+    if (!rawUrl || fetchingSite) return;
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(rawUrl);
+    } catch {
+      setFetchError('Enter a valid URL, e.g. https://old-site.example');
+      return;
+    }
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      setFetchError('Enter a valid URL, e.g. https://old-site.example');
+      return;
+    }
     setFetchingSite(true);
     setFetchError(null);
     setFetchProgress(null);
     setFetchSummary(null);
     try {
       const res = await fetchSite(
-        fetchUrl.trim(),
+        rawUrl,
         browserTextFetch,
         (p) => setFetchProgress(p),
         { startDate: fetchStartDate, endDate: fetchEndDate },
@@ -181,14 +192,7 @@ export const ImportTab: React.FC = () => {
         setFetchError(res.reason);
         return;
       }
-      const rawUrl = fetchUrl.trim();
-      let fetchedFrom = rawUrl;
-      try {
-        fetchedFrom = new URL(normalizeBaseUrl(rawUrl)).host;
-      } catch {
-        // unparseable input — fall back to showing the raw string
-      }
-      setFileName(fetchedFrom);
+      setFileName(parsedUrl.host);
       const sourceLabel = res.source === 'rest' ? 'REST API' : 'RSS feed';
       const truncationNote = res.truncated
         ? res.source === 'rest'

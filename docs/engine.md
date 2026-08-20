@@ -50,7 +50,15 @@ produces the same `ParseResult`.
 - **`fetchSite.ts`** — single entry point the Import tab calls. Probes the URL
   (`probeSite.ts`): if it exposes WP REST (`wp-json`), import via REST;
   otherwise fall back to the RSS/Atom feed. Never throws; failures past the
-  probe stage are contained and returned as `{ ok: false, reason }`.
+  probe stage are contained and returned as `{ ok: false, reason }`. When the
+  date range matches nothing it returns
+  `{ ok: false, reason: "No articles found in the date range." }`.
+- **`probeSite.ts`** — probes REST (`wp-json`, then `?rest_route=`), then the
+  RSS/Atom feed URLs. On total failure it distinguishes *why*: if any probe
+  fetch threw, the reason blames the network ("Couldn't reach the server…");
+  if the proxy returned a 5xx on every probe, it names the HTTP status
+  ("The old site returned a server error (HTTP N)…"); otherwise it reports
+  that no WordPress REST API or RSS feed was found at the address.
 - **`fetchRestPosts.ts`** — paginates `/wp-json/wp/v2/posts` (with
   `before`/`after` date filtering), reading `X-WP-TotalPages` / `X-WP-Total`
   headers. Reports `truncated` when it hits a cap.

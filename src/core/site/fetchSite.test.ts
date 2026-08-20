@@ -89,6 +89,41 @@ describe('fetchSite', () => {
     expect(ascending).toBe(true);
   });
 
+  it('returns ok:false with a clear reason when the date range matches no posts', async () => {
+    const fetchImpl: TextFetchLike = async (input) => {
+      const url = new URL(input);
+      const isProbe = url.searchParams.get('per_page') === '1' && !url.searchParams.has('page');
+      if (isProbe) {
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => '[{ "id": 1 }]' };
+      }
+      if (url.pathname.endsWith('/categories') || url.pathname.endsWith('/tags')) {
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => '[]' };
+      }
+      return {
+        ok: true, status: 200,
+        headers: { get: (name: string) => (name.toLowerCase() === 'x-wp-totalpages' ? '1' : null) },
+        text: async () => '[]',
+      };
+    };
+    const res = await fetchSite('https://site.example', fetchImpl);
+    expect(res).toEqual({ ok: false, reason: 'No articles found in the date range.' });
+  });
+
+  it('returns ok:false when the RSS feed matches no items in the date range', async () => {
+    const fetchImpl: TextFetchLike = async (input) => {
+      const url = new URL(input);
+      if (url.pathname.startsWith('/wp-json') || url.pathname.startsWith('/index.php')) {
+        return { ok: false, status: 404, headers: { get: () => null }, text: async () => 'nope' };
+      }
+      if (url.pathname.startsWith('/feed')) {
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => '<rss version="2.0"><channel></channel></rss>' };
+      }
+      throw new Error('unexpected url');
+    };
+    const res = await fetchSite('https://site.example', fetchImpl);
+    expect(res).toEqual({ ok: false, reason: 'No articles found in the date range.' });
+  });
+
   it('returns ok:false when the posts fetch returns a 200 with a non-JSON body', async () => {
     const fetchImpl: TextFetchLike = async (input) => {
       const url = new URL(input);
@@ -130,7 +165,10 @@ describe('fetchSite', () => {
       return {
         ok: true, status: 200,
         headers: { get: (name: string) => (name.toLowerCase() === 'x-wp-totalpages' ? '1' : null) },
-        text: async () => '[]',
+        text: async () => JSON.stringify([{
+          id: 1, date: '2020-01-15T00:00:00', slug: 'hello', link: 'https://site.example/hello/',
+          title: { rendered: 'Hello' }, content: { rendered: '<p>Hi</p>' }, featured_media: 0,
+        }]),
       };
     };
     const res = await fetchSite('https://site.example', fetchImpl, undefined, {

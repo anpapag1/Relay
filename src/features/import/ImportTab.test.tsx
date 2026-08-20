@@ -112,20 +112,47 @@ describe('ImportTab fetch-from-site', () => {
     document.body.removeChild(container);
   });
 
-  it('falls back to the raw fetch URL when the host cannot be parsed', async () => {
-    mockFetchSite.mockResolvedValue({
-      ok: true,
-      source: 'rest',
-      truncated: false,
-      result: SUCCESS_RESULT,
-    });
-
+  it('rejects an invalid URL before fetching, with a helpful message', async () => {
     const { container, root } = renderTab();
     await renderImportTab(root);
-    await fetchSource(container, 'not a url');
 
-    expect(container.textContent).toContain('Import detected');
-    expect(container.textContent).toContain('From not a url');
+    const input = container.querySelector('input[placeholder*="https://old-site.example"]') as HTMLInputElement;
+    const startInput = container.querySelector('input[aria-label="Start date"]') as HTMLInputElement;
+    const endInput = container.querySelector('input[aria-label="End date"]') as HTMLInputElement;
+    await act(async () => {
+      setInputValue(input, 'not a url');
+      setInputValue(startInput, '2000-01-01');
+      setInputValue(endInput, '2030-12-31');
+    });
+    await act(async () => {
+      findFetchButton(container)?.click();
+    });
+
+    expect(container.textContent).toContain('Enter a valid URL, e.g. https://old-site.example');
+    expect(mockFetchSite).not.toHaveBeenCalled();
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
+
+  it('rejects a non-http(s) URL before fetching', async () => {
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+
+    const input = container.querySelector('input[placeholder*="https://old-site.example"]') as HTMLInputElement;
+    const startInput = container.querySelector('input[aria-label="Start date"]') as HTMLInputElement;
+    const endInput = container.querySelector('input[aria-label="End date"]') as HTMLInputElement;
+    await act(async () => {
+      setInputValue(input, 'ftp://files.example');
+      setInputValue(startInput, '2000-01-01');
+      setInputValue(endInput, '2030-12-31');
+    });
+    await act(async () => {
+      findFetchButton(container)?.click();
+    });
+
+    expect(container.textContent).toContain('Enter a valid URL, e.g. https://old-site.example');
+    expect(mockFetchSite).not.toHaveBeenCalled();
 
     root.unmount();
     document.body.removeChild(container);

@@ -73,7 +73,11 @@ Three ways in:
    where the count is unknown. Once the fetch lands, the bar is replaced by
    a one-line summary (`fetchSummary`, e.g. "Fetched 400 posts from REST
    API", including the truncation warning when applicable); both the bar and
-   the summary clear on "Start over".
+   the summary clear on "Start over". The URL is validated up front — it must
+   parse as an `http(s)` URL or the fetch is blocked with "Enter a valid URL,
+   e.g. https://old-site.example". Scrape failures show the reason from
+   `fetchSite`/`probeSite` in the card (network vs. server error vs. nothing
+   found, or "No articles found in the date range.").
 3. **Sample export** — loads the bundled WPBakery fixture so the whole pipeline
    can be exercised without a real file.
 

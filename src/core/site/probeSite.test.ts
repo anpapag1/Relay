@@ -71,4 +71,33 @@ describe('probeSite', () => {
     const res = await probeSite('https://site.example', fetchImpl);
     expect(res.ok).toBe(false);
   });
+
+  it('blames the network, not the site, when fetching throws', async () => {
+    const fetchImpl: TextFetchLike = async () => {
+      throw new TypeError('Failed to fetch');
+    };
+    const res = await probeSite('https://site.example', fetchImpl);
+    expect(res).toEqual({
+      ok: false,
+      reason: "Couldn't reach the server. Check your internet connection and that Relay is running.",
+    });
+  });
+
+  it('surfaces a server error when the proxy returns a 5xx on every probe', async () => {
+    const fetchImpl: TextFetchLike = async () => ({ ok: false, status: 503, headers: { get: () => null }, text: async () => 'upstream down' });
+    const res = await probeSite('https://site.example', fetchImpl);
+    expect(res).toEqual({
+      ok: false,
+      reason: "The old site returned a server error (HTTP 503). Check that it's online and the URL is correct.",
+    });
+  });
+
+  it('still detects RSS when one probe throws but the feed responds', async () => {
+    const fetchImpl: TextFetchLike = async (input) => {
+      if (input.includes('wp-json') || input.includes('rest_route')) throw new TypeError('Failed to fetch');
+      return xmlFetch('<rss version="2.0"><channel><title>t</title></channel></rss>')(input);
+    };
+    const res = await probeSite('https://site.example', fetchImpl);
+    expect(res).toEqual({ ok: true, source: 'rss', feedUrl: 'https://site.example/feed/' });
+  });
 });
