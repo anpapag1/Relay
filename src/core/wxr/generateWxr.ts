@@ -2,12 +2,23 @@ import type { ExportArticle, GenerateWxrOptions } from '../../types/domain';
 import { buildAttachmentRegistry, type AttachmentRegistry, type AttachmentRegistryEntry } from '../media/attachmentRegistry';
 import { cdata, cdataSafe, escapeXml, slugFromLink, slugify } from './xml';
 
+/** Converts a `postDate` value (local time, any format `new Date` accepts)
+ * into the WXR `YYYY-MM-DD HH:MM:SS` UTC form used by `wp:post_date_gmt`.
+ * Returns the input unchanged when it cannot be parsed, so a bad date
+ * degrades to the old copy-through behavior instead of emitting garbage. */
+function toUtcDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
 function registryUrlsFor(articles: ExportArticle[]): Iterable<string | null | undefined> {
   return articles.flatMap((article) => [article.featuredAttachmentUrl, ...(article.mediaAttachmentUrls ?? [])]);
 }
 
 function buildAttachmentItem(url: string, entry: AttachmentRegistryEntry, { authorLogin, postDate }: { authorLogin: string; postDate: string }): string {
   const pubDate = postDate ? new Date(postDate).toUTCString() : new Date().toUTCString();
+  const postDateGmt = postDate ? toUtcDateTime(postDate) : '';
 
   return `
 	<item>
@@ -21,7 +32,7 @@ function buildAttachmentItem(url: string, entry: AttachmentRegistryEntry, { auth
 		<excerpt:encoded><![CDATA[]]></excerpt:encoded>
 		<wp:post_id>${entry.id}</wp:post_id>
 		${cdata('wp:post_date', postDate)}
-		${cdata('wp:post_date_gmt', postDate)}
+		${cdata('wp:post_date_gmt', postDateGmt)}
 		${cdata('wp:comment_status', 'closed')}
 		${cdata('wp:ping_status', 'closed')}
 		${cdata('wp:post_name', slugify(entry.filename))}
@@ -105,6 +116,7 @@ function resolveUniquePostNames(articles: ExportArticle[]): Map<ExportArticle, s
 
 function buildArticleItem(article: ExportArticle, postName: string, registry: AttachmentRegistry): string {
   const pubDate = article.postDate ? new Date(article.postDate).toUTCString() : new Date().toUTCString();
+  const postDateGmt = article.postDateGmt || toUtcDateTime(article.postDate);
 
   return `
 	<item>
@@ -118,7 +130,7 @@ function buildArticleItem(article: ExportArticle, postName: string, registry: At
 		<excerpt:encoded><![CDATA[]]></excerpt:encoded>
 		<wp:post_id>${article.postId}</wp:post_id>
 		${cdata('wp:post_date', article.postDate)}
-		${cdata('wp:post_date_gmt', article.postDate)}
+		${cdata('wp:post_date_gmt', postDateGmt)}
 		${cdata('wp:comment_status', 'open')}
 		${cdata('wp:ping_status', 'closed')}
 		${cdata('wp:post_name', postName)}

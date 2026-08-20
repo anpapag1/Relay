@@ -17,6 +17,11 @@ export interface ParsedArticle {
   title: string;
   link: string;
   postDate: string;
+  /** The UTC variant of `postDate` as stored in the source WXR's
+   * `wp:post_date_gmt`. Preserved so the export can write a correct GMT
+   * instead of copying the local time into it. Absent for live-scraped
+   * articles, which have no source GMT. */
+  postDateGmt?: string;
   postName: string;
   creator: string;
   contentHtml: string;
@@ -77,6 +82,7 @@ export interface ExportArticle {
   title: string;
   link: string;
   postDate: string;
+  postDateGmt?: string;
   postName?: string;
   authorLogin: string;
   contentHtml: string;

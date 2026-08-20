@@ -139,6 +139,7 @@ function toExportArticle(
     title: input.title ?? article.title,
     link: article.link,
     postDate: input.postDate ?? article.postDate,
+    postDateGmt: input.postDate == null ? article.postDateGmt : undefined,
     postName: input.newSlug || article.postName || undefined,
     authorLogin: MIGRATION_AUTHOR_LOGIN,
     contentHtml,

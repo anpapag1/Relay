@@ -39,6 +39,12 @@ ParseResult → detectBuilder → reader → IR tree → writeBlocks → WXR mar
   deduped across the included articles (WordPress-style `-2`/`-3` suffixing,
   skipping suffixes already taken by natural slugs) so a manually re-included
   article that collides with an included one still produces a valid WXR.
+  `wp:post_date_gmt` is written from the source WXR's preserved GMT
+  (`parseWxr` reads `wp:post_date_gmt` into `postDateGmt` and `runBuild`'s
+  `toExportArticle` carries it through) so imported posts keep their true UTC
+  publication time; when there is no source GMT — live-scraped articles, or a
+  date override from the article sidebar — it is derived from `postDate` via a
+  UTC conversion instead of copying the local time into both fields.
 - **`xml.ts`** — the only place escaping/CDATA is handled. Escape when writing
   element text, wrap content blocks in CDATA. The round-trip test proves it.
 

@@ -21,6 +21,7 @@ const SAMPLE_WXR = `<?xml version="1.0" encoding="UTF-8" ?>
 		<excerpt:encoded><![CDATA[]]></excerpt:encoded>
 		<wp:post_id>1</wp:post_id>
 		<wp:post_date><![CDATA[2026-01-01 00:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2025-12-31 22:00:00]]></wp:post_date_gmt>
 		<wp:post_name><![CDATA[hello-world]]></wp:post_name>
 		<wp:status><![CDATA[publish]]></wp:status>
 		<wp:post_type><![CDATA[post]]></wp:post_type>
@@ -58,6 +59,8 @@ describe('parseWxr', () => {
     expect(article.title).toBe('Hello World');
     expect(article.postType).toBe('post');
     expect(article.contentHtml).toBe('<p>Hi there</p>');
+    expect(article.postDate).toBe('2026-01-01 00:00:00');
+    expect(article.postDateGmt).toBe('2025-12-31 22:00:00');
     expect(article.postmeta._thumbnail_id).toBe('42');
     expect(article.terms).toEqual([
       { domain: 'category', nicename: 'news', name: 'News' },

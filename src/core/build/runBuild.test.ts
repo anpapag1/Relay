@@ -114,7 +114,7 @@ describe('runBuild', () => {
   it('applies title/postDate overrides in the exported WXR, falling back to parsed values otherwise', async () => {
     const articles: BuildArticleInput[] = [
       { article: makeArticle({ postId: 1, title: 'Original Title', postDate: '2026-01-01 00:00:00' }), excluded: false, title: 'Edited Title', postDate: '2026-02-02 02:02:02' },
-      { article: makeArticle({ postId: 2, title: 'Kept Title', postDate: '2026-03-03 03:03:03' }), excluded: false },
+      { article: makeArticle({ postId: 2, title: 'Kept Title', postDate: '2026-03-03 03:03:03', postDateGmt: '2026-03-03 00:03:03' }), excluded: false },
     ];
     const result = await runBuild({
       articles,
@@ -139,6 +139,7 @@ describe('runBuild', () => {
     expect(parsed.articles[0].postDate).toBe('2026-02-02 02:02:02');
     expect(parsed.articles[1].title).toBe('Kept Title');
     expect(parsed.articles[1].postDate).toBe('2026-03-03 03:03:03');
+    expect(parsed.articles[1].postDateGmt).toBe('2026-03-03 00:03:03');
   });
 
   it('marks an article "review" when its reader produces a warning', async () => {

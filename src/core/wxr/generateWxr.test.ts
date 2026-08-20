@@ -138,6 +138,27 @@ describe('generateWxr', () => {
     expect(result.statusCounts.publish).toBe(2);
   });
 
+  describe('wp:post_date_gmt', () => {
+    it('emits the preserved source GMT verbatim instead of copying the local post_date', () => {
+      const articles: ExportArticle[] = [
+        { ...ARTICLES[0], postDate: '2026-01-01 00:00:00', postDateGmt: '2025-12-31 22:00:00' },
+      ];
+      const xml = generateWxr(articles, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+
+      expect(xml).toContain('<wp:post_date><![CDATA[2026-01-01 00:00:00]]></wp:post_date>');
+      expect(xml).toContain('<wp:post_date_gmt><![CDATA[2025-12-31 22:00:00]]></wp:post_date_gmt>');
+    });
+
+    it('derives a UTC wp:post_date_gmt from post_date when no source GMT exists', () => {
+      const articles: ExportArticle[] = [
+        { ...ARTICLES[0], postDate: '2026-01-01T00:00:00Z', postDateGmt: undefined },
+      ];
+      const xml = generateWxr(articles, { siteTitle: 'New Site', siteUrl: 'https://new-site.example' });
+
+      expect(xml).toContain('<wp:post_date_gmt><![CDATA[2026-01-01 00:00:00]]></wp:post_date_gmt>');
+    });
+  });
+
   describe('featured images', () => {
     const SHARED_IMAGE = 'https://old-site.example/wp-content/uploads/shared.jpg';
 

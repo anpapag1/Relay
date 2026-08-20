@@ -31,6 +31,7 @@ function parseTerms(item: Element): TermRef[] {
 function parseArticleItem(item: Element, postType: 'post' | 'page'): ParsedArticle {
   const postId = childText(item, 'wp:post_id');
   const postDate = childText(item, 'wp:post_date');
+  const postDateGmt = childText(item, 'wp:post_date_gmt');
   return {
     postId: postId ? Number(postId) : null,
     postType,
@@ -38,6 +39,7 @@ function parseArticleItem(item: Element, postType: 'post' | 'page'): ParsedArtic
     title: decodeHtmlEntities(childText(item, 'title') ?? ''),
     link: childText(item, 'link') ?? '',
     postDate: postDate ?? '',
+    postDateGmt: postDateGmt ?? '',
     postName: childText(item, 'wp:post_name') ?? '',
     creator: childText(item, 'dc:creator') ?? '',
     contentHtml: childText(item, 'content:encoded') ?? '',
