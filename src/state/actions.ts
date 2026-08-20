@@ -10,6 +10,7 @@ export type Action =
   | { type: 'OPEN_MODAL'; modal: keyof AppState['ui']['modals'] }
   | { type: 'CLOSE_MODAL'; modal: keyof AppState['ui']['modals'] }
   | { type: 'SET_SOURCE_DOMAIN'; domain: string }
+  | { type: 'SET_ONBOARDING_STEP'; step: number | null }
   | { type: 'LOAD_SOURCE'; result: ParseResult; defaultBuilder: BuilderId; confidence: number }
   | { type: 'CLEAR_SOURCE' }
   | { type: 'SET_BUILDER'; builderId: BuilderId }
@@ -59,6 +60,7 @@ export const actions = {
   openModal: (modal: keyof AppState['ui']['modals']): Action => ({ type: 'OPEN_MODAL', modal }),
   closeModal: (modal: keyof AppState['ui']['modals']): Action => ({ type: 'CLOSE_MODAL', modal }),
   setSourceDomain: (domain: string): Action => ({ type: 'SET_SOURCE_DOMAIN', domain }),
+  setOnboardingStep: (step: number | null): Action => ({ type: 'SET_ONBOARDING_STEP', step }),
   loadSource: (result: ParseResult, defaultBuilder: BuilderId, confidence: number): Action => ({
     type: 'LOAD_SOURCE',
     result,

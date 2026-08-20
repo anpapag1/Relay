@@ -1,5 +1,6 @@
 import { AppStateProvider, useAppState } from './state/AppStateContext';
 import { Header } from './ui/Header';
+import { OnboardingTour } from './features/onboarding/OnboardingTour';
 import { ImportTab } from './features/import';
 import { MappingsTab } from './features/mappings';
 import { SettingsTab } from './features/settings';
@@ -29,6 +30,7 @@ function AppContent() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--relay-bg)', color: 'var(--relay-text)' }}>
       <Header />
+      <OnboardingTour />
       <main style={{ flex: 1, padding: '32px 24px' }}>
         {activeTab === 'import' && <ImportTab />}
         {activeTab === 'mappings' && <MappingsTab />}

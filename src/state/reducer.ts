@@ -37,6 +37,7 @@ export const initialState: AppState = {
       destinationTermId: null,
     },
     sourceDomain: null,
+    onboardingStep: null,
   },
   source: null,
   target: {
@@ -122,6 +123,8 @@ export function appReducer(state: AppState = initialState, action: Action): AppS
       return { ...state, ui: { ...state.ui, modals: { ...state.ui.modals, [action.modal]: false } } };
     case 'SET_SOURCE_DOMAIN':
       return { ...state, ui: { ...state.ui, sourceDomain: action.domain.trim() || null } };
+    case 'SET_ONBOARDING_STEP':
+      return { ...state, ui: { ...state.ui, onboardingStep: action.step } };
     case 'LOAD_SOURCE': {
       const { result, defaultBuilder, confidence } = action;
 

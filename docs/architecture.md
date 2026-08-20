@@ -54,7 +54,7 @@ Relay/
 │  └─ src/cache.ts           in-memory, TTL'd, per-URL
 └─ src/
    ├─ main.tsx
-   ├─ App.tsx            shell only: header, tab switch, image-health hook
+   ├─ App.tsx            shell only: header, tab switch, image-health hook, onboarding tour
    ├─ types/domain.ts    the domain model shared by core, state and UI
    ├─ core/                        ── engine, zero React ──
    │  ├─ wxr/            parseWxr · generateWxr · xml (escaping/CDATA)
@@ -81,8 +81,9 @@ Relay/
    │  ├─ articles/      ArticlesTab · ArticleDrawer · ArticlePreviewPane
    │  │                 ArticleSidebar · debugPayload · useArticleDraft · useScrollManagement …
    │  ├─ build/         BuildTab
-   │  └─ sites/         SitesDrawer (auto-saved per-site configs)
-   ├─ ui/               Header · Modal · Badge
+   │  ├─ sites/         SitesDrawer (auto-saved per-site configs)
+   │  └─ onboarding/    OnboardingTour (first-run tour, one step per tab)
+   ├─ ui/               Header (tabs, theme, help button, tour tab pulse) · Modal · Badge
    └─ theme/            tokens · useTheme (ThemeProvider + dark-mode palette) · index.css
 ```
 
@@ -95,7 +96,7 @@ The shape is in `src/state/types.ts`:
 
 ```
 AppState
-├─ ui:        activeTab, selectedArticleId, previewMode, modals, pickers, sourceDomain
+├─ ui:        activeTab, selectedArticleId, previewMode, modals, pickers, sourceDomain, onboardingStep
 ├─ source:    ParseResult | null       // parsed export / live fetch
 ├─ target:    new-site taxonomies (pasted JSON or typed)
 ├─ oldTables: old-site term tables from the source

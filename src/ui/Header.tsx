@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useAppState } from '../state/AppStateContext';
+import { actions } from '../state/actions';
 import { domainForState } from '../state/siteProfiles';
 import { SitesDrawer } from '../features/sites/SitesDrawer';
+import { ONBOARDING_STEP_COUNT } from '../features/onboarding/OnboardingTour';
 import { useTheme } from '../theme';
 
 type TabId = 'import' | 'mappings' | 'settings' | 'articles' | 'build';
@@ -58,6 +60,7 @@ export const Header: React.FC = () => {
   const [sitesOpen, setSitesOpen] = useState(false);
   const domain = domainForState(state) ?? 'Sites';
   const { preference, setTheme } = useTheme();
+  const tourStep = state.ui.onboardingStep;
 
   const cycleTheme = () => {
     const order: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
@@ -122,6 +125,7 @@ export const Header: React.FC = () => {
               <div style={{ display: 'flex', gap: '26px' }}>
                 {TABS.map((tab) => {
                   const isActive = tab.id === activeTab;
+                  const isTourTarget = tourStep !== null && TABS.indexOf(tab) === tourStep;
                   return (
                     <button
                       key={tab.id}
@@ -139,7 +143,7 @@ export const Header: React.FC = () => {
                         transition: 'all 0.15s ease',
                       }}
                     >
-                      {tab.label}
+                      <span className={isTourTarget ? 'tour-tab-pulse' : undefined}>{tab.label}</span>
                     </button>
                   );
                 })}
@@ -147,6 +151,31 @@ export const Header: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => dispatch(actions.setOnboardingStep(0))}
+                aria-label="Start the onboarding tour"
+                title="Start the onboarding tour"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '28px',
+                  height: '28px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  color: 'var(--relay-text-2)',
+                  background: 'var(--relay-surface-subtle)',
+                  border: '1px solid var(--relay-border)',
+                  borderRadius: '50%',
+                  padding: '0',
+                  marginBottom: '14px',
+                  flexShrink: 0,
+                  cursor: 'pointer',
+                }}
+              >
+                ?
+              </button>
               <button
                 type="button"
                 onClick={cycleTheme}
@@ -174,6 +203,7 @@ export const Header: React.FC = () => {
                 type="button"
                 onClick={() => setSitesOpen(true)}
                 aria-label="Open saved site preferences"
+                className={tourStep !== null && tourStep === ONBOARDING_STEP_COUNT - 1 ? 'tour-btn-pulse' : undefined}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

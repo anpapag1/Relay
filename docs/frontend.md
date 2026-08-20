@@ -49,7 +49,39 @@ It also mounts `useImageHealthCheck` (from `features/import`) and
 `useUnsavedChangesWarning` (from `state/`) at the top level deliberately:
 tabs unmount when you switch away, and both effects must survive navigating
 between tabs (the health check must keep running after leaving Import; the
-`beforeunload` guard must stay armed on whichever tab is active).
+`beforeunload` guard must stay armed on whichever tab is active). It mounts
+`OnboardingTour` (from `features/onboarding`) the same way so the tour
+survives tab switches.
+
+## Onboarding — `src/features/onboarding/`
+
+`OnboardingTour` is a larger, centered, non-blocking floating-card tour, one
+step per tab plus a closing step. Each step shows a title, a short
+description, and a small CSS-keyframe illustration: Import shows loading data
+via XML export or live scrape feeding the old/new taxonomy tables; Mappings
+shows old→new matches with checks and an unmatched flag; Settings shows image
+resizing, text sizing and the button render mode swapping between a blue
+underlined link and a filled button in the same spot inside a live preview
+panel; Articles shows an A4-ratio skeleton preview whose
+outline automatically cycles through Included (green) / Needs review (amber) /
+Excluded (red) in sync with three status chips beside sidebar-like rows; Build
+shows checked articles flowing through a spinning converter into a bouncing
+`export.wxr` download box; the final step, Reusability, shows the taxonomies,
+mappings and settings being saved locally and reloaded with the site's
+articles. The header tab a step is about gets a soft pulsing glow around its
+label while that step is open; the final Reusability step glows the header's
+Saved sites button instead. Settings' controls and preview move slowly and
+out of phase — each element animates in short bursts with pauses, so the
+preview feels alive rather than ticking in lockstep. It does not change the
+active tab — the background stays exactly as the user left it. It
+auto-opens once on first load — gated by
+`localStorage['relay_onboarding_seen']`, set on any dismissal — and the
+header's `?` help button reopens it any time. Rendered as a card rather than
+a full-screen modal so the app stays visible behind it. All steps share the
+same fixed card height. Navigation is Back / Next / Done / Skip / ×, and the
+card is also keyboard-driven: **Left / Right** arrows step back and forward
+(a Right on the last step closes it), **Escape** closes and marks it seen —
+handled by a window `keydown` listener mounted only while the tour is open.
 
 ## The five tabs
 
@@ -190,8 +222,10 @@ domain is detected.
 ## Shared UI and theme
 
 - **`src/ui/`** — `Header.tsx` (app header, including the detected-domain pill
-  that opens the saved-sites drawer and the theme toggle), `Modal.tsx`,
-  `Badge.tsx` (status chips). Small, file-per-component.
+  that opens the saved-sites drawer, the theme toggle, the `?` help button
+  that reopens the onboarding tour, and a `tour-tab-pulse` glow on the tab
+  the open tour step explains), `Modal.tsx`, `Badge.tsx` (status chips).
+  Small, file-per-component.
 - **`src/theme/`** — `tokens.ts` (frozen design values), `index.css` (the
   design-token `:root` / `[data-theme='dark']` variable block plus the
   `.wp-preview` styles that make converted content look like a real WordPress

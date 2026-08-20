@@ -294,6 +294,13 @@ describe('appReducer', () => {
     expect(closed.ui.pickers.destinationTermId).toBeNull();
   });
 
+  it('handles SET_ONBOARDING_STEP, null closing the tour', () => {
+    const opened = appReducer(initialState, { type: 'SET_ONBOARDING_STEP', step: 2 });
+    expect(opened.ui.onboardingStep).toBe(2);
+    const closed = appReducer(opened, { type: 'SET_ONBOARDING_STEP', step: null });
+    expect(closed.ui.onboardingStep).toBeNull();
+  });
+
   it('handles SET_ARTICLE_EXCLUDED and removes auto flag', () => {
     const loaded = appReducer(initialState, {
       type: 'LOAD_SOURCE',

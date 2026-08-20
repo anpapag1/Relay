@@ -50,6 +50,8 @@ export interface AppState {
       destinationTermId: string | null;
     };
     sourceDomain: string | null;
+    /** Index of the open onboarding tour step, or null when the tour is closed. */
+    onboardingStep: number | null;
   };
   source: ParseResult | null;
   target: {
