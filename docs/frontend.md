@@ -206,9 +206,12 @@ build uses — so what you see is what exports.
 ### Build & Export — `src/features/build/`
 
 Preflight summary, run the build (`core/build/runBuild.ts`), watch progress
-(server-driven chunking so Cancel stays responsive), review the report, and
-download the generated WXR as a Blob. Build history entries record article
-count + size (real bytes, since the report holds the actual WXR string).
+(server-driven chunking so Cancel stays responsive; the bar is fed across
+both build phases — media resolution first, then conversion — so it never
+sits at 0% during the network pass; the log auto-scrolls as lines arrive),
+review the report, and download the generated WXR as a Blob. Build history
+entries record article count + size (real bytes, since the report holds the
+actual WXR string).
 
 ### Saved sites drawer — `src/features/sites/`
 

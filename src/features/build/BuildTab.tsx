@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAppState } from '../../state/AppStateContext';
 import { getDerivedArticles } from '../../state/selectors';
 
@@ -8,6 +8,12 @@ export const BuildTab: React.FC = () => {
   const [copied, setCopied] = useState<boolean>(false);
   const [includeFilter, setIncludeFilter] = useState<'all' | 'ready' | 'review' | 'edited'>('all');
   const [exportPendingForReview, setExportPendingForReview] = useState<boolean>(true);
+  const logRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = logRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [state.build.log]);
 
   const isBuilding = state.build.running;
   const buildPercent = Math.round(
@@ -293,6 +299,7 @@ export const BuildTab: React.FC = () => {
 
         {(isBuilding || buildDone || buildCancelled || buildLog.length > 0) && (
           <div
+            ref={logRef}
             style={{
               background: 'oklch(15% 0.01 250)',
               color: 'oklch(85% 0.005 250)',
