@@ -55,8 +55,9 @@ produces the same `ParseResult`.
   `before`/`after` date filtering), reading `X-WP-TotalPages` / `X-WP-Total`
   headers. Reports `truncated` when it hits a cap.
 - **`fetchRestMedia.ts`** — resolves featured images by media ID, batching
-  `include=` ids (with `per_page=100`, since WordPress otherwise caps an
-  `include=` batch at its default of 10 and silently drops the rest).
+  `include=` ids in chunks of 10 (the WordPress default `per_page`, so an
+  `include=` batch is never silently capped). Reports per-batch progress so
+  the Import tab's media bar climbs as images resolve.
 - **`fetchRestTaxonomies.ts`** — pulls the new site's term vocabularies into
   `oldTables`.
 - **`fetchFeedPosts.ts`** — RSS/Atom parse fallback (same `SiteArticle` shape).

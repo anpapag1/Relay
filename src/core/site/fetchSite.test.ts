@@ -52,6 +52,43 @@ describe('fetchSite', () => {
     if (!res.ok) expect(res.reason).toContain('connection reset');
   });
 
+  it('reports media-stage progress as featured images resolve', async () => {
+    const progress: { stage: string; fetched: number; total: number | null }[] = [];
+    const fetchImpl: TextFetchLike = async (input) => {
+      const url = new URL(input);
+      const isMedia = url.pathname.includes('/media');
+      const isProbe = url.searchParams.get('per_page') === '1' && !url.searchParams.has('page');
+      if (isProbe) {
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => '[{ "id": 1 }]' };
+      }
+      if (isMedia) {
+        const include = url.searchParams.get('include') ?? '';
+        const items = include.split(',').map((id) => ({ id: Number(id), source_url: `https://cdn.example/${id}.jpg` }));
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => JSON.stringify(items) };
+      }
+      if (url.pathname.endsWith('/categories') || url.pathname.endsWith('/tags')) {
+        return { ok: true, status: 200, headers: { get: () => null }, text: async () => '[]' };
+      }
+      return {
+        ok: true, status: 200,
+        headers: { get: (name: string) => (name.toLowerCase() === 'x-wp-totalpages' ? '1' : null) },
+        text: async () => JSON.stringify(Array.from({ length: 25 }, (_, i) => ({
+          id: 100 + i, date: '2026-08-17T09:00:00', slug: `p${i}`, link: `https://site.example/p${i}/`,
+          title: { rendered: `Post ${i}` }, content: { rendered: '<p>Hi</p>' }, featured_media: 100 + i, status: 'publish',
+        }))),
+      };
+    };
+
+    const res = await fetchSite('https://site.example', fetchImpl, (p) => progress.push(p));
+    expect(res.ok).toBe(true);
+    const mediaEvents = progress.filter((p) => p.stage === 'media');
+    expect(mediaEvents.length).toBeGreaterThan(1);
+    expect(mediaEvents[0]).toEqual({ stage: 'media', fetched: 0, total: 25 });
+    expect(mediaEvents[mediaEvents.length - 1].fetched).toBe(25);
+    const ascending = mediaEvents.every((e, i, arr) => i === 0 || e.fetched >= arr[i - 1].fetched);
+    expect(ascending).toBe(true);
+  });
+
   it('returns ok:false when the posts fetch returns a 200 with a non-JSON body', async () => {
     const fetchImpl: TextFetchLike = async (input) => {
       const url = new URL(input);
