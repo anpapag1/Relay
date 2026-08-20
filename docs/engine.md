@@ -113,10 +113,17 @@ one registry line.
 - **`wpbakery/`** — shortcode tree via `shortcode/tokenize.ts`. `[vc_row]` /
   `[vc_column]` → `columns`; `[vc_column_text]` delegates to plainHtml;
   `[vc_single_image]`, `[vc_gallery]`, `[vc_btn]`, `[vc_video]`,
-  `[vc_separator]`, `[vc_empty_space]`.
+  `[vc_separator]`, `[vc_empty_space]`. A row is flattened to a single flow
+  (no `wp:columns`) when it holds one real content column, or a content
+  column plus a media-only sidebar column (video/image/gallery/separator/
+  spacer only) — the sidebar media merges into the main column's flow.
 - **`divi/`** — the same tokenizer: `[et_pb_section|row|column]` → `columns`;
   `[et_pb_text]` delegates; `[et_pb_image|gallery|button|video|divider]`.
-  Percent-encoded attribute values are decoded.
+  The shared `shortcode/tokenize.ts` decodes the HTML-entity quote marks
+  WPBakery/Divi exports use around attribute values (`&#8221;…&#8221;` →
+  `"…"`) — otherwise a value containing spaces (a title) breaks the whole
+  shortcode's parse and its content degrades to a raw fallback — and Divi's
+  percent-encoded attribute values are decoded.
 - **`elementor/`** — a JSON tree in the `_elementor_data` postmeta. Recurses
   `elType: section|column|widget`, dispatching widgets by `widgetType`
   (`text-editor`, `heading`, `image`, `image-gallery`, `button`, `video`,

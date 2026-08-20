@@ -26,6 +26,22 @@ function parseAttrs(attrString: string): Record<string, string> {
   return attrs;
 }
 
+// WPBakery (and some Divi exports) write shortcode attributes with
+// HTML-entity quote marks — `link=&#8221;url&#8221;` instead of
+// `link="url"`. When such a value contains spaces (e.g. a title) the
+// unquoted-value grammar below can't span them, so the whole shortcode
+// fails to match and its content degrades to a raw fallback. Decoding the
+// common quote characters up front turns those into normal quoted
+// attributes the quoted-value branch handles. Only quote characters are
+// decoded — real HTML entities in body text are left for the plainHtml
+// reader's DOMParser.
+const DOUBLE_QUOTE_ENTITY_RE = /&#(?:8220|8221|8243|34);|&quot;/g;
+const SINGLE_QUOTE_ENTITY_RE = /&#(?:8216|8217|8242|39);|&apos;/g;
+
+function decodeQuoteEntities(input: string): string {
+  return input.replace(DOUBLE_QUOTE_ENTITY_RE, '"').replace(SINGLE_QUOTE_ENTITY_RE, "'");
+}
+
 /** A small, non-strict shortcode parser shared by wpbakery and divi (both
  * use the same `[tag attr="v"]...[/tag]` / `[tag attr="v" /]` grammar,
  * just with different tag vocabularies). Text between tags is kept
@@ -41,15 +57,16 @@ function parseAttrs(attrString: string): Record<string, string> {
  * looks exactly like an opening tag, so without this the tokenizer would
  * otherwise swallow every following shortcode as its "child". */
 export function tokenizeShortcodes(input: string, voidTags: ReadonlySet<string> = new Set()): ShortcodeNode[] {
+  const decoded = decodeQuoteEntities(input);
   const root: ShortcodeElement = { type: 'element', tag: '__root__', attrs: {}, children: [], selfClosing: false };
   const stack: ShortcodeElement[] = [root];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
   TAG_RE.lastIndex = 0;
 
-  while ((match = TAG_RE.exec(input)) !== null) {
+  while ((match = TAG_RE.exec(decoded)) !== null) {
     const [full, closingSlash, tag, attrString, selfClosingSlash] = match;
-    const textBefore = input.slice(lastIndex, match.index);
+    const textBefore = decoded.slice(lastIndex, match.index);
     if (textBefore) stack[stack.length - 1].children.push({ type: 'text', text: textBefore });
     lastIndex = match.index + full.length;
 
@@ -75,7 +92,7 @@ export function tokenizeShortcodes(input: string, voidTags: ReadonlySet<string> 
     if (!isVoid) stack.push(element);
   }
 
-  const tail = input.slice(lastIndex);
+  const tail = decoded.slice(lastIndex);
   if (tail) stack[stack.length - 1].children.push({ type: 'text', text: tail });
 
   return root.children;

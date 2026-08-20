@@ -54,6 +54,17 @@ function readColumn(el: ShortcodeElement, warnings: ReaderWarning[]): IRNode[] {
   return readChildren(el.children, warnings);
 }
 
+// A sidebar column whose only content is media (an aside video/image, a
+// decorative separator or spacer) carries no two-column meaning of its own
+// once Gutenberg replaces the theme layout — flattening it into the main
+// column's flow reads as "content, then media" rather than a split layout
+// the user has to fix by hand.
+const MEDIA_ONLY_KINDS = new Set<IRNode['kind']>(['image', 'video', 'gallery', 'separator', 'spacer']);
+
+function isMediaOnly(column: IRNode[]): boolean {
+  return column.length > 0 && column.every((node) => MEDIA_ONLY_KINDS.has(node.kind));
+}
+
 function readElement(el: ShortcodeElement, warnings: ReaderWarning[]): IRNode[] {
   if (ROW_TAGS.has(el.tag)) {
     const columnElements = el.children.filter(
@@ -72,10 +83,16 @@ function readElement(el: ShortcodeElement, warnings: ReaderWarning[]): IRNode[] 
     // a row that's left with only one populated column is not a
     // multi-column layout at all — it's flattened to that column's
     // content directly, with no `wp:columns` wrapper, rather than
-    // preserving a pointless single-column layout block.
+    // preserving a pointless single-column layout block. Similarly, a row
+    // left with one real content column plus a media-only sidebar column
+    // is really "content, then media" — merged into one flow instead of a
+    // two-column split.
     const nonEmptyColumns = columnElements.map((col) => readColumn(col, warnings)).filter((column) => column.length > 0);
     if (nonEmptyColumns.length === 0) return [];
     if (nonEmptyColumns.length === 1) return nonEmptyColumns[0];
+    if (nonEmptyColumns.length === 2 && isMediaOnly(nonEmptyColumns[0]) !== isMediaOnly(nonEmptyColumns[1])) {
+      return [...nonEmptyColumns[0], ...nonEmptyColumns[1]];
+    }
     return [{ kind: 'columns', columns: nonEmptyColumns }];
   }
 

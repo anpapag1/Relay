@@ -37,6 +37,37 @@ describe('readWpbakery', () => {
     expect(nodes).toEqual([]);
   });
 
+  it('flattens a main-content column plus a media-only sidebar column into one flow instead of a 2-column split', () => {
+    const { nodes } = readWpbakery({
+      contentHtml:
+        '[vc_row][vc_column width="3/4"][vc_column_text]<p>Main text</p>[/vc_column_text][/vc_column][vc_column width="1/4"][vc_video link="https://www.youtube.com/watch?v=abc123" title="Video"][vc_raw_html]JTNDZGl2JTIwaWQlM0QlMjJzaWRlYmFyLWF0LXZpc3VhbCUyMiUzRSUzQyUyRmRpdg==[/vc_raw_html][/vc_column][/vc_row]',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([
+      { kind: 'paragraph', html: 'Main text' },
+      { kind: 'video', src: 'https://www.youtube.com/watch?v=abc123', provider: 'youtube' },
+    ]);
+  });
+
+  it('converts a vc_video quoted with HTML-entity quote marks to a video node instead of a raw [video] fallback', () => {
+    const { nodes, warnings } = readWpbakery({
+      contentHtml:
+        '[vc_row][vc_column][vc_video link=&#8221;https://www.youtube.com/watch?v=8Ood9C1qWZE&#8221; el_aspect=&#8221;43&#8243; title=&#8221;Ασπίδα Προστασίας στην Κλιματική Κρίση&#8221;][/vc_column][/vc_row]',
+      postmeta: {},
+    });
+    expect(nodes).toEqual([{ kind: 'video', src: 'https://www.youtube.com/watch?v=8Ood9C1qWZE', provider: 'youtube' }]);
+    expect(msgs(warnings)).not.toContain('Classic [video] shortcode with no resolvable source — kept as raw.');
+  });
+
+  it('keeps a 2-column split when both columns hold real content', () => {
+    const { nodes } = readWpbakery({
+      contentHtml:
+        '[vc_row][vc_column][vc_column_text]<p>Left</p>[/vc_column_text][/vc_column][vc_column][vc_column_text]<p>Right</p>[/vc_column_text][/vc_column][/vc_row]',
+      postmeta: {},
+    });
+    expect(nodes[0]?.kind).toBe('columns');
+  });
+
   it('converts a vc_video shortcode embedded inside vc_column_text text to a video node instead of leaving the literal shortcode in the paragraph', () => {
     const { nodes } = readWpbakery({
       contentHtml:

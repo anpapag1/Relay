@@ -21,6 +21,18 @@ describe('tokenizeShortcodes', () => {
     expect(el.attrs.link).toBe('url:https://x.com|title:X');
   });
 
+  it('parses WPBakery attributes quoted with HTML-entity quote marks, including values containing spaces', () => {
+    const tree = tokenizeShortcodes(
+      '[vc_video link=&#8221;https://www.youtube.com/watch?v=8Ood9C1qWZE&#8221; el_aspect=&#8221;43&#8243; title=&#8221;Ασπίδα Προστασίας στην Κλιματική Κρίση&#8221;]',
+    );
+    const [el] = tree;
+    if (el.type !== 'element') throw new Error('expected element');
+    expect(el.tag).toBe('vc_video');
+    expect(el.attrs.link).toBe('https://www.youtube.com/watch?v=8Ood9C1qWZE');
+    expect(el.attrs.el_aspect).toBe('43');
+    expect(el.attrs.title).toBe('Ασπίδα Προστασίας στην Κλιματική Κρίση');
+  });
+
   it('treats an unrecognised attribute-only self-closing tag as self-closing', () => {
     const tree = tokenizeShortcodes('[vc_empty_space height="20px"]');
     const [el] = tree;
