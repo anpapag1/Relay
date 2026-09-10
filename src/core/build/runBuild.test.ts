@@ -588,6 +588,66 @@ describe('runBuild', () => {
     expect(parsed.attachments[0].attachmentUrl).toBe('https://old.example/wp-content/uploads/photo.jpg');
   });
 
+  it('registers and rewrites a file link buried inside a list item, not just a hotlink to the old site', async () => {
+    const articles: BuildArticleInput[] = [
+      {
+        article: makeArticle({
+          contentHtml:
+            '<ul><li><a href="https://old.example/wp-content/uploads/2026/08/report.pdf">The report</a></li></ul>',
+        }),
+        excluded: false,
+      },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [
+        { postId: 10, title: 'Report', attachmentUrl: 'https://old.example/wp-content/uploads/2026/08/report.pdf', postParent: 1 },
+      ],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.attachments).toHaveLength(1);
+    expect(parsed.attachments[0].attachmentUrl).toBe('https://old.example/wp-content/uploads/2026/08/report.pdf');
+    expect(parsed.articles[0].contentHtml).toContain('href="https://old.example/wp-content/uploads/2026/08/report.pdf"');
+  });
+
+  it('rewrites a list-item file link to the matched attachment\'s canonical URL when the two differ (matched by filename, not by identical URL)', async () => {
+    const articles: BuildArticleInput[] = [
+      {
+        article: makeArticle({
+          contentHtml: '<ul><li><a href="https://old.example/redirect/report.pdf">The report</a></li></ul>',
+        }),
+        excluded: false,
+      },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [
+        { postId: 10, title: 'Report', attachmentUrl: 'https://old.example/wp-content/uploads/2026/08/report.pdf', postParent: 1 },
+      ],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.articles[0].contentHtml).toContain('href="https://old.example/wp-content/uploads/2026/08/report.pdf"');
+    expect(parsed.articles[0].contentHtml).not.toContain('https://old.example/redirect/report.pdf');
+  });
+
   it('embeds the synthetic attachment id in the image block itself, matching the attachment item\'s own id', async () => {
     const articles: BuildArticleInput[] = [
       {

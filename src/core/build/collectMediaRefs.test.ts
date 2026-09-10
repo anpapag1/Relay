@@ -48,6 +48,21 @@ describe('collectMediaRefs', () => {
       'https://old.example/uploads/other-original.jpg',
     ]);
   });
+
+  it('collects file links buried inside list items, since readList never splits them into their own file node', () => {
+    const nodes: IRNode[] = [
+      {
+        kind: 'list',
+        ordered: false,
+        items: [
+          '<strong><a href="https://old.example/wp-content/uploads/2026/08/report.pdf">The report</a></strong>',
+          'Plain text item with no link',
+          '<a href="https://old.example/page/">A normal page link, not a file</a>',
+        ],
+      },
+    ];
+    expect(collectMediaRefs(nodes)).toEqual(['https://old.example/wp-content/uploads/2026/08/report.pdf']);
+  });
 });
 
 describe('rewriteMediaRefs', () => {
@@ -109,5 +124,46 @@ describe('rewriteMediaRefs', () => {
     const emptyRegistry = buildAttachmentRegistry([]);
     const { nodes: withEmptyRegistry } = rewriteMediaRefs(nodes, resolved, emptyRegistry);
     expect((withEmptyRegistry[0] as { attachmentId?: number }).attachmentId).toBeUndefined();
+  });
+
+  it('rewrites a file link inside a list item to its resolved URL, keeping the rest of the item HTML intact', () => {
+    const nodes: IRNode[] = [
+      {
+        kind: 'list',
+        ordered: false,
+        items: [
+          '<strong><a href="https://old.example/wp-content/uploads/2026/08/report.pdf">The report</a></strong>',
+          '<a href="https://old.example/page/">A normal page link, not a file</a>',
+        ],
+      },
+    ];
+    const resolved: Record<string, MediaResolution> = {
+      'https://old.example/wp-content/uploads/2026/08/report.pdf': { outcome: 'matched-export', url: 'https://new-site.example/uploads/report.pdf' },
+    };
+    const { nodes: out, warnings } = rewriteMediaRefs(nodes, resolved);
+    expect(out).toEqual([
+      {
+        kind: 'list',
+        ordered: false,
+        items: [
+          '<strong><a href="https://new-site.example/uploads/report.pdf">The report</a></strong>',
+          '<a href="https://old.example/page/">A normal page link, not a file</a>',
+        ],
+      },
+    ]);
+    expect(warnings).toEqual([]);
+  });
+
+  it('leaves an unresolved file link inside a list item untouched and reports a warning', () => {
+    const nodes: IRNode[] = [
+      { kind: 'list', ordered: false, items: ['<a href="https://old.example/wp-content/uploads/2026/08/missing.pdf">Missing</a>'] },
+    ];
+    const resolved: Record<string, MediaResolution> = {
+      'https://old.example/wp-content/uploads/2026/08/missing.pdf': { outcome: 'unresolved', reason: 'not found' },
+    };
+    const { nodes: out, warnings } = rewriteMediaRefs(nodes, resolved);
+    expect(out).toEqual(nodes);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('missing.pdf');
   });
 });

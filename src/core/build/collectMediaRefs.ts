@@ -15,6 +15,27 @@ function isSameAttachment(a: string, b: string): boolean {
   return stripSizeSuffix(filenameOf(a)) === stripSizeSuffix(filenameOf(b));
 }
 
+/** Matches a downloadable-document extension in an href value — the same
+ * set plainHtml's reader promotes to a standalone wp:file block, but here
+ * applied to a link staying inline (see listFileHrefs). */
+const LIST_FILE_EXTENSION_RE = /\.(pdf|docx?|xlsx?|pptx?|zip|rar|7z)(?:[?#]|$)/i;
+/** Finds every `<a href="...">` in a list item's raw HTML (list items are
+ * never parsed into their own image/file IR nodes the way a paragraph's
+ * children are — see readList — so a document link buried in a bullet
+ * point, e.g. `<li><a href="report.pdf">Report</a></li>`, would otherwise
+ * never enter the media pipeline at all: never resolved, never migrated,
+ * left pointing at the old site forever with no warning either). */
+const LIST_ANCHOR_HREF_RE = /<a\b[^>]*\bhref=(["'])(.*?)\1[^>]*>/gi;
+
+function listFileHrefs(html: string): string[] {
+  const hrefs: string[] = [];
+  for (const match of html.matchAll(LIST_ANCHOR_HREF_RE)) {
+    const href = match[2];
+    if (LIST_FILE_EXTENSION_RE.test(href)) hrefs.push(href);
+  }
+  return hrefs;
+}
+
 /** Walks an IR tree (recursing into columns) and collects every media
  * reference a reader emitted: image src/href, gallery image src/href,
  * and file href. Buttons and embedded videos are left alone — they link
@@ -47,6 +68,9 @@ export function collectMediaRefs(nodes: IRNode[]): string[] {
           break;
         case 'file':
           refs.push(node.href);
+          break;
+        case 'list':
+          for (const item of node.items) refs.push(...listFileHrefs(item));
           break;
         case 'columns':
           for (const column of node.columns) visit(column);
@@ -117,6 +141,15 @@ export function rewriteMediaRefs(
           const href = resolveRef(node.href, resolved, warnings);
           return { ...node, href, attachmentId: attachmentIdFor(href) };
         }
+        case 'list':
+          return {
+            ...node,
+            items: node.items.map((item) =>
+              item.replace(LIST_ANCHOR_HREF_RE, (full, _quote: string, href: string) =>
+                LIST_FILE_EXTENSION_RE.test(href) ? full.replace(href, resolveRef(href, resolved, warnings)) : full,
+              ),
+            ),
+          };
         case 'columns':
           return { ...node, columns: node.columns.map(visit) };
         default:
