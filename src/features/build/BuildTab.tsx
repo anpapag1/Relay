@@ -364,6 +364,17 @@ export const BuildTab: React.FC = () => {
               </div>
             </div>
 
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', padding: '14px 16px', background: 'var(--relay-accent-soft)', border: '1px solid var(--relay-border-soft)', borderRadius: '10px' }}>
+              <span style={{ fontSize: '16px' }}>🧩</span>
+              <span>
+                Before you import: install{' '}
+                <a href="https://github.com/anpapag1/RelayCompanion" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700 }}>
+                  Relay Companion
+                </a>{' '}
+                on the destination site first — it fixes a WordPress core bug that mangles non-Latin filenames, and adds a one-step import plus stale-link repair.
+              </span>
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
               <button
                 type="button"
