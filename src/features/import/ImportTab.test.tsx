@@ -468,3 +468,34 @@ describe('ImportTab saved-site dropdown', () => {
     document.body.removeChild(container);
   });
 });
+
+describe('ImportTab new site taxonomies — WordPress taxonomy domain', () => {
+  it('lets the user set the WordPress taxonomy domain for a manually-created target table', async () => {
+    mockFetchSite.mockResolvedValue({ ok: true, source: 'rest', truncated: false, result: SUCCESS_RESULT });
+
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+    await fetchSource(container, 'https://news.example.com');
+
+    const newTaxonomiesTabBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.startsWith('New site taxonomies')) as HTMLButtonElement;
+    await act(async () => { newTaxonomiesTabBtn.click(); });
+
+    const addTableBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === '+ Add Table') as HTMLButtonElement;
+    await act(async () => { addTableBtn.click(); });
+
+    expect(container.textContent).toContain('Set this to the real WordPress taxonomy');
+
+    const domainInput = container.querySelector('input[placeholder="category"]') as HTMLInputElement;
+    expect(domainInput).toBeDefined();
+
+    await act(async () => {
+      setInputValue(domainInput, 'category');
+    });
+
+    expect((container.querySelector('input[placeholder="category"]') as HTMLInputElement).value).toBe('category');
+    expect(container.textContent).not.toContain('Set this to the real WordPress taxonomy');
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
+});

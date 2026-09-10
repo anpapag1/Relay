@@ -68,6 +68,19 @@ describe('resolveArticleTerms', () => {
     };
     expect(resolveArticleTerms(terms, mappings, NEW_TABLES)).toEqual([]);
   });
+
+  it('exports the table\'s WordPress taxonomy domain, not its internal id, when set', () => {
+    const tables: TermTable[] = [
+      { id: 'custom-table-1', domain: 'category', label: 'New Category Table 1', terms: [{ id: 'c1', name: 'News', slug: 'news' }] },
+    ];
+    const terms: TermRef[] = [{ domain: 'category', nicename: 'news', name: 'News' }];
+    const mappings: Record<string, TermMapping> = {
+      'category:news': { oldDomain: 'category', oldNicename: 'news', targetTableId: 'custom-table-1', targetTermIds: ['c1'], excluded: false, origin: 'user' },
+    };
+    expect(resolveArticleTerms(terms, mappings, tables)).toEqual([
+      { domain: 'category', nicename: 'news', name: 'News', sourceDomain: 'category' },
+    ]);
+  });
 });
 
 describe('applyTermOverrides', () => {
@@ -126,6 +139,15 @@ describe('applyTermOverrides', () => {
     const tables: TermTable[] = [{ id: 'category', label: 'Categories', terms: [{ id: 'c2', name: 'Press' }] }];
     const result = applyTermOverrides(base, { categoryIds: ['c2'] }, tables);
     expect(result).toContainEqual({ domain: 'category', nicename: 'c2', name: 'Press', sourceDomain: 'category' });
+  });
+
+  it('finds the category table by its WordPress taxonomy domain, not its internal id', () => {
+    const tables: TermTable[] = [
+      { id: 'custom-table-1', domain: 'category', label: 'New Category Table 1', terms: [{ id: 'c2', name: 'Press', slug: 'press' }] },
+    ];
+    expect(applyTermOverrides([], { categoryIds: ['c2'] }, tables)).toEqual([
+      { domain: 'category', nicename: 'press', name: 'Press', sourceDomain: 'category' },
+    ]);
   });
 });
 

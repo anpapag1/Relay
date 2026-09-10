@@ -246,6 +246,37 @@ describe('runBuild', () => {
     expect(parsed.articles[0].terms).toEqual([{ domain: 'category', nicename: 'news', name: 'News' }]);
   });
 
+  it('exports the destination table\'s WordPress taxonomy domain, not its internal id, when mapped to a manually-created table', async () => {
+    const newTables: TermTable[] = [
+      { id: 'custom-table-1', domain: 'category', label: 'New Category Table 1', terms: [{ id: 'c1', name: 'News', slug: 'news' }] },
+    ];
+    const mappings: Record<string, TermMapping> = {
+      'category:oldnews': { oldDomain: 'category', oldNicename: 'oldnews', targetTableId: 'custom-table-1', targetTermIds: ['c1'], excluded: false, origin: 'user' },
+    };
+    const articles: BuildArticleInput[] = [
+      { article: makeArticle({ terms: [{ domain: 'category', nicename: 'oldnews', name: 'Old News' }] }), excluded: false },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [],
+      mappings,
+      newTables,
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+
+    expect(result.wxr).toContain('domain="category"');
+    expect(result.wxr).not.toContain('custom-table-1');
+
+    const parsed = parseWxr(result.wxr);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.articles[0].terms).toEqual([{ domain: 'category', nicename: 'news', name: 'News' }]);
+  });
+
   it('exports the newSlug override as wp:post_name, ahead of the parsed slug', async () => {
     const articles: BuildArticleInput[] = [
       { article: makeArticle({ postName: 'hello-world' }), excluded: false, newSlug: 'my-custom-slug' },

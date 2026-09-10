@@ -92,8 +92,8 @@ export const ArticleDrawer: React.FC<ArticleDrawerProps> = ({
   };
 
   const targetTables = Object.values(state.target.tables);
-  const categoryOptions = targetTables.find((t) => t.id === 'category')?.terms ?? [];
-  const tagOptions = targetTables.find((t) => t.id === 'post_tag')?.terms ?? [];
+  const categoryOptions = targetTables.find((t) => (t.domain || t.id) === 'category')?.terms ?? [];
+  const tagOptions = targetTables.find((t) => (t.domain || t.id) === 'post_tag')?.terms ?? [];
 
   return (
     <>

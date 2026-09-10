@@ -123,6 +123,14 @@ export interface TermTable {
   id: string;
   label: string;
   terms: NewSiteTerm[];
+  /** The actual WordPress taxonomy slug this table represents (e.g.
+   * `category`, `post_tag`, or a custom taxonomy) — written verbatim as
+   * the `domain` attribute of each exported `<category>` element, and
+   * used to find "the" category/tag table for per-article overrides.
+   * Falls back to `id` when unset, so tables created before this field
+   * existed (which relied on `id` itself being `category`/`post_tag`)
+   * keep working. */
+  domain?: string;
 }
 
 export type MappingOrigin = 'suggested' | 'user';

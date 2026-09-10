@@ -294,6 +294,47 @@ describe('ArticleDrawer before/after preview toggle', () => {
   });
 });
 
+describe('ArticleDrawer category/tag options', () => {
+  it('finds the category/tag options by the table\'s WordPress taxonomy domain, not its internal id', async () => {
+    const article = makeArticle();
+    await act(async () => {
+      root.render(
+        <AppStateProvider
+          enableAutosave={false}
+          initialStateOverride={{
+            target: {
+              tables: {
+                'custom-table-1': {
+                  id: 'custom-table-1',
+                  domain: 'category',
+                  label: 'New Category Table 1',
+                  terms: [{ id: 'c1', name: 'News', slug: 'news' }],
+                },
+                'custom-table-2': {
+                  id: 'custom-table-2',
+                  domain: 'post_tag',
+                  label: 'New Tag Table 1',
+                  terms: [{ id: 't1', name: 'React', slug: 'react' }],
+                },
+              },
+            },
+          }}
+        >
+          <ArticleDrawer article={article} onClose={vi.fn()} onPrev={vi.fn()} onNext={vi.fn()} hasPrev={false} hasNext={false} />
+        </AppStateProvider>,
+      );
+    });
+
+    const editBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Edit metadata') as HTMLButtonElement;
+    await act(async () => { editBtn.click(); });
+
+    expect(container.textContent).toContain('News');
+    expect(container.textContent).toContain('React');
+    expect(container.textContent).not.toContain('No destination category table set up');
+    expect(container.textContent).not.toContain('No destination tags table set up');
+  });
+});
+
 describe('ArticleDrawer navigation buttons', () => {
   it('calls onPrev/onNext when clicked and not dirty', async () => {
     const article = makeArticle();

@@ -36,15 +36,15 @@ export function applyTermOverrides(
     return true;
   });
 
-  const tableById = new Map(newTables.map((table) => [table.id, table]));
-  const pushResolved = (ids: string[] | undefined, tableId: string, sourceDomain: string) => {
+  const tableByDomain = new Map(newTables.map((table) => [table.domain || table.id, table]));
+  const pushResolved = (ids: string[] | undefined, wpTaxonomy: string, sourceDomain: string) => {
     if (!ids || ids.length === 0) return;
-    const table = tableById.get(tableId);
+    const table = tableByDomain.get(wpTaxonomy);
     if (!table) return;
     for (const id of ids) {
       const term = table.terms.find((candidate) => candidate.id === id);
       if (!term) continue;
-      out.push({ domain: tableId, nicename: term.slug || term.id, name: term.name, sourceDomain });
+      out.push({ domain: table.domain || table.id, nicename: term.slug || term.id, name: term.name, sourceDomain });
     }
   };
 
@@ -75,7 +75,7 @@ export function resolveArticleTerms(
     for (const targetTermId of mapping.targetTermIds) {
       const newTerm = table.terms.find((candidate) => candidate.id === targetTermId);
       if (!newTerm) continue;
-      out.push({ domain: table.id, nicename: newTerm.slug || newTerm.id, name: newTerm.name, sourceDomain: term.domain });
+      out.push({ domain: table.domain || table.id, nicename: newTerm.slug || newTerm.id, name: newTerm.name, sourceDomain: term.domain });
     }
   }
 

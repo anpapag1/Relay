@@ -336,6 +336,15 @@ export const ImportTab: React.FC = () => {
     dispatch({ type: 'SET_TARGET_TABLES', tables: updated });
   };
 
+  const updateTableDomain = (tableId: string, newDomain: string) => {
+    const tables = Object.values(state.target.tables);
+    const updated = tables.map((t) => {
+      if (t.id !== tableId) return t;
+      return { ...t, domain: newDomain };
+    });
+    dispatch({ type: 'SET_TARGET_TABLES', tables: updated });
+  };
+
   const updateTermName = (tableId: string, termId: string, newName: string) => {
     const tables = Object.values(state.target.tables);
     const updated = tables.map((t) => {
@@ -1057,6 +1066,26 @@ export const ImportTab: React.FC = () => {
                       >
                         Remove Table
                       </button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <label style={{ fontSize: '12px', color: 'var(--relay-text-muted)', whiteSpace: 'nowrap' }}>
+                          WordPress taxonomy
+                        </label>
+                        <input
+                          type="text"
+                          value={tbl.domain ?? ''}
+                          onChange={(e) => updateTableDomain(tbl.id, e.target.value)}
+                          placeholder="category"
+                          style={{ flex: 1, padding: '7px 9px', border: '1px solid var(--relay-border)', borderRadius: '6px', fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace" }}
+                        />
+                      </div>
+                      {!tbl.domain && (
+                        <div style={{ fontSize: '11px', color: 'var(--relay-warning)' }}>
+                          Set this to the real WordPress taxonomy (e.g. <code>category</code> or <code>post_tag</code>) —
+                          otherwise categories/tags mapped here won't be applied on import.
+                        </div>
+                      )}
                     </div>
                     {isNewExpanded && (
                       <>
