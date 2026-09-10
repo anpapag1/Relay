@@ -14,6 +14,7 @@ import type { FetchLike } from '../media/mediaClient';
 import { termMappingIdOf } from '../mappings/termId';
 import { collectMediaRefs, rewriteMediaRefs } from './collectMediaRefs';
 import { applyTermOverrides, resolveArticleTerms } from './resolveTerms';
+import { filenameImportRiskWarning } from '../media/filenameImportRisk';
 
 /** Every exported post is attributed to this one fixed login rather than
  * the article's real original author — matches the reference tool: real
@@ -59,6 +60,23 @@ function unmappedTermWarnings(
     const hasValidTarget = mapping?.targetTermIds.some((id) => allTargetTerms.some((t) => t.id === id)) ?? false;
     if (!mapping || mapping.targetTermIds.length === 0 || !hasValidTarget) {
       warnings.push(`Unmapped taxonomy term: "${term.name}"`);
+    }
+  }
+  return warnings;
+}
+
+/** Warns about any resolved media URL whose filename risks the WordPress
+ * WXR importer's "File name too long" failure (see filenameImportRisk.ts) —
+ * checked here, at export time, rather than left for the user to discover
+ * via a cryptic PHP warning after import. */
+function filenameRiskWarnings(urls: Array<string | null | undefined>): string[] {
+  const warnings: string[] = [];
+  const seen = new Set<string>();
+  for (const url of urls) {
+    const warning = filenameImportRiskWarning(url);
+    if (warning && !seen.has(warning)) {
+      seen.add(warning);
+      warnings.push(warning);
     }
   }
   return warnings;
@@ -160,6 +178,7 @@ interface ResolvedArticle {
   terms: ExportTermRef[];
   featuredAttachmentUrl: string | null;
   termWarnings: string[];
+  filenameWarnings: string[];
   nodes?: IRNode[];
   resolved?: Record<string, MediaResolution>;
   readerWarnings?: ReaderWarning[];
@@ -183,7 +202,8 @@ async function resolveOneArticle(
   const termWarnings = unmappedTermWarnings(article.terms, options.mappings, options.newTables);
 
   if (input.editedHtml != null) {
-    return { input, terms, featuredAttachmentUrl, termWarnings };
+    const filenameWarnings = filenameRiskWarnings([featuredAttachmentUrl]);
+    return { input, terms, featuredAttachmentUrl, termWarnings, filenameWarnings };
   }
 
   const reader = getReader(options.builderId);
@@ -198,8 +218,9 @@ async function resolveOneArticle(
     articleUrl: article.link || null,
     fetchImpl: options.fetchImpl,
   });
+  const filenameWarnings = filenameRiskWarnings([featuredAttachmentUrl, ...Object.values(resolved).map((r) => r.url)]);
 
-  return { input, terms, featuredAttachmentUrl, termWarnings, nodes, resolved, readerWarnings };
+  return { input, terms, featuredAttachmentUrl, termWarnings, filenameWarnings, nodes, resolved, readerWarnings };
 }
 
 function buildOneArticle(
@@ -207,7 +228,7 @@ function buildOneArticle(
   options: RunBuildOptions,
   attachmentRegistry: AttachmentRegistry,
 ): { exportArticle: ExportArticle | null; result: BuildArticleResult } {
-  const { input, terms, featuredAttachmentUrl, termWarnings } = resolvedArticle;
+  const { input, terms, featuredAttachmentUrl, termWarnings, filenameWarnings } = resolvedArticle;
   const { article } = input;
   const exportPendingForReview = options.exportPendingForReview ?? true;
 
@@ -215,7 +236,7 @@ function buildOneArticle(
     exportPendingForReview && warnings.length > 0 ? 'pending' : 'publish';
 
   if (input.editedHtml != null) {
-    const warnings = termWarnings;
+    const warnings = [...termWarnings, ...filenameWarnings];
     return {
       exportArticle: toExportArticle(input, input.editedHtml, terms, featuredAttachmentUrl, [], postStatusFor(warnings)),
       result: {
@@ -235,7 +256,7 @@ function buildOneArticle(
   const mediaAttachmentUrls = Array.from(
     new Set(Object.values(resolved).map((r) => r.url).filter((url): url is string => Boolean(url))),
   );
-  const warnings = [...termWarnings, ...reviewMessages(readerWarnings), ...mediaWarnings];
+  const warnings = [...termWarnings, ...filenameWarnings, ...reviewMessages(readerWarnings), ...mediaWarnings];
 
   if (isEffectivelyEmptyOutput(contentHtml)) {
     return {

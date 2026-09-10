@@ -619,6 +619,56 @@ describe('runBuild', () => {
     expect(parsed.articles[0].contentHtml).toContain('href="https://old.example/wp-content/uploads/2026/08/report.pdf"');
   });
 
+  it('warns when a resolved file has a long non-Latin filename WordPress\'s importer would fail to download', async () => {
+    const longGreekFilename =
+      '1.-ΑΠΟΦΑΣΗ-ΔΗΜΑΡΧΟΥ-ΓΙΑ-ΔΙΕΝΕΡΓΕΙΑ-ΑΠ΄-ΕΥΘΕΙΑΣ-ΑΝΑΘΕΣΗΣ_-ΣΥΝΤΗΡΗΣΗ-ΣΚ-ΔΕ-ΓΕΡΑΣ-ΠΛΩΜΑΡΙΟΥ.pdf';
+    const url = `https://old.example/wp-content/uploads/2026/08/${longGreekFilename}`;
+    const articles: BuildArticleInput[] = [
+      {
+        article: makeArticle({ contentHtml: `<ul><li><a href="${url}">The report</a></li></ul>` }),
+        excluded: false,
+      },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [{ postId: 10, title: 'Report', attachmentUrl: url, postParent: 1 }],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+    expect(result.articles[0].status).toBe('review');
+    expect(result.articles[0].warnings).toHaveLength(1);
+    expect(result.articles[0].warnings[0]).toContain('File name too long');
+    expect(result.articles[0].warnings[0]).toContain('ΓΕΡΑΣ-ΠΛΩΜΑΡΙΟΥ');
+  });
+
+  it('does not warn about a short/Latin filename', async () => {
+    const url = 'https://old.example/wp-content/uploads/2026/08/report.pdf';
+    const articles: BuildArticleInput[] = [
+      {
+        article: makeArticle({ contentHtml: `<ul><li><a href="${url}">The report</a></li></ul>` }),
+        excluded: false,
+      },
+    ];
+    const result = await runBuild({
+      articles,
+      attachments: [{ postId: 10, title: 'Report', attachmentUrl: url, postParent: 1 }],
+      mappings: {},
+      newTables: [],
+      settings: SETTINGS,
+      builderId: 'plainHtml',
+      siteTitle: 'New Site',
+      siteUrl: 'https://new-site.example',
+      fetchImpl: NEVER_FETCH,
+    });
+    expect(result.articles[0].status).toBe('ready');
+    expect(result.articles[0].warnings).toEqual([]);
+  });
+
   it('rewrites a list-item file link to the matched attachment\'s canonical URL when the two differ (matched by filename, not by identical URL)', async () => {
     const articles: BuildArticleInput[] = [
       {
