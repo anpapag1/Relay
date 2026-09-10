@@ -12,6 +12,7 @@ import { BUILDER_VALIDATION_STATUS, type BuilderId } from '../../core/builders/t
 import type { TermTable } from '../../types/domain';
 import { BuilderStatusPill } from '../../ui/Badge';
 import { FetchProgressBar } from './FetchProgressBar';
+import { DateRangeModal } from './DateRangeModal';
 
 const BUILDER_OPTIONS: BuilderId[] = ['plainHtml', 'elementor', 'divi', 'wpbakery'];
 
@@ -66,11 +67,21 @@ export const ImportTab: React.FC = () => {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [fetchStartDate, setFetchStartDate] = useState('');
   const [fetchEndDate, setFetchEndDate] = useState('');
+  const [dateRangeModalOpen, setDateRangeModalOpen] = useState(false);
   const [fetchDropdownOpen, setFetchDropdownOpen] = useState(false);
   const [fetchDropdownIndex, setFetchDropdownIndex] = useState(0);
   const [savedProfiles, setSavedProfiles] = useState<SiteProfile[]>([]);
 
   const fetchDatesValid = Boolean(fetchStartDate && fetchEndDate && fetchStartDate <= fetchEndDate);
+
+  function formatFetchDate(value: string): string {
+    const [year, month, day] = value.split('-').map(Number);
+    if (!year || !month || !day) return value;
+    return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  const dateRangeLabel =
+    fetchStartDate && fetchEndDate ? `${formatFetchDate(fetchStartDate)} – ${formatFetchDate(fetchEndDate)}` : 'Select date range';
 
   function formatSavedAt(iso: string): string {
     const diffMs = Date.now() - new Date(iso).getTime();
@@ -624,32 +635,29 @@ export const ImportTab: React.FC = () => {
             </button>
           </div>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap', marginTop: '10px' }}>
-            <label style={{ fontSize: '13px', color: 'var(--relay-text-muted)' }}>
-              Start date{' '}
-              <input
-                type="date"
-                aria-label="Start date"
-                value={fetchStartDate}
-                onChange={(e) => setFetchStartDate(e.target.value)}
-                disabled={fetchingSite}
-                style={{ padding: '8px 10px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '14px' }}
-              />
-            </label>
-            <label style={{ fontSize: '13px', color: 'var(--relay-text-muted)' }}>
-              End date{' '}
-              <input
-                type="date"
-                aria-label="End date"
-                value={fetchEndDate}
-                onChange={(e) => setFetchEndDate(e.target.value)}
-                disabled={fetchingSite}
-                style={{ padding: '8px 10px', border: '1px solid var(--relay-border)', borderRadius: '8px', fontSize: '14px' }}
-              />
-            </label>
+            <button
+              type="button"
+              onClick={() => setDateRangeModalOpen(true)}
+              disabled={fetchingSite}
+              className="btn btn-secondary"
+              style={{ fontWeight: 500 }}
+            >
+              {dateRangeLabel}
+            </button>
           </div>
           {fetchProgress && <FetchProgressBar progress={fetchProgress} />}
           {fetchError && <div style={{ marginTop: '10px', fontSize: '13px', color: 'var(--relay-danger)' }}>{fetchError}</div>}
         </div>
+        <DateRangeModal
+          isOpen={dateRangeModalOpen}
+          initialStart={fetchStartDate}
+          initialEnd={fetchEndDate}
+          onApply={(start, end) => {
+            setFetchStartDate(start);
+            setFetchEndDate(end);
+          }}
+          onClose={() => setDateRangeModalOpen(false)}
+        />
       </div>
     );
   }

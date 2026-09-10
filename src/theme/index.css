@@ -709,3 +709,52 @@ a:hover {
   font-size: 12px;
   font-weight: 600;
 }
+
+/* Date range picker (Import tab fetch filter) — react-day-picker themed
+ * through its own CSS variables rather than overriding its classes
+ * directly, so it follows the app's palette (including dark mode) instead
+ * of the library's default blue. */
+.relay-date-range-picker .rdp {
+  --rdp-cell-size: 38px;
+  --rdp-accent-color: var(--relay-accent);
+  --rdp-background-color: var(--relay-accent-soft);
+  --rdp-accent-color-dark: var(--relay-accent);
+  --rdp-background-color-dark: var(--relay-accent-soft);
+  --rdp-outline: 2px solid var(--relay-accent);
+  --rdp-outline-selected: 2px solid var(--relay-accent);
+  margin: 0;
+  color: var(--relay-text);
+}
+.relay-date-range-picker .rdp-caption_label,
+.relay-date-range-picker .rdp-head_cell {
+  color: var(--relay-text);
+}
+.relay-date-range-picker .rdp-head_cell {
+  font-weight: 600;
+  color: var(--relay-text-muted);
+}
+.relay-date-range-picker .rdp-day {
+  color: var(--relay-text);
+  border-radius: 50%;
+}
+.relay-date-range-picker .rdp-day_outside {
+  color: var(--relay-text-muted);
+  opacity: 0.5;
+}
+.relay-date-range-picker .rdp-day_range_middle {
+  border-radius: 0;
+  background: var(--relay-accent-soft);
+  color: var(--relay-text);
+}
+.relay-date-range-picker .rdp-day_range_start,
+.relay-date-range-picker .rdp-day_range_end {
+  border-radius: 50%;
+  background: var(--relay-accent);
+  color: white;
+}
+.relay-date-range-picker .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background: var(--relay-surface-hover);
+}
+.relay-date-range-picker .rdp-nav_button {
+  color: var(--relay-text);
+}

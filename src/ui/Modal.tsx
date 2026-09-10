@@ -6,9 +6,12 @@ export interface ModalProps {
   title: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** Overrides the default 480px cap — for content that's naturally wider,
+   * e.g. a two-month date-range calendar. */
+  maxWidth?: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, maxWidth }) => {
   if (!isOpen) return null;
 
   return (
@@ -32,7 +35,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
           background: 'var(--relay-surface)',
           borderRadius: '12px',
           width: '100%',
-          maxWidth: '480px',
+          maxWidth: maxWidth ?? '480px',
           boxShadow: '0 20px 25px -5px oklch(0% 0 0 / 0.1), 0 10px 10px -5px oklch(0% 0 0 / 0.04)',
           overflow: 'hidden',
         }}

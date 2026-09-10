@@ -66,22 +66,68 @@ function findFetchButton(container: HTMLDivElement): HTMLButtonElement | undefin
   return Array.from(container.querySelectorAll('button')).find((btn) => btn.textContent === 'Fetch posts');
 }
 
+function findDateRangeTriggerButton(container: HTMLDivElement): HTMLButtonElement {
+  return Array.from(container.querySelectorAll('button')).find(
+    (btn) => btn.textContent === 'Select date range' || btn.textContent?.includes('–'),
+  ) as HTMLButtonElement;
+}
+
+/** The month shown at `monthIndex` (0 = first/current) as `{ year, month }`,
+ * read from the DayPicker caption ("September 2026") rather than assumed,
+ * since the calendar always opens on the real current month. */
+function captionMonth(container: HTMLDivElement, monthIndex: number): { year: number; month: number } {
+  const captions = container.querySelectorAll('.rdp-caption_label');
+  const label = captions[monthIndex].textContent ?? '';
+  const parsed = new Date(`1 ${label}`);
+  return { year: parsed.getFullYear(), month: parsed.getMonth() + 1 };
+}
+
+function dayButtonsInMonth(container: HTMLDivElement, monthIndex: number): HTMLButtonElement[] {
+  const months = container.querySelectorAll('.rdp-month');
+  return Array.from(months[monthIndex].querySelectorAll('button.rdp-day:not(.rdp-day_outside)'));
+}
+
+function isoDateOf(container: HTMLDivElement, monthIndex: number, dayButton: HTMLButtonElement): string {
+  const { year, month } = captionMonth(container, monthIndex);
+  const day = Number(dayButton.textContent);
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+/** Opens the date-range modal, clicks the 10th and 20th day of the first
+ * displayed month (always a valid, non-inverted range regardless of which
+ * month is "current" when the test runs), and applies — returning the two
+ * resulting `yyyy-mm-dd` strings so callers that care about exact values
+ * can assert against them. */
+async function pickDateRange(container: HTMLDivElement): Promise<{ start: string; end: string }> {
+  await act(async () => {
+    findDateRangeTriggerButton(container).click();
+  });
+  const days = dayButtonsInMonth(container, 0);
+  const start = isoDateOf(container, 0, days[9]);
+  const end = isoDateOf(container, 0, days[19]);
+  await act(async () => {
+    days[9].click();
+  });
+  await act(async () => {
+    days[19].click();
+  });
+  const applyBtn = Array.from(container.querySelectorAll('button')).find((btn) => btn.textContent === 'Apply') as HTMLButtonElement;
+  await act(async () => {
+    applyBtn.click();
+  });
+  return { start, end };
+}
+
 async function fetchSource(container: HTMLDivElement, url: string) {
   const input = container.querySelector('input[placeholder*="https://old-site.example"]') as HTMLInputElement;
   expect(input).toBeDefined();
   const fetchBtn = findFetchButton(container);
   expect(fetchBtn).toBeDefined();
 
-  const startInput = container.querySelector('input[aria-label="Start date"]') as HTMLInputElement;
-  const endInput = container.querySelector('input[aria-label="End date"]') as HTMLInputElement;
-  expect(startInput).toBeDefined();
-  expect(endInput).toBeDefined();
-
   await act(async () => {
     setInputValue(input, url);
-    setInputValue(startInput, '2000-01-01');
-    setInputValue(endInput, '2030-12-31');
   });
+  await pickDateRange(container);
   await act(async () => {
     fetchBtn?.click();
   });
@@ -117,13 +163,10 @@ describe('ImportTab fetch-from-site', () => {
     await renderImportTab(root);
 
     const input = container.querySelector('input[placeholder*="https://old-site.example"]') as HTMLInputElement;
-    const startInput = container.querySelector('input[aria-label="Start date"]') as HTMLInputElement;
-    const endInput = container.querySelector('input[aria-label="End date"]') as HTMLInputElement;
     await act(async () => {
       setInputValue(input, 'not a url');
-      setInputValue(startInput, '2000-01-01');
-      setInputValue(endInput, '2030-12-31');
     });
+    await pickDateRange(container);
     await act(async () => {
       findFetchButton(container)?.click();
     });
@@ -140,13 +183,10 @@ describe('ImportTab fetch-from-site', () => {
     await renderImportTab(root);
 
     const input = container.querySelector('input[placeholder*="https://old-site.example"]') as HTMLInputElement;
-    const startInput = container.querySelector('input[aria-label="Start date"]') as HTMLInputElement;
-    const endInput = container.querySelector('input[aria-label="End date"]') as HTMLInputElement;
     await act(async () => {
       setInputValue(input, 'ftp://files.example');
-      setInputValue(startInput, '2000-01-01');
-      setInputValue(endInput, '2030-12-31');
     });
+    await pickDateRange(container);
     await act(async () => {
       findFetchButton(container)?.click();
     });
@@ -286,30 +326,8 @@ describe('ImportTab fetch filters', () => {
     const fetchBtn = findFetchButton(container);
     expect(fetchBtn?.disabled).toBe(true);
 
-    const startInput = container.querySelector('input[aria-label="Start date"]') as HTMLInputElement;
-    const endInput = container.querySelector('input[aria-label="End date"]') as HTMLInputElement;
-    await act(async () => {
-      setInputValue(startInput, '2020-01-01');
-      setInputValue(endInput, '2020-01-31');
-    });
+    await pickDateRange(container);
     expect(fetchBtn?.disabled).toBe(false);
-
-    root.unmount();
-    document.body.removeChild(container);
-  });
-
-  it('disables the fetch button when the range is inverted', async () => {
-    const { container, root } = renderTab();
-    await renderImportTab(root);
-
-    const startInput = container.querySelector('input[aria-label="Start date"]') as HTMLInputElement;
-    const endInput = container.querySelector('input[aria-label="End date"]') as HTMLInputElement;
-    await act(async () => {
-      setInputValue(startInput, '2020-12-31');
-      setInputValue(endInput, '2020-01-01');
-    });
-    const fetchBtn = findFetchButton(container);
-    expect(fetchBtn?.disabled).toBe(true);
 
     root.unmount();
     document.body.removeChild(container);
@@ -322,13 +340,10 @@ describe('ImportTab fetch filters', () => {
     await renderImportTab(root);
 
     const input = container.querySelector('input[placeholder*="https://old-site.example"]') as HTMLInputElement;
-    const startInput = container.querySelector('input[aria-label="Start date"]') as HTMLInputElement;
-    const endInput = container.querySelector('input[aria-label="End date"]') as HTMLInputElement;
     await act(async () => {
       setInputValue(input, 'https://site.example');
-      setInputValue(startInput, '2020-01-01');
-      setInputValue(endInput, '2020-01-31');
     });
+    const { start, end } = await pickDateRange(container);
     await act(async () => {
       findFetchButton(container)?.click();
     });
@@ -340,8 +355,26 @@ describe('ImportTab fetch filters', () => {
       'https://site.example',
       expect.any(Function),
       expect.any(Function),
-      expect.objectContaining({ startDate: '2020-01-01', endDate: '2020-01-31' }),
+      expect.objectContaining({ startDate: start, endDate: end }),
     );
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
+
+  it('shows the picked range on the trigger button and lets the user reopen and change it', async () => {
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+
+    const { start } = await pickDateRange(container);
+    const triggerAfterFirstPick = findDateRangeTriggerButton(container);
+    expect(triggerAfterFirstPick.textContent).toContain('–');
+    expect(triggerAfterFirstPick.textContent).not.toBe('Select date range');
+
+    // Reopening pre-fills the calendar from the committed range rather than
+    // resetting to blank, so days[9]/days[19] land on the same two dates.
+    const { start: reopenedStart } = await pickDateRange(container);
+    expect(reopenedStart).toBe(start);
 
     root.unmount();
     document.body.removeChild(container);
