@@ -379,6 +379,33 @@ describe('ImportTab fetch filters', () => {
     root.unmount();
     document.body.removeChild(container);
   });
+
+  it('moves the calendar forward and back a month when the header arrows are clicked', async () => {
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+
+    await act(async () => {
+      findDateRangeTriggerButton(container).click();
+    });
+
+    const before = captionMonth(container, 0);
+    const nextBtn = container.querySelector('button[aria-label="Next month"]') as HTMLButtonElement;
+    await act(async () => {
+      nextBtn.click();
+    });
+    const afterNext = captionMonth(container, 0);
+    expect(afterNext.year * 12 + afterNext.month).toBe(before.year * 12 + before.month + 1);
+
+    const prevBtn = container.querySelector('button[aria-label="Previous month"]') as HTMLButtonElement;
+    await act(async () => {
+      prevBtn.click();
+    });
+    const afterPrev = captionMonth(container, 0);
+    expect(afterPrev).toEqual(before);
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
 });
 
 describe('ImportTab saved-site dropdown', () => {
