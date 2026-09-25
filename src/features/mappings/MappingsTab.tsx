@@ -549,7 +549,7 @@ export const MappingsTab: React.FC = () => {
             ? openPickerTermId.slice(domainName.length + 1)
             : null;
         const visibleTable = onlyWithArticles
-          ? { ...table, terms: table.terms.filter((t) => siteTermsByNicename?.has(t.slug || t.id)) }
+          ? { ...table, terms: table.terms.filter((t) => (siteTermsByNicename?.get(t.slug || t.id)?.count ?? 0) > 0) }
           : table;
 
         return (
