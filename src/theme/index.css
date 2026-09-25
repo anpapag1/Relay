@@ -725,6 +725,13 @@ a:hover {
   margin: 0;
   color: var(--relay-text);
 }
+.relay-date-range-picker .rdp-months {
+  justify-content: space-between;
+  gap: 24px;
+}
+.relay-date-range-picker .rdp-month {
+  margin: 0;
+}
 .relay-date-range-picker .rdp-caption_label,
 .relay-date-range-picker .rdp-head_cell {
   color: var(--relay-text);
