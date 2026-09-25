@@ -166,6 +166,14 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
   const [range, setRange] = useState<DateRange | undefined>(undefined);
   const [month, setMonth] = useState<Date>(currentMonthOnRightAnchor);
 
+  const handleMonthChange = (next: Date) => {
+    console.log('[DateRangeModal] month navigation:', month.toDateString(), '->', next.toDateString());
+    setMonth(next);
+  };
+  const handleCalendarKeyDown = (e: React.KeyboardEvent) => {
+    console.log('[DateRangeModal] keydown reached calendar:', e.key, 'defaultPrevented before handler:', e.defaultPrevented);
+  };
+
   useEffect(() => {
     if (!isOpen) return;
     setRange({ from: parseDateInput(initialStart), to: parseDateInput(initialEnd) });
@@ -191,7 +199,10 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
           <button
             type="button"
             aria-label="Previous month"
-            onClick={() => setMonth((m) => addMonths(m, -1))}
+            onClick={() => {
+              console.log('[DateRangeModal] previous-month arrow clicked');
+              setMonth((m) => addMonths(m, -1));
+            }}
             className="btn btn-secondary"
             style={{ padding: '5px 9px', fontSize: '12px' }}
           >
@@ -201,7 +212,10 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
           <button
             type="button"
             aria-label="Next month"
-            onClick={() => setMonth((m) => addMonths(m, 1))}
+            onClick={() => {
+              console.log('[DateRangeModal] next-month arrow clicked');
+              setMonth((m) => addMonths(m, 1));
+            }}
             className="btn btn-secondary"
             style={{ padding: '5px 9px', fontSize: '12px' }}
           >
@@ -225,14 +239,14 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
         </>
       }
     >
-      <div className="relay-date-range-picker">
+      <div className="relay-date-range-picker" onKeyDownCapture={handleCalendarKeyDown}>
         <DayPicker
           mode="range"
           selected={range}
           onSelect={setRange}
           numberOfMonths={2}
           month={month}
-          onMonthChange={setMonth}
+          onMonthChange={handleMonthChange}
           showOutsideDays
         />
       </div>
