@@ -406,6 +406,40 @@ describe('ImportTab fetch filters', () => {
     root.unmount();
     document.body.removeChild(container);
   });
+
+  it('advances the calendar with keyboard navigation (PageDown moves a month forward)', async () => {
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+
+    await act(async () => {
+      findDateRangeTriggerButton(container).click();
+    });
+
+    // Two months are shown at once, so the first PageDown (month+1) lands on
+    // an already-visible day in the second calendar without shifting the
+    // view — only the second PageDown (month+2) pushes past what's visible
+    // and forces the anchor month to actually advance.
+    const before = captionMonth(container, 0);
+    const firstDay = dayButtonsInMonth(container, 0)[0];
+    await act(async () => {
+      firstDay.focus();
+    });
+    await act(async () => {
+      firstDay.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true }));
+    });
+    expect(captionMonth(container, 0)).toEqual(before);
+
+    await act(async () => {
+      (document.activeElement as HTMLElement)?.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true }));
+    });
+    // The now-focused day (month+2) wasn't visible at all, so the anchor
+    // jumps straight to that month rather than stepping by one.
+    const after = captionMonth(container, 0);
+    expect(after.year * 12 + after.month).toBe(before.year * 12 + before.month + 2);
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
 });
 
 describe('ImportTab saved-site dropdown', () => {

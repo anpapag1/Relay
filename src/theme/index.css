@@ -762,3 +762,10 @@ a:hover {
 .relay-date-range-picker .rdp-nav_button {
   color: var(--relay-text);
 }
+/* Navigation lives in the modal header instead — hidden rather than
+ * disabled, so keyboard day-navigation across a month/year boundary
+ * (arrow keys, PageUp/PageDown) still works through the library's own
+ * month-change logic. */
+.relay-date-range-picker .rdp-nav {
+  display: none;
+}

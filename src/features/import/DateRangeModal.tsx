@@ -29,12 +29,6 @@ function formatDateInput(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function formatMonthInput(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return `${year}-${month}`;
-}
-
 /** With two months shown side by side, anchoring the left one here puts
  * the actual current month on the right — the default view someone
  * filtering by "recent" dates wants, and what the "Today" button returns
@@ -233,13 +227,12 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
     >
       <div className="relay-date-range-picker">
         <DayPicker
-          key={formatMonthInput(month)}
           mode="range"
           selected={range}
           onSelect={setRange}
           numberOfMonths={2}
-          defaultMonth={month}
-          disableNavigation
+          month={month}
+          onMonthChange={setMonth}
           showOutsideDays
         />
       </div>
