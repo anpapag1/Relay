@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Action } from '../../state/actions';
 import { useAppState } from '../../state/AppStateContext';
 import { termMappingId } from '../../core/mappings/termId';
@@ -85,6 +85,17 @@ const TermRow: React.FC<TermRowProps> = React.memo(function TermRow({
     setMapping(mappingTransitions.setTargetTable(mapping, domainName, nicename, targetTableIdValue));
     dispatch({ type: 'SET_TERM_ACTION', oldDomain: domainName, oldNicename: nicename, targetTableId: targetTableIdValue });
   };
+
+  // With exactly one possible destination table, there's nothing to choose —
+  // pick it automatically instead of leaving the row on "-- Choose --". Only
+  // fires for terms that don't already have a target (a prior manual choice
+  // or auto-match result is never overridden), and only once per row.
+  const singleTargetTableId = targetTables.length === 1 ? targetTables[0].id : null;
+  useEffect(() => {
+    if (singleTargetTableId && targetTableId === null && !excluded) {
+      handleSetAction(singleTargetTableId);
+    }
+  }, [singleTargetTableId]);
 
   const handleAddDestination = (targetTermId: string) => {
     const next = mappingTransitions.addDestination(mapping, targetTermId);
@@ -418,6 +429,7 @@ export const MappingsTab: React.FC = () => {
   const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>({ category: true, post_tag: true });
   const [pickerSearch, setPickerSearch] = useState('');
   const [resetGeneration, setResetGeneration] = useState(0);
+  const [onlyWithArticles, setOnlyWithArticles] = useState(false);
 
   const { source, mappings, target, oldTables } = state;
   const openPickerTermId = state.ui.pickers.destinationTermId;
@@ -501,7 +513,15 @@ export const MappingsTab: React.FC = () => {
             Decide where every term from the old site lands: a category, a tag, or nowhere at all.
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--relay-text-2)', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={onlyWithArticles}
+              onChange={(e) => setOnlyWithArticles(e.target.checked)}
+            />
+            Only show terms with articles in this upload
+          </label>
           <button
             type="button"
             onClick={() => dispatch({ type: 'OPEN_MODAL', modal: 'autoMatchConfirm' })}
@@ -528,12 +548,15 @@ export const MappingsTab: React.FC = () => {
           openPickerTermId && openPickerTermId.startsWith(`${domainName}:`)
             ? openPickerTermId.slice(domainName.length + 1)
             : null;
+        const visibleTable = onlyWithArticles
+          ? { ...table, terms: table.terms.filter((t) => siteTermsByNicename?.has(t.slug || t.id)) }
+          : table;
 
         return (
           <DomainSection
             key={domainName}
             domainName={domainName}
-            table={table}
+            table={visibleTable}
             isExpanded={isExpanded}
             isCore={isCore}
             targetTables={targetTables}
