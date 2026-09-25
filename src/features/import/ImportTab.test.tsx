@@ -440,6 +440,30 @@ describe('ImportTab fetch filters', () => {
     root.unmount();
     document.body.removeChild(container);
   });
+
+  it('changes the month with ArrowLeft/ArrowRight anywhere in the document, without needing a day focused first', async () => {
+    const { container, root } = renderTab();
+    await renderImportTab(root);
+
+    await act(async () => {
+      findDateRangeTriggerButton(container).click();
+    });
+
+    const before = captionMonth(container, 0);
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    });
+    const afterRight = captionMonth(container, 0);
+    expect(afterRight.year * 12 + afterRight.month).toBe(before.year * 12 + before.month + 1);
+
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    });
+    expect(captionMonth(container, 0)).toEqual(before);
+
+    root.unmount();
+    document.body.removeChild(container);
+  });
 });
 
 describe('ImportTab saved-site dropdown', () => {

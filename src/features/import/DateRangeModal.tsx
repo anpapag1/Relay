@@ -89,11 +89,11 @@ const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ month, onPick }) => {
       </button>
       {open && (
         <div
+          className="relay-popover-enter"
           style={{
             position: 'absolute',
             top: '100%',
             left: '50%',
-            transform: 'translateX(-50%)',
             marginTop: '6px',
             background: 'var(--relay-surface)',
             border: '1px solid var(--relay-border)',
@@ -165,23 +165,34 @@ const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ month, onPick }) => {
 export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialStart, initialEnd, onApply, onClose }) => {
   const [range, setRange] = useState<DateRange | undefined>(undefined);
   const [month, setMonth] = useState<Date>(currentMonthOnRightAnchor);
-  const [debugLog, setDebugLog] = useState<string[]>([]);
-
-  const pushDebug = (line: string) => setDebugLog((prev) => [...prev.slice(-6), line]);
-
-  const handleMonthChange = (next: Date) => {
-    pushDebug(`month navigation: ${month.toDateString()} -> ${next.toDateString()}`);
-    setMonth(next);
-  };
-  const handleCalendarKeyDown = (e: React.KeyboardEvent) => {
-    pushDebug(`keydown on calendar: "${e.key}" (defaultPrevented=${e.defaultPrevented})`);
-  };
 
   useEffect(() => {
     if (!isOpen) return;
     setRange({ from: parseDateInput(initialStart), to: parseDateInput(initialEnd) });
     setMonth(currentMonthOnRightAnchor());
   }, [isOpen, initialStart, initialEnd]);
+
+  // Same pattern as the article drawer's prev/next shortcut
+  // (useDrawerNavigationGuard): a document-level listener that works
+  // regardless of what's focused, rather than relying on react-day-picker's
+  // own keyboard handling, which only reacts when a day button already has
+  // focus — easy to miss since nothing focuses a day by default.
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const active = document.activeElement;
+      const tag = active?.tagName;
+      const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || (active instanceof HTMLElement && active.isContentEditable);
+      if (isEditable) return;
+      if (e.key === 'ArrowLeft') {
+        setMonth((m) => addMonths(m, -1));
+      } else if (e.key === 'ArrowRight') {
+        setMonth((m) => addMonths(m, 1));
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   const canApply = Boolean(range?.from && range?.to);
 
@@ -202,11 +213,8 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
           <button
             type="button"
             aria-label="Previous month"
-            onClick={() => {
-              pushDebug('previous-month arrow clicked');
-              setMonth((m) => addMonths(m, -1));
-            }}
-            className="btn btn-secondary"
+            onClick={() => setMonth((m) => addMonths(m, -1))}
+            className="btn btn-secondary relay-nav-arrow"
             style={{ padding: '5px 9px', fontSize: '12px' }}
           >
             ‹
@@ -215,11 +223,8 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
           <button
             type="button"
             aria-label="Next month"
-            onClick={() => {
-              pushDebug('next-month arrow clicked');
-              setMonth((m) => addMonths(m, 1));
-            }}
-            className="btn btn-secondary"
+            onClick={() => setMonth((m) => addMonths(m, 1))}
+            className="btn btn-secondary relay-nav-arrow"
             style={{ padding: '5px 9px', fontSize: '12px' }}
           >
             ›
@@ -242,31 +247,18 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
         </>
       }
     >
-      <div
-        style={{
-          marginBottom: '10px',
-          padding: '8px 10px',
-          background: 'var(--relay-surface-subtle)',
-          border: '1px dashed var(--relay-border)',
-          borderRadius: '8px',
-          fontSize: '11px',
-          fontFamily: 'monospace',
-          color: 'var(--relay-text-muted)',
-          minHeight: '18px',
-        }}
-      >
-        {debugLog.length === 0 ? 'debug: click an arrow or press a key in the calendar…' : debugLog.map((line, i) => <div key={i}>{line}</div>)}
-      </div>
-      <div className="relay-date-range-picker" onKeyDownCapture={handleCalendarKeyDown}>
-        <DayPicker
-          mode="range"
-          selected={range}
-          onSelect={setRange}
-          numberOfMonths={2}
-          month={month}
-          onMonthChange={handleMonthChange}
-          showOutsideDays
-        />
+      <div className="relay-date-range-picker">
+        <div key={month.getTime()} className="relay-calendar-enter">
+          <DayPicker
+            mode="range"
+            selected={range}
+            onSelect={setRange}
+            numberOfMonths={2}
+            month={month}
+            onMonthChange={setMonth}
+            showOutsideDays
+          />
+        </div>
       </div>
     </Modal>
   );

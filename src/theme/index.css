@@ -769,3 +769,52 @@ a:hover {
 .relay-date-range-picker .rdp-nav {
   display: none;
 }
+
+@keyframes relay-calendar-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.relay-calendar-enter {
+  animation: relay-calendar-enter 160ms ease-out;
+}
+
+@keyframes relay-popover-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+.relay-popover-enter {
+  transform: translate(-50%, 0);
+  animation: relay-popover-enter 130ms ease-out;
+}
+
+.relay-nav-arrow {
+  transition: transform 100ms ease, background 100ms ease;
+}
+.relay-nav-arrow:active {
+  transform: scale(0.92);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .relay-calendar-enter,
+  .relay-popover-enter {
+    animation: none;
+  }
+  .relay-nav-arrow {
+    transition: none;
+  }
+  .relay-nav-arrow:active {
+    transform: none;
+  }
+}
