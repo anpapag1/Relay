@@ -165,13 +165,16 @@ const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ month, onPick }) => {
 export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialStart, initialEnd, onApply, onClose }) => {
   const [range, setRange] = useState<DateRange | undefined>(undefined);
   const [month, setMonth] = useState<Date>(currentMonthOnRightAnchor);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+
+  const pushDebug = (line: string) => setDebugLog((prev) => [...prev.slice(-6), line]);
 
   const handleMonthChange = (next: Date) => {
-    console.log('[DateRangeModal] month navigation:', month.toDateString(), '->', next.toDateString());
+    pushDebug(`month navigation: ${month.toDateString()} -> ${next.toDateString()}`);
     setMonth(next);
   };
   const handleCalendarKeyDown = (e: React.KeyboardEvent) => {
-    console.log('[DateRangeModal] keydown reached calendar:', e.key, 'defaultPrevented before handler:', e.defaultPrevented);
+    pushDebug(`keydown on calendar: "${e.key}" (defaultPrevented=${e.defaultPrevented})`);
   };
 
   useEffect(() => {
@@ -200,7 +203,7 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
             type="button"
             aria-label="Previous month"
             onClick={() => {
-              console.log('[DateRangeModal] previous-month arrow clicked');
+              pushDebug('previous-month arrow clicked');
               setMonth((m) => addMonths(m, -1));
             }}
             className="btn btn-secondary"
@@ -213,7 +216,7 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
             type="button"
             aria-label="Next month"
             onClick={() => {
-              console.log('[DateRangeModal] next-month arrow clicked');
+              pushDebug('next-month arrow clicked');
               setMonth((m) => addMonths(m, 1));
             }}
             className="btn btn-secondary"
@@ -239,6 +242,21 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
         </>
       }
     >
+      <div
+        style={{
+          marginBottom: '10px',
+          padding: '8px 10px',
+          background: 'var(--relay-surface-subtle)',
+          border: '1px dashed var(--relay-border)',
+          borderRadius: '8px',
+          fontSize: '11px',
+          fontFamily: 'monospace',
+          color: 'var(--relay-text-muted)',
+          minHeight: '18px',
+        }}
+      >
+        {debugLog.length === 0 ? 'debug: click an arrow or press a key in the calendar…' : debugLog.map((line, i) => <div key={i}>{line}</div>)}
+      </div>
       <div className="relay-date-range-picker" onKeyDownCapture={handleCalendarKeyDown}>
         <DayPicker
           mode="range"
