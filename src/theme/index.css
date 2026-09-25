@@ -770,18 +770,34 @@ a:hover {
   display: none;
 }
 
-@keyframes relay-calendar-enter {
+.relay-date-range-picker {
+  overflow: hidden;
+}
+@keyframes relay-calendar-slide-right {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateX(18px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }
-.relay-calendar-enter {
-  animation: relay-calendar-enter 160ms ease-out;
+@keyframes relay-calendar-slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.relay-calendar-enter-right {
+  animation: relay-calendar-slide-right 180ms ease-out;
+}
+.relay-calendar-enter-left {
+  animation: relay-calendar-slide-left 180ms ease-out;
 }
 
 @keyframes relay-popover-enter {
@@ -807,7 +823,8 @@ a:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .relay-calendar-enter,
+  .relay-calendar-enter-right,
+  .relay-calendar-enter-left,
   .relay-popover-enter {
     animation: none;
   }

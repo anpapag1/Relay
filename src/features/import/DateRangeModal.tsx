@@ -165,6 +165,15 @@ const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ month, onPick }) => {
 export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialStart, initialEnd, onApply, onClose }) => {
   const [range, setRange] = useState<DateRange | undefined>(undefined);
   const [month, setMonth] = useState<Date>(currentMonthOnRightAnchor);
+  // Which way the calendar should slide in: 1 = forward (from the right),
+  // -1 = backward (from the left). Set alongside `month` at every
+  // navigation site so the two always land in the same render.
+  const [direction, setDirection] = useState<1 | -1>(1);
+
+  const goToMonth = (next: Date, dir: 1 | -1) => {
+    setDirection(dir);
+    setMonth(next);
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -185,8 +194,10 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
       const isEditable = tag === 'INPUT' || tag === 'TEXTAREA' || (active instanceof HTMLElement && active.isContentEditable);
       if (isEditable) return;
       if (e.key === 'ArrowLeft') {
+        setDirection(-1);
         setMonth((m) => addMonths(m, -1));
       } else if (e.key === 'ArrowRight') {
+        setDirection(1);
         setMonth((m) => addMonths(m, 1));
       }
     };
@@ -213,17 +224,17 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
           <button
             type="button"
             aria-label="Previous month"
-            onClick={() => setMonth((m) => addMonths(m, -1))}
+            onClick={() => goToMonth(addMonths(month, -1), -1)}
             className="btn btn-secondary relay-nav-arrow"
             style={{ padding: '5px 9px', fontSize: '12px' }}
           >
             ‹
           </button>
-          <MonthYearPicker month={month} onPick={setMonth} />
+          <MonthYearPicker month={month} onPick={(picked) => goToMonth(picked, picked.getTime() >= month.getTime() ? 1 : -1)} />
           <button
             type="button"
             aria-label="Next month"
-            onClick={() => setMonth((m) => addMonths(m, 1))}
+            onClick={() => goToMonth(addMonths(month, 1), 1)}
             className="btn btn-secondary relay-nav-arrow"
             style={{ padding: '5px 9px', fontSize: '12px' }}
           >
@@ -232,7 +243,15 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
         </>
       }
       headerActions={
-        <button type="button" onClick={() => setMonth(currentMonthOnRightAnchor())} className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: '12px' }}>
+        <button
+          type="button"
+          onClick={() => {
+            const anchor = currentMonthOnRightAnchor();
+            goToMonth(anchor, anchor.getTime() >= month.getTime() ? 1 : -1);
+          }}
+          className="btn btn-secondary"
+          style={{ padding: '5px 10px', fontSize: '12px' }}
+        >
           Today
         </button>
       }
@@ -248,14 +267,14 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
       }
     >
       <div className="relay-date-range-picker">
-        <div key={month.getTime()} className="relay-calendar-enter">
+        <div key={month.getTime()} className={direction === 1 ? 'relay-calendar-enter-right' : 'relay-calendar-enter-left'}>
           <DayPicker
             mode="range"
             selected={range}
             onSelect={setRange}
             numberOfMonths={2}
             month={month}
-            onMonthChange={setMonth}
+            onMonthChange={(next) => goToMonth(next, next.getTime() >= month.getTime() ? 1 : -1)}
             showOutsideDays
           />
         </div>
