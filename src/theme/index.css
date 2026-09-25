@@ -741,6 +741,10 @@ a:hover {
   color: var(--relay-text-muted);
   opacity: 0.5;
 }
+.relay-date-range-picker .rdp-day_today:not(.rdp-day_selected) {
+  color: var(--relay-accent);
+  font-weight: 700;
+}
 .relay-date-range-picker .rdp-day_range_middle {
   border-radius: 0;
   background: var(--relay-accent-soft);

@@ -50,6 +50,10 @@ function currentMonthOnRightAnchor(): Date {
   return new Date(now.getFullYear(), now.getMonth() - 1, 1);
 }
 
+function addMonths(date: Date, delta: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + delta, 1);
+}
+
 /** A single modal for picking both ends of the fetch date filter at once —
  * a calendar grid (react-day-picker in range mode) instead of two separate
  * native date inputs. Nothing commits to the caller's state until "Apply";
@@ -79,9 +83,38 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
       title="Select date range"
       maxWidth="640px"
       headerActions={
-        <button type="button" onClick={() => setMonth(currentMonthOnRightAnchor())} className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: '12px' }}>
-          Today
-        </button>
+        <>
+          <button
+            type="button"
+            aria-label="Previous month"
+            onClick={() => setMonth((m) => addMonths(m, -1))}
+            className="btn btn-secondary"
+            style={{ padding: '5px 9px', fontSize: '12px' }}
+          >
+            ‹
+          </button>
+          <input
+            type="month"
+            value={formatMonthInput(month)}
+            onChange={(e) => {
+              const parsed = parseMonthInput(e.target.value);
+              if (parsed) setMonth(parsed);
+            }}
+            style={{ padding: '6px 8px', border: '1px solid var(--relay-border)', borderRadius: '6px', fontSize: '13px', color: 'var(--relay-text)', background: 'var(--relay-surface)' }}
+          />
+          <button
+            type="button"
+            aria-label="Next month"
+            onClick={() => setMonth((m) => addMonths(m, 1))}
+            className="btn btn-secondary"
+            style={{ padding: '5px 9px', fontSize: '12px' }}
+          >
+            ›
+          </button>
+          <button type="button" onClick={() => setMonth(currentMonthOnRightAnchor())} className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: '12px' }}>
+            Today
+          </button>
+        </>
       }
       footer={
         <>
@@ -95,17 +128,6 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
       }
     >
       <div className="relay-date-range-picker">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
-          <input
-            type="month"
-            value={formatMonthInput(month)}
-            onChange={(e) => {
-              const parsed = parseMonthInput(e.target.value);
-              if (parsed) setMonth(parsed);
-            }}
-            style={{ padding: '6px 8px', border: '1px solid var(--relay-border)', borderRadius: '6px', fontSize: '13px', color: 'var(--relay-text)', background: 'var(--relay-surface)' }}
-          />
-        </div>
         <DayPicker
           mode="range"
           selected={range}
@@ -113,6 +135,7 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
           numberOfMonths={2}
           month={month}
           onMonthChange={setMonth}
+          disableNavigation
           showOutsideDays
         />
       </div>
