@@ -9,9 +9,11 @@ export interface ModalProps {
   /** Overrides the default 480px cap — for content that's naturally wider,
    * e.g. a two-month date-range calendar. */
   maxWidth?: string;
+  /** Extra controls rendered in the header, left of the close button. */
+  headerActions?: React.ReactNode;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, maxWidth }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, maxWidth, headerActions }) => {
   if (!isOpen) return null;
 
   return (
@@ -51,18 +53,21 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
           }}
         >
           <div style={{ fontSize: '16px', fontWeight: 700 }}>{title}</div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              fontSize: '18px',
-              cursor: 'pointer',
-              color: 'var(--relay-text-muted)',
-            }}
-          >
-            ×
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {headerActions}
+            <button
+              onClick={onClose}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                fontSize: '18px',
+                cursor: 'pointer',
+                color: 'var(--relay-text-muted)',
+              }}
+            >
+              ×
+            </button>
+          </div>
         </div>
         <div style={{ padding: '20px' }}>{children}</div>
         {footer && (
