@@ -82,7 +82,7 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
       onClose={onClose}
       title="Select date range"
       maxWidth="640px"
-      headerActions={
+      headerCenter={
         <>
           <button
             type="button"
@@ -93,15 +93,27 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
           >
             ‹
           </button>
-          <input
-            type="month"
-            value={formatMonthInput(month)}
-            onChange={(e) => {
-              const parsed = parseMonthInput(e.target.value);
-              if (parsed) setMonth(parsed);
-            }}
-            style={{ padding: '6px 8px', border: '1px solid var(--relay-border)', borderRadius: '6px', fontSize: '13px', color: 'var(--relay-text)', background: 'var(--relay-surface)' }}
-          />
+          <div style={{ position: 'relative', display: 'inline-flex' }}>
+            <button
+              type="button"
+              aria-hidden="true"
+              tabIndex={-1}
+              className="btn btn-secondary"
+              style={{ padding: '5px 9px', fontSize: '13px', pointerEvents: 'none' }}
+            >
+              📅
+            </button>
+            <input
+              type="month"
+              aria-label="Jump to month"
+              value={formatMonthInput(month)}
+              onChange={(e) => {
+                const parsed = parseMonthInput(e.target.value);
+                if (parsed) setMonth(parsed);
+              }}
+              style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%' }}
+            />
+          </div>
           <button
             type="button"
             aria-label="Next month"
@@ -111,10 +123,12 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
           >
             ›
           </button>
-          <button type="button" onClick={() => setMonth(currentMonthOnRightAnchor())} className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: '12px' }}>
-            Today
-          </button>
         </>
+      }
+      headerActions={
+        <button type="button" onClick={() => setMonth(currentMonthOnRightAnchor())} className="btn btn-secondary" style={{ padding: '5px 10px', fontSize: '12px' }}>
+          Today
+        </button>
       }
       footer={
         <>
@@ -129,12 +143,12 @@ export const DateRangeModal: React.FC<DateRangeModalProps> = ({ isOpen, initialS
     >
       <div className="relay-date-range-picker">
         <DayPicker
+          key={formatMonthInput(month)}
           mode="range"
           selected={range}
           onSelect={setRange}
           numberOfMonths={2}
-          month={month}
-          onMonthChange={setMonth}
+          defaultMonth={month}
           disableNavigation
           showOutsideDays
         />

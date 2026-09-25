@@ -11,9 +11,11 @@ export interface ModalProps {
   maxWidth?: string;
   /** Extra controls rendered in the header, left of the close button. */
   headerActions?: React.ReactNode;
+  /** Controls centered in the header, independent of the title and headerActions. */
+  headerCenter?: React.ReactNode;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, maxWidth, headerActions }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, maxWidth, headerActions, headerCenter }) => {
   if (!isOpen) return null;
 
   return (
@@ -47,13 +49,15 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
           style={{
             padding: '16px 20px',
             borderBottom: '1px solid var(--relay-border-soft)',
-            display: 'flex',
+            display: 'grid',
+            gridTemplateColumns: '1fr auto 1fr',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            gap: '10px',
           }}
         >
           <div style={{ fontSize: '16px', fontWeight: 700 }}>{title}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>{headerCenter}</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px' }}>
             {headerActions}
             <button
               onClick={onClose}
